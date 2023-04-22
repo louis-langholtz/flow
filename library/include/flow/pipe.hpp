@@ -28,8 +28,7 @@ struct pipe {
     void close(io_type direction);
     void dup(io_type direction, descriptor_id newfd);
 
-    friend std::ostream& operator<<(std::ostream& os,
-                                    const pipe& p);
+    friend std::ostream& operator<<(std::ostream& os, const pipe& p);
 
 private:
     std::array<int, 2> value;
