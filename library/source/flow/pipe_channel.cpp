@@ -7,23 +7,23 @@
 
 #include <unistd.h> // for pipe, close
 
-#include "pipe.hpp"
+#include "pipe_channel.hpp"
 
 namespace flow {
 
-pipe::pipe()
+pipe_channel::pipe_channel()
 {
     if (::pipe(value.data()) == -1) {
         throw std::runtime_error{std::strerror(errno)};
     }
 }
 
-pipe::pipe(pipe&& other) noexcept: value{std::exchange(other.value, {-1, -1})}
+pipe_channel::pipe_channel(pipe_channel&& other) noexcept: value{std::exchange(other.value, {-1, -1})}
 {
     // Intentionally empty.
 }
 
-pipe::~pipe() noexcept
+pipe_channel::~pipe_channel() noexcept
 {
     for (auto&& d: value) {
         if (d != -1) {
@@ -33,13 +33,13 @@ pipe::~pipe() noexcept
     }
 }
 
-pipe& pipe::operator=(pipe&& other) noexcept
+pipe_channel& pipe_channel::operator=(pipe_channel&& other) noexcept
 {
     value = std::exchange(other.value, {-1, -1});
     return *this;
 }
 
-void pipe::close(io_type direction)
+void pipe_channel::close(io_type direction)
 {
     auto& d = value[int(direction)];
     if (d != -1) {
@@ -53,7 +53,7 @@ void pipe::close(io_type direction)
     }
 }
 
-void pipe::dup(io_type direction, descriptor_id newfd)
+void pipe_channel::dup(io_type direction, descriptor_id newfd)
 {
     const auto new_d = int(newfd);
     auto& d = value[int(direction)];
@@ -66,7 +66,7 @@ void pipe::dup(io_type direction, descriptor_id newfd)
     d = new_d;
 }
 
-std::ostream& operator<<(std::ostream& os, const pipe& p)
+std::ostream& operator<<(std::ostream& os, const pipe_channel& p)
 {
     os << "{";
     os << p.value[0];

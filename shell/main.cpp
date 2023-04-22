@@ -19,7 +19,7 @@
 
 #include "flow/descriptor_id.hpp"
 #include "flow/io_type.hpp"
-#include "flow/pipe.hpp"
+#include "flow/pipe_channel.hpp"
 #include "flow/process_id.hpp"
 #include "flow/process_name.hpp"
 
@@ -52,10 +52,8 @@ struct process_port {
 };
 
 struct file_port {
-    std::string path;
+    std::filesystem::path path;
 };
-
-using port = std::variant<process_port, file_port>;
 
 /// @note Results in a <code>pipe</code>.
 struct pipe_connection {
@@ -74,7 +72,7 @@ using connection = std::variant<pipe_connection, file_connection>;
 struct file_channel {
 };
 
-using channel = std::variant<pipe, file_channel>;
+using channel = std::variant<pipe_channel, file_channel>;
 
 struct system_instance {
     process_name prototype;
@@ -89,8 +87,8 @@ using process_prototype = std::variant<executable_prototype, system_prototype>;
 
 struct executable_prototype {
     descriptor_container descriptors;
-    std::string working_directory;
-    std::string path;
+    std::filesystem::path working_directory;
+    std::filesystem::path path;
     argument_container arguments;
     environment_container environment;
 };
@@ -186,7 +184,7 @@ process_id instantiate(const process_name& name,
             const auto index = static_cast<std::size_t>(&connection - connections.data());
             if (const auto c = std::get_if<pipe_connection>(&connection)) {
                 if (c->in.address == name) {
-                    auto& p = std::get<pipe>(channels[index]);
+                    auto& p = std::get<pipe_channel>(channels[index]);
                     try {
                         p.close(io_type::in);
                         p.dup(io_type::out, c->in.descriptor);
@@ -197,7 +195,7 @@ process_id instantiate(const process_name& name,
                     }
                 }
                 if (c->out.address == name) {
-                    auto& p = std::get<pipe>(channels[index]);
+                    auto& p = std::get<pipe_channel>(channels[index]);
                     try {
                         p.close(io_type::out);
                         p.dup(io_type::in, c->out.descriptor);
@@ -232,11 +230,11 @@ process_id instantiate(const process_name& name,
             if (const auto c = std::get_if<pipe_connection>(&connection)) {
                 if (c->in.address == process_name{}) {
                     const auto index = static_cast<std::size_t>(&connection - connections.data());
-                    std::get<pipe>(channels[index]).close(io_type::in);
+                    std::get<pipe_channel>(channels[index]).close(io_type::in);
                 }
                 if (c->out.address == process_name{}) {
                     const auto index = static_cast<std::size_t>(&connection - connections.data());
-                    std::get<pipe>(channels[index]).close(io_type::out);
+                    std::get<pipe_channel>(channels[index]).close(io_type::out);
                 }
             }
         }
@@ -253,7 +251,7 @@ system_instance instantiate(const system_prototype& system,
     std::vector<channel> channels;
     for (auto&& connection: system.connections) {
         if (std::holds_alternative<pipe_connection>(connection)) {
-            channels.push_back(pipe{});
+            channels.push_back(pipe_channel{});
         }
         else if (std::holds_alternative<file_connection>(connection)) {
             channels.push_back(file_channel{});
@@ -274,7 +272,7 @@ system_instance instantiate(const system_prototype& system,
         if (const auto c = std::get_if<pipe_connection>(&connection)) {
             if ((c->in.address != process_name{}) && (c->out.address != process_name{})) {
                 const auto index = static_cast<std::size_t>(&connection - system.connections.data());
-                auto& p = std::get<pipe>(channels[index]);
+                auto& p = std::get<pipe_channel>(channels[index]);
                 p.close(io_type::in);
                 p.close(io_type::out);
             }

@@ -9,8 +9,8 @@
 /* Begin PBXBuildFile section */
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		99940BEA29F1BFEB00A77461 /* pipe.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BE829F1BFEB00A77461 /* pipe.cpp */; };
-		99940BEB29F1BFEB00A77461 /* pipe.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BE929F1BFEB00A77461 /* pipe.hpp */; };
+		99940BEA29F1BFEB00A77461 /* pipe_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BE829F1BFEB00A77461 /* pipe_channel.cpp */; };
+		99940BEB29F1BFEB00A77461 /* pipe_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BE929F1BFEB00A77461 /* pipe_channel.hpp */; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
 		99940BEF29F1C9A500A77461 /* io_type.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BED29F1C9A500A77461 /* io_type.hpp */; };
 		99940BF429F1D01400A77461 /* libflow.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; };
@@ -59,8 +59,8 @@
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		99940BE829F1BFEB00A77461 /* pipe.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = pipe.cpp; sourceTree = "<group>"; };
-		99940BE929F1BFEB00A77461 /* pipe.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = pipe.hpp; sourceTree = "<group>"; };
+		99940BE829F1BFEB00A77461 /* pipe_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = pipe_channel.cpp; sourceTree = "<group>"; };
+		99940BE929F1BFEB00A77461 /* pipe_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = pipe_channel.hpp; sourceTree = "<group>"; };
 		99940BEC29F1C9A500A77461 /* io_type.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = io_type.cpp; sourceTree = "<group>"; };
 		99940BED29F1C9A500A77461 /* io_type.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = io_type.hpp; sourceTree = "<group>"; };
 		99940BF529F1DAE800A77461 /* descriptor_id.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor_id.cpp; sourceTree = "<group>"; };
@@ -154,7 +154,7 @@
 			children = (
 				99940BF629F1DAE800A77461 /* descriptor_id.hpp */,
 				99940BED29F1C9A500A77461 /* io_type.hpp */,
-				99940BE929F1BFEB00A77461 /* pipe.hpp */,
+				99940BE929F1BFEB00A77461 /* pipe_channel.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
 				99940BFE29F1F73900A77461 /* process_name.hpp */,
 			);
@@ -166,7 +166,7 @@
 			children = (
 				99940BF529F1DAE800A77461 /* descriptor_id.cpp */,
 				99940BEC29F1C9A500A77461 /* io_type.cpp */,
-				99940BE829F1BFEB00A77461 /* pipe.cpp */,
+				99940BE829F1BFEB00A77461 /* pipe_channel.cpp */,
 				99940BF929F1F49F00A77461 /* process_id.cpp */,
 				99940BFD29F1F73900A77461 /* process_name.cpp */,
 			);
@@ -183,7 +183,7 @@
 				99940BEF29F1C9A500A77461 /* io_type.hpp in Headers */,
 				99940BF829F1DAE800A77461 /* descriptor_id.hpp in Headers */,
 				99940C0029F1F73900A77461 /* process_name.hpp in Headers */,
-				99940BEB29F1BFEB00A77461 /* pipe.hpp in Headers */,
+				99940BEB29F1BFEB00A77461 /* pipe_channel.hpp in Headers */,
 				99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -276,7 +276,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				99940BEA29F1BFEB00A77461 /* pipe.cpp in Sources */,
+				99940BEA29F1BFEB00A77461 /* pipe_channel.cpp in Sources */,
 				99940BF729F1DAE800A77461 /* descriptor_id.cpp in Sources */,
 				99940BFF29F1F73900A77461 /* process_name.cpp in Sources */,
 				99940BFB29F1F49F00A77461 /* process_id.cpp in Sources */,
