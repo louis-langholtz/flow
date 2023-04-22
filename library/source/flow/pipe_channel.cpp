@@ -39,40 +39,37 @@ pipe_channel& pipe_channel::operator=(pipe_channel&& other) noexcept
     return *this;
 }
 
-void pipe_channel::close(io_type direction)
+bool pipe_channel::close(io_type direction, std::ostream& os) noexcept
 {
     auto& d = value[int(direction)];
     if (d != -1) {
         if (::close(d) == -1) {
-            std::ostringstream os;
-            os << "close(" << direction << ", " << d << ") failed: ";
+            os << "close(" << direction << "," << d << ") failed: ";
             os << std::strerror(errno);
-            throw std::runtime_error{os.str()};
+            return false;
         }
         d = -1;
     }
+    return true;
 }
 
-void pipe_channel::dup(io_type direction, descriptor_id newfd)
+bool pipe_channel::dup(io_type direction, descriptor_id newfd,
+                       std::ostream& os) noexcept
 {
     const auto new_d = int(newfd);
     auto& d = value[int(direction)];
     if (dup2(d, new_d) == -1) {
-        std::ostringstream os;
         os << "dup2(" << direction << ":" << d << "," << new_d << ") failed: ";
         os << std::strerror(errno);
-        throw std::runtime_error{os.str()};
+        return false;
     }
     d = new_d;
+    return true;
 }
 
 std::ostream& operator<<(std::ostream& os, const pipe_channel& p)
 {
-    os << "{";
-    os << p.value[0];
-    os << ",";
-    os << p.value[1];
-    os << "}";
+    os << "pipe_channel{" << p.value[0] << "," << p.value[1] << "}";
     return os;
 }
 

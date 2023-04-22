@@ -2,6 +2,7 @@
 #define flow_pipe_hpp
 
 #include <array>
+#include <ostream>
 #include <type_traits> // for std::is_nothrow_move_*
 
 #include "flow/descriptor_id.hpp"
@@ -25,13 +26,13 @@ struct pipe_channel {
     pipe_channel(const pipe_channel& other) = delete;
     pipe_channel& operator=(const pipe_channel& other) = delete;
 
-    void close(io_type direction);
-    void dup(io_type direction, descriptor_id newfd);
+    bool close(io_type direction, std::ostream& os) noexcept;
+    bool dup(io_type direction, descriptor_id newfd, std::ostream& os) noexcept;
 
     friend std::ostream& operator<<(std::ostream& os, const pipe_channel& p);
 
 private:
-    std::array<int, 2> value;
+    std::array<int, 2> value{-1, -1};
 };
 
 static_assert(std::is_nothrow_move_constructible_v<pipe_channel>);
