@@ -7,23 +7,23 @@
 
 #include <unistd.h> // for pipe, close
 
-#include "posix_pipe.hpp"
+#include "pipe.hpp"
 
 namespace flow {
 
-posix_pipe::posix_pipe()
+pipe::pipe()
 {
-    if (pipe(value.data()) == -1) {
+    if (::pipe(value.data()) == -1) {
         throw std::runtime_error{std::strerror(errno)};
     }
 }
 
-posix_pipe::posix_pipe(posix_pipe&& other) noexcept: value{std::exchange(other.value, {-1, -1})}
+pipe::pipe(pipe&& other) noexcept: value{std::exchange(other.value, {-1, -1})}
 {
     // Intentionally empty.
 }
 
-posix_pipe::~posix_pipe() noexcept
+pipe::~pipe() noexcept
 {
     for (auto&& d: value) {
         if (d != -1) {
@@ -33,13 +33,13 @@ posix_pipe::~posix_pipe() noexcept
     }
 }
 
-posix_pipe& posix_pipe::operator=(posix_pipe&& other) noexcept
+pipe& pipe::operator=(pipe&& other) noexcept
 {
     value = std::exchange(other.value, {-1, -1});
     return *this;
 }
 
-void posix_pipe::close(io_type direction)
+void pipe::close(io_type direction)
 {
     auto& d = value[int(direction)];
     if (d != -1) {
@@ -53,7 +53,7 @@ void posix_pipe::close(io_type direction)
     }
 }
 
-void posix_pipe::dup(io_type direction, descriptor_id newfd)
+void pipe::dup(io_type direction, descriptor_id newfd)
 {
     const auto new_d = int(newfd);
     auto& d = value[int(direction)];
@@ -66,7 +66,7 @@ void posix_pipe::dup(io_type direction, descriptor_id newfd)
     d = new_d;
 }
 
-std::ostream& operator<<(std::ostream& os, const posix_pipe& p)
+std::ostream& operator<<(std::ostream& os, const pipe& p)
 {
     os << "{";
     os << p.value[0];

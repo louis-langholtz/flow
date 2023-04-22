@@ -15,7 +15,7 @@
 
 #include "flow/descriptor_id.hpp"
 #include "flow/io_type.hpp"
-#include "flow/posix_pipe.hpp"
+#include "flow/pipe.hpp"
 #include "flow/process_id.hpp"
 #include "flow/process_name.hpp"
 
@@ -63,7 +63,7 @@ struct unidirectional_connection {
 
 using connection = std::variant<unidirectional_connection>;
 
-using channel = std::variant<posix_pipe>;
+using channel = std::variant<pipe>;
 
 struct system_instance {
     process_name prototype;
@@ -171,8 +171,8 @@ process_id instantiate(const process_name& name,
             if (p_in && (p_in->address == name)) {
                 const auto index = static_cast<std::size_t>(&connection - connections.data());
                 try {
-                    std::get<posix_pipe>(channels[index]).close(io_type::in);
-                    std::get<posix_pipe>(channels[index]).dup(io_type::out, p_in->descriptor);
+                    std::get<pipe>(channels[index]).close(io_type::in);
+                    std::get<pipe>(channels[index]).dup(io_type::out, p_in->descriptor);
                 }
                 catch (const std::runtime_error& error) {
                     std::cerr << error.what() << '\n';
@@ -182,8 +182,8 @@ process_id instantiate(const process_name& name,
             if (p_out && (p_out->address == name)) {
                 const auto index = static_cast<std::size_t>(&connection - connections.data());
                 try {
-                    std::get<posix_pipe>(channels[index]).close(io_type::out);
-                    std::get<posix_pipe>(channels[index]).dup(io_type::in, p_out->descriptor);
+                    std::get<pipe>(channels[index]).close(io_type::out);
+                    std::get<pipe>(channels[index]).dup(io_type::in, p_out->descriptor);
                 }
                 catch (const std::runtime_error& error) {
                     std::cerr << error.what() << '\n';
@@ -201,11 +201,11 @@ process_id instantiate(const process_name& name,
             const auto c = std::get_if<unidirectional_connection>(&connection);
             if (const auto p = std::get_if<process_port>(&c->in); p && (p->address == process_name{})) {
                 const auto index = static_cast<std::size_t>(&connection - connections.data());
-                std::get<posix_pipe>(channels[index]).close(io_type::in);
+                std::get<pipe>(channels[index]).close(io_type::in);
             }
             if (const auto p = std::get_if<process_port>(&c->out); p && (p->address == process_name{})) {
                 const auto index = static_cast<std::size_t>(&connection - connections.data());
-                std::get<posix_pipe>(channels[index]).close(io_type::out);
+                std::get<pipe>(channels[index]).close(io_type::out);
             }
         }
         break;
@@ -223,7 +223,7 @@ system_instance instantiate(const system_prototype& system,
         if (std::holds_alternative<unidirectional_connection>(connection)) {
             const auto& c = std::get<unidirectional_connection>(connection);
             if (std::empty(c.name)) {
-                channels.push_back(flow::posix_pipe{});
+                channels.push_back(flow::pipe{});
             }
             else {
                 // push fifo
@@ -247,8 +247,8 @@ system_instance instantiate(const system_prototype& system,
         const auto p_out = std::get_if<process_port>(&c->out);
         if (p_in && p_out && (p_in->address != process_name{}) && (p_out->address != process_name{})) {
             const auto index = static_cast<std::size_t>(&connection - system.connections.data());
-            std::get<posix_pipe>(channels[index]).close(io_type::in);
-            std::get<posix_pipe>(channels[index]).close(io_type::out);
+            std::get<pipe>(channels[index]).close(io_type::in);
+            std::get<pipe>(channels[index]).close(io_type::out);
         }
     }
     result.channels = std::move(channels);
