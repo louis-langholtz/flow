@@ -7,7 +7,7 @@
 
 #include <unistd.h> // for pipe, close
 
-#include "pipe_channel.hpp"
+#include "flow/pipe_channel.hpp"
 
 namespace flow {
 
