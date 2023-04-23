@@ -1,14 +1,20 @@
-#ifndef flow_pipe_hpp
-#define flow_pipe_hpp
+#ifndef channel_hpp
+#define channel_hpp
 
 #include <array>
 #include <ostream>
 #include <type_traits> // for std::is_nothrow_move_*
+#include <variant>
 
 #include "flow/descriptor_id.hpp"
 #include "flow/io_type.hpp"
 
 namespace flow {
+
+/// @brief File channel.
+/// @note This is intended to be a strong place-holder type.
+struct file_channel {
+};
 
 /// @brief POSIX pipe.
 /// @note This class is movable but not copyable.
@@ -32,14 +38,17 @@ struct pipe_channel {
     friend std::ostream& operator<<(std::ostream& os, const pipe_channel& p);
 
 private:
-    std::array<int, 2> value{-1, -1};
+    std::array<int, 2> descriptors{-1, -1};
 };
 
 static_assert(std::is_nothrow_move_constructible_v<pipe_channel>);
 static_assert(std::is_nothrow_move_assignable_v<pipe_channel>);
 
-std::ostream& operator<<(std::ostream& os, const pipe_channel& p);
+using channel = std::variant<pipe_channel, file_channel>;
+
+std::ostream& operator<<(std::ostream& os, const file_channel& value);
+std::ostream& operator<<(std::ostream& os, const pipe_channel& value);
 
 }
 
-#endif /* flow_pipe_hpp */
+#endif /* channel_hpp */
