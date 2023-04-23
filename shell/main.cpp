@@ -20,8 +20,10 @@
 #include "flow/descriptor_id.hpp"
 #include "flow/io_type.hpp"
 #include "flow/pipe_channel.hpp"
+#include "flow/pipe_connection.hpp"
 #include "flow/process_id.hpp"
 #include "flow/process_name.hpp"
+#include "flow/process_port.hpp"
 
 namespace flow {
 
@@ -41,24 +43,8 @@ inline const auto standard_descriptors = descriptor_container{
     {descriptor_id{2}, {"stderr", io_type::out}},
 };
 
-struct process_instance {
-    process_name prototype;
-    process_id id;
-};
-
-struct process_port {
-    process_name address;
-    descriptor_id descriptor{invalid_descriptor_id}; ///< Well known descriptor ID for port.
-};
-
 struct file_port {
     std::filesystem::path path;
-};
-
-/// @note Results in a <code>pipe</code>.
-struct pipe_connection {
-    process_port in;
-    process_port out;
 };
 
 struct file_connection {
@@ -74,9 +60,9 @@ struct file_channel {
 
 using channel = std::variant<pipe_channel, file_channel>;
 
-struct system_instance {
-    process_name prototype;
-    std::map<process_name, process_id> process_ids;
+struct process_instance {
+    process_id id;
+    std::map<process_name, process_instance> children;
     std::vector<channel> channels;
 };
 
@@ -188,6 +174,7 @@ process_id instantiate(const process_name& name,
                     auto& p = std::get<pipe_channel>(channels[index]);
                     if (!p.close(io_type::in, err_stream) ||
                         !p.dup(io_type::out, c->in.descriptor, err_stream)) {
+                        err_stream << ", for " << name << '\n';
                         _exit(1);
                     }
                 }
@@ -195,6 +182,7 @@ process_id instantiate(const process_name& name,
                     auto& p = std::get<pipe_channel>(channels[index]);
                     if (!p.close(io_type::out, err_stream) ||
                         !p.dup(io_type::in, c->out.descriptor, err_stream)) {
+                        err_stream << ", for " << name << '\n';
                         _exit(1);
                     }
                 }
@@ -236,12 +224,11 @@ process_id instantiate(const process_name& name,
     return pid;
 }
 
-system_instance instantiate(const system_prototype& system,
-                            std::ostream& err_stream,
-                            process_name name = {})
+process_instance instantiate(const system_prototype& system,
+                             std::ostream& err_stream)
 {
-    system_instance result;
-    result.prototype = std::move(name);
+    process_instance result;
+    result.id = process_id(0);
     std::vector<channel> channels;
     for (auto&& connection: system.connections) {
         if (std::holds_alternative<pipe_connection>(connection)) {
@@ -256,11 +243,13 @@ system_instance instantiate(const system_prototype& system,
         const auto& prototype = process_prototype.second;
         if (std::holds_alternative<executable_prototype>(prototype)) {
             const auto& exe_proto = std::get<executable_prototype>(prototype);
-            result.process_ids.emplace(name, instantiate(name, exe_proto, system.connections,
-                                                         channels, err_stream));
+            const auto pid = instantiate(name, exe_proto, system.connections,
+                                         channels, err_stream);
+            result.children.emplace(name, process_instance{pid});
         }
-        else {
-            result.process_ids.emplace(name, process_id(0));
+        else if (std::holds_alternative<system_prototype>(prototype)) {
+            const auto& sys_proto = std::get<system_prototype>(prototype);
+            result.children.emplace(name, instantiate(sys_proto, err_stream));
         }
     }
     for (const auto& connection: system.connections) {
@@ -281,10 +270,11 @@ enum class wait_diags {
     none, yes,
 };
 
-void wait(system_instance& instance, std::ostream& err_stream, wait_diags diags = wait_diags::none)
+void wait(process_instance& instance, std::ostream& err_stream,
+          wait_diags diags = wait_diags::none)
 {
     if (diags == wait_diags::yes) {
-        err_stream << "wait called for " << std::size(instance.process_ids) << " pids\n";
+        err_stream << "wait called for " << std::size(instance.children) << " children\n";
     }
     int status = 0;
     auto pid = flow::invalid_process_id;
@@ -296,12 +286,12 @@ void wait(system_instance& instance, std::ostream& err_stream, wait_diags diags 
             }
             continue;
         }
-        const auto it = std::find_if(std::begin(instance.process_ids),
-                                     std::end(instance.process_ids),
+        const auto it = std::find_if(std::begin(instance.children),
+                                     std::end(instance.children),
                                      [pid](const auto& e) {
-            return e.second == pid;
+            return e.second.id == pid;
         });
-        if (it != std::end(instance.process_ids)) {
+        if (it != std::end(instance.children)) {
             if (WIFEXITED(status)) {
                 if (WEXITSTATUS(status) != 0) {
                     err_stream << it->first << " exit status=";
@@ -313,7 +303,7 @@ void wait(system_instance& instance, std::ostream& err_stream, wait_diags diags 
                         err_stream << "wait detected normal exit of " << it->first << '\n';
                     }
                 }
-                it->second = process_id(0);
+                it->second.id = process_id(0);
             }
             else {
                 err_stream << "unexpected status " << status << " from process " << it->first << '\n';
@@ -327,7 +317,7 @@ void wait(system_instance& instance, std::ostream& err_stream, wait_diags diags 
 
 void touch(const file_port& file)
 {
-    if (const auto fd = ::creat(file.path.c_str(), 0666); fd != -1) {
+    if (const auto fd = ::open(file.path.c_str(), O_CREAT|O_WRONLY, 0666); fd != -1) {
         ::close(fd);
         return;
     }
@@ -383,8 +373,7 @@ int main(int argc, const char * argv[])
     wait(instance, std::cerr, flow::wait_diags::yes);
 
     std::cerr << "system ran: ";
-    std::cerr << "name={" << instance.prototype << "}";
-    std::cerr << ", pids[" << std::size(instance.process_ids) << "]";
+    std::cerr << ", children[" << std::size(instance.children) << "]";
     std::cerr << "\n";
     return 0;
 }
