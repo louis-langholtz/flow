@@ -7,6 +7,8 @@ namespace flow {
 
 enum class io_type: int { in = 0, out = 1};
 
+int to_open_flags(io_type direction);
+
 std::ostream& operator<<(std::ostream& os, io_type value);
 
 }

@@ -1,8 +1,8 @@
-#include "flow/process_port.hpp"
+#include "flow/prototype_port.hpp"
 
 namespace flow {
 
-std::ostream& operator<<(std::ostream& os, const process_port& value)
+std::ostream& operator<<(std::ostream& os, const prototype_port& value)
 {
     os << value.address;
     os << ':';
