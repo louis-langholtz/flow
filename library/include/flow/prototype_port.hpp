@@ -4,18 +4,18 @@
 #include <ostream>
 
 #include "flow/descriptor_id.hpp"
-#include "flow/process_name.hpp"
+#include "flow/prototype_name.hpp"
 
 namespace flow {
 
-struct process_port {
-    process_name address;
+struct prototype_port {
+    prototype_name address;
 
     ///@brief Well known descriptor ID for port.
     descriptor_id descriptor{invalid_descriptor_id};
 };
 
-std::ostream& operator<<(std::ostream& os, const process_port& value);
+std::ostream& operator<<(std::ostream& os, const prototype_port& value);
 
 }
 

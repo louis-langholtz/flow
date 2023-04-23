@@ -2,6 +2,7 @@
 #define prototype_hpp
 
 #include <map>
+#include <ostream>
 #include <string>
 #include <variant>
 #include <vector>
@@ -9,7 +10,7 @@
 #include "flow/descriptor_id.hpp"
 #include "flow/connection.hpp"
 #include "flow/io_type.hpp"
-#include "flow/process_name.hpp"
+#include "flow/prototype_name.hpp"
 
 namespace flow {
 
@@ -44,9 +45,14 @@ struct executable_prototype {
 
 struct system_prototype {
     descriptor_container descriptors;
-    std::map<process_name, prototype> prototypes;
+    std::map<prototype_name, prototype> prototypes;
     std::vector<connection> connections;
 };
+
+std::ostream& operator<<(std::ostream& os, const descriptor_container& value);
+std::ostream& operator<<(std::ostream& os, const executable_prototype& value);
+std::ostream& operator<<(std::ostream& os, const system_prototype& value);
+std::ostream& operator<<(std::ostream& os, const prototype& value);
 
 }
 

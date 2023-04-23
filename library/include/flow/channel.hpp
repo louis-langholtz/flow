@@ -19,6 +19,7 @@ struct file_channel {
 /// @brief POSIX pipe.
 /// @note This class is movable but not copyable.
 struct pipe_channel {
+    /// @note This function is NOT thread safe in error cases.
     /// @throws std::runtime_error if the underlying OS call fails.
     pipe_channel();
 
@@ -32,10 +33,13 @@ struct pipe_channel {
     pipe_channel(const pipe_channel& other) = delete;
     pipe_channel& operator=(const pipe_channel& other) = delete;
 
+    /// @note This function is NOT thread safe in error cases.
     bool close(io_type direction, std::ostream& os) noexcept;
+
+    /// @note This function is NOT thread safe in error cases.
     bool dup(io_type direction, descriptor_id newfd, std::ostream& os) noexcept;
 
-    friend std::ostream& operator<<(std::ostream& os, const pipe_channel& p);
+    friend std::ostream& operator<<(std::ostream& os, const pipe_channel& value);
 
 private:
     std::array<int, 2> descriptors{-1, -1};
@@ -48,6 +52,7 @@ using channel = std::variant<pipe_channel, file_channel>;
 
 std::ostream& operator<<(std::ostream& os, const file_channel& value);
 std::ostream& operator<<(std::ostream& os, const pipe_channel& value);
+std::ostream& operator<<(std::ostream& os, const channel& value);
 
 }
 

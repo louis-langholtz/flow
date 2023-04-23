@@ -14,7 +14,7 @@ namespace flow {
 pipe_channel::pipe_channel()
 {
     if (::pipe(descriptors.data()) == -1) {
-        throw std::runtime_error{std::strerror(errno)};
+        throw std::runtime_error{std::strerror(errno)}; // NOLINT(concurrency-mt-unsafe)
     }
 }
 
@@ -45,7 +45,7 @@ bool pipe_channel::close(io_type direction, std::ostream& os) noexcept
     if (d != -1) {
         if (::close(d) == -1) {
             os << "close(" << direction << "," << d << ") failed: ";
-            os << std::strerror(errno);
+            os << std::strerror(errno); // NOLINT(concurrency-mt-unsafe)
             return false;
         }
         d = -1;
@@ -60,14 +60,14 @@ bool pipe_channel::dup(io_type direction, descriptor_id newfd,
     auto& d = descriptors[int(direction)];
     if (dup2(d, new_d) == -1) {
         os << "dup2(" << direction << ":" << d << "," << new_d << ") failed: ";
-        os << std::strerror(errno);
+        os << std::strerror(errno); // NOLINT(concurrency-mt-unsafe)
         return false;
     }
     d = new_d;
     return true;
 }
 
-std::ostream& operator<<(std::ostream& os, const file_channel& value)
+std::ostream& operator<<(std::ostream& os, const file_channel&)
 {
     os << "file_channel{}";
     return os;
@@ -80,6 +80,17 @@ std::ostream& operator<<(std::ostream& os, const pipe_channel& value)
     os << ",";
     os << value.descriptors[1];
     os << "}";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const channel& value)
+{
+    if (const auto c = std::get_if<pipe_channel>(&value)) {
+        os << *c;
+    }
+    else if (const auto c = std::get_if<file_channel>(&value)) {
+        os << *c;
+    }
     return os;
 }
 
