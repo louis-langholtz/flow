@@ -10,7 +10,9 @@ namespace flow {
 
 struct process_port {
     process_name address;
-    descriptor_id descriptor{invalid_descriptor_id}; ///< Well known descriptor ID for port.
+
+    ///@brief Well known descriptor ID for port.
+    descriptor_id descriptor{invalid_descriptor_id};
 };
 
 std::ostream& operator<<(std::ostream& os, const process_port& value);

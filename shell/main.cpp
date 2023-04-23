@@ -1,5 +1,4 @@
 #include <array>
-#include <filesystem>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -8,7 +7,6 @@
 #include <string>
 #include <type_traits>
 #include <utility> // for std::move
-#include <variant>
 #include <vector>
 
 #include <fcntl.h> // for open
@@ -17,72 +15,22 @@
 #include <sys/types.h> // for mkfifo
 #include <sys/stat.h> // for mkfifo
 
+#include "flow/channel.hpp"
+#include "flow/connection.hpp"
 #include "flow/descriptor_id.hpp"
+#include "flow/file_port.hpp"
 #include "flow/io_type.hpp"
-#include "flow/pipe_channel.hpp"
-#include "flow/pipe_connection.hpp"
 #include "flow/process_id.hpp"
 #include "flow/process_name.hpp"
 #include "flow/process_port.hpp"
+#include "flow/prototype.hpp"
 
 namespace flow {
 
-using argument_container = std::vector<std::string>;
-using environment_container = std::map<std::string, std::string>;
-
-struct descriptor {
-    std::string comment;
-    io_type direction;
-};
-
-using descriptor_container = std::map<descriptor_id, descriptor>;
-
-inline const auto standard_descriptors = descriptor_container{
-    {descriptor_id{0}, {"stdin", io_type::in}},
-    {descriptor_id{1}, {"stdout", io_type::out}},
-    {descriptor_id{2}, {"stderr", io_type::out}},
-};
-
-struct file_port {
-    std::filesystem::path path;
-};
-
-struct file_connection {
-    file_port file;
-    io_type direction;
-    process_port process;
-};
-
-using connection = std::variant<pipe_connection, file_connection>;
-
-struct file_channel {
-};
-
-using channel = std::variant<pipe_channel, file_channel>;
-
-struct process_instance {
+struct instance {
     process_id id;
-    std::map<process_name, process_instance> children;
+    std::map<process_name, instance> children;
     std::vector<channel> channels;
-};
-
-struct system_prototype;
-struct executable_prototype;
-
-using process_prototype = std::variant<executable_prototype, system_prototype>;
-
-struct executable_prototype {
-    descriptor_container descriptors;
-    std::filesystem::path working_directory;
-    std::filesystem::path path;
-    argument_container arguments;
-    environment_container environment;
-};
-
-struct system_prototype {
-    descriptor_container descriptors;
-    std::map<process_name, process_prototype> process_prototypes;
-    std::vector<connection> connections;
 };
 
 /// @note This is NOT an "async-signal-safe" function. So, it's not suitable for forked child to call.
@@ -224,10 +172,10 @@ process_id instantiate(const process_name& name,
     return pid;
 }
 
-process_instance instantiate(const system_prototype& system,
+instance instantiate(const system_prototype& system,
                              std::ostream& err_stream)
 {
-    process_instance result;
+    instance result;
     result.id = process_id(0);
     std::vector<channel> channels;
     for (auto&& connection: system.connections) {
@@ -238,14 +186,14 @@ process_instance instantiate(const system_prototype& system,
             channels.push_back(file_channel{});
         }
     }
-    for (auto&& process_prototype: system.process_prototypes) {
-        const auto& name = process_prototype.first;
-        const auto& prototype = process_prototype.second;
+    for (auto&& prototype_mapentry: system.prototypes) {
+        const auto& name = prototype_mapentry.first;
+        const auto& prototype = prototype_mapentry.second;
         if (std::holds_alternative<executable_prototype>(prototype)) {
             const auto& exe_proto = std::get<executable_prototype>(prototype);
             const auto pid = instantiate(name, exe_proto, system.connections,
                                          channels, err_stream);
-            result.children.emplace(name, process_instance{pid});
+            result.children.emplace(name, instance{pid});
         }
         else if (std::holds_alternative<system_prototype>(prototype)) {
             const auto& sys_proto = std::get<system_prototype>(prototype);
@@ -270,7 +218,7 @@ enum class wait_diags {
     none, yes,
 };
 
-void wait(process_instance& instance, std::ostream& err_stream,
+void wait(instance& instance, std::ostream& err_stream,
           wait_diags diags = wait_diags::none)
 {
     if (diags == wait_diags::yes) {
@@ -346,13 +294,13 @@ int main(int argc, const char * argv[])
     flow::executable_prototype cat_executable;
     cat_executable.path = "/bin/cat";
     const auto cat_process_name = flow::process_name{"cat"};
-    system.process_prototypes.emplace(cat_process_name, cat_executable);
+    system.prototypes.emplace(cat_process_name, cat_executable);
 
     flow::executable_prototype xargs_executable;
     xargs_executable.path = "/usr/bin/xargs";
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
     const auto xargs_process_name = flow::process_name{"xargs"};
-    system.process_prototypes.emplace(xargs_process_name, xargs_executable);
+    system.prototypes.emplace(xargs_process_name, xargs_executable);
 
     system.connections.push_back(flow::file_connection{
         input_file_port,
