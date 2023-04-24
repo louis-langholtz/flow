@@ -1,5 +1,7 @@
+#include <algorithm> // for std::find
 #include <array>
 #include <iostream>
+#include <iterator> // for std::distance
 #include <map>
 #include <memory>
 #include <numeric> // for std::accumulate
@@ -12,7 +14,7 @@
 
 #include <fcntl.h> // for open
 #include <sys/wait.h>
-#include <unistd.h> // for fork, getcwd
+#include <unistd.h> // for fork
 #include <sys/types.h> // for mkfifo
 #include <sys/stat.h> // for mkfifo
 
@@ -52,6 +54,10 @@ process_id instantiate(const prototype_name& name,
         // flow::pipe_connection{
         //   flow::process_port{ls_process_name, flow::descriptor_id{1}},
         //   flow::process_port{cat_process_name, flow::descriptor_id{0}}}
+        //
+        // Also:
+        // Close file descriptors inherited by child that it's not using.
+        // See: https://stackoverflow.com/a/7976880/7410358
         //
         // Have to be especially careful here though!
         // From https://man7.org/linux/man-pages/man2/fork.2.html:
@@ -223,16 +229,14 @@ void wait(instance& instance, std::ostream& err_stream,
     }
 }
 
-std::optional<std::size_t> find_index(const std::span<connection>& connections,
-                                      const prototype_name& in, const prototype_name& out)
+auto find_index(const std::span<connection>& connections,
+                const connection& look_for) -> std::optional<std::size_t>
 {
-    for (auto&& connection: connections) {
-        const auto index = static_cast<std::size_t>(&connection - &(*connections.begin()));
-        if (const auto c = std::get_if<pipe_connection>(&connection)) {
-            if (c->in.address == in && c->out.address == out) {
-                return index;
-            }
-        }
+    const auto first = std::begin(connections);
+    const auto last = std::end(connections);
+    const auto iter = std::find(first, last, look_for);
+    if (iter != last) {
+        return {std::distance(first, iter)};
     }
     return {};
 }
@@ -276,14 +280,25 @@ int main(int argc, const char * argv[])
     const auto xargs_process_name = flow::prototype_name{"xargs"};
     system.prototypes.emplace(xargs_process_name, xargs_executable);
 
-    system.connections.push_back(flow::pipe_connection{
+    const auto cat_stdin = flow::pipe_connection{
         flow::prototype_port{},
-        flow::prototype_port{cat_process_name, flow::descriptor_id{0}},
-    });
+        flow::prototype_port{cat_process_name, flow::descriptor_id{0}}
+    };
+    system.connections.push_back(cat_stdin);
     system.connections.push_back(flow::pipe_connection{
         flow::prototype_port{cat_process_name, flow::descriptor_id{1}},
         flow::prototype_port{xargs_process_name, flow::descriptor_id{0}},
     });
+    const auto xargs_stdout = flow::pipe_connection{
+        flow::prototype_port{xargs_process_name, flow::descriptor_id{1}},
+        flow::prototype_port{},
+    };
+    system.connections.push_back(xargs_stdout);
+    const auto xargs_stderr = flow::pipe_connection{
+        flow::prototype_port{xargs_process_name, flow::descriptor_id{2}},
+        flow::prototype_port{},
+    };
+    system.connections.push_back(xargs_stderr);
 #if 0
     system.connections.push_back(flow::file_connection{
         output_file_port,
@@ -292,19 +307,46 @@ int main(int argc, const char * argv[])
     });
 #endif
 
-    auto instance = instantiate(system, std::cerr);
-    if (const auto found = find_index(system.connections,
-                                      flow::prototype_name{}, cat_process_name)) {
-        std::cerr << "found channel\n";
-        auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
-        std::cerr << "writing to channel: " << channel << "\n";
-        channel.write("/bin\n/sbin\n", std::cerr);
-        channel.close(flow::io_type::out, std::cerr);
+    {
+        auto instance = instantiate(system, std::cerr);
+        if (const auto found = find_index(system.connections, cat_stdin)) {
+            std::cerr << "found cat stdin channel\n";
+            auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
+            std::cerr << "writing to channel: " << channel << "\n";
+            channel.write("/bin\n/sbin", std::cerr);
+            channel.close(flow::io_type::out, std::cerr);
+        }
+        wait(instance, std::cerr, flow::wait_diags::none);
+        if (const auto found = find_index(system.connections, xargs_stderr)) {
+            auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
+            std::array<char, 1024> buffer{};
+            const auto nread = channel.read(buffer, std::cerr);
+            if (nread == static_cast<std::size_t>(-1)) {
+                std::cerr << "xargs can't read stderr\n";
+            }
+            else if (nread != 0u) {
+                std::cerr << "xargs stderr: " << buffer.data() << "\n";
+            }
+        }
+        if (const auto found = find_index(system.connections, xargs_stdout)) {
+            auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
+            for (;;) {
+                std::array<char, 4096> buffer{};
+                const auto nread = channel.read(buffer, std::cerr);
+                if (nread == static_cast<std::size_t>(-1)) {
+                    std::cerr << "xargs can't read stdout\n";
+                }
+                else if (nread != 0u) {
+                    std::cout << buffer.data();
+                }
+                else {
+                    break;
+                }
+            }
+        }
+        std::cerr << "system ran: ";
+        std::cerr << ", children[" << std::size(instance.children) << "]";
+        std::cerr << "\n";
     }
-    wait(instance, std::cerr, flow::wait_diags::yes);
-
-    std::cerr << "system ran: ";
-    std::cerr << ", children[" << std::size(instance.children) << "]";
-    std::cerr << "\n";
     return 0;
 }

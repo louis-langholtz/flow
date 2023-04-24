@@ -16,6 +16,16 @@ struct file_connection {
     prototype_port process;
 };
 
+constexpr auto operator==(const file_connection& lhs,
+                          const file_connection& rhs) -> bool
+{
+    return (lhs.file == rhs.file)
+        && (lhs.direction == rhs.direction)
+        && (lhs.process == rhs.process);
+}
+
+auto operator<<(std::ostream& os, const file_connection& value) -> std::ostream&;
+
 /// @brief Pipe connection.
 /// @details A unidirectional connection between prototypes.
 /// @note Results in a <code>pipe_channel</code>.
@@ -24,10 +34,15 @@ struct pipe_connection {
     prototype_port out;
 };
 
-using connection = std::variant<pipe_connection, file_connection>;
+constexpr auto operator==(const pipe_connection& lhs,
+                          const pipe_connection& rhs) -> bool
+{
+    return (lhs.in == rhs.in) && (lhs.out == rhs.out);
+}
 
-std::ostream& operator<<(std::ostream& os, const file_connection& value);
-std::ostream& operator<<(std::ostream& os, const pipe_connection& value);
+auto operator<<(std::ostream& os, const pipe_connection& value) -> std::ostream&;
+
+using connection = std::variant<pipe_connection, file_connection>;
 
 }
 

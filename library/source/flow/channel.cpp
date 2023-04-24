@@ -28,7 +28,6 @@ pipe_channel::~pipe_channel() noexcept
     for (auto&& d: descriptors) {
         if (d != -1) {
             ::close(d);
-            std::cerr << "pipe closed\n";
         }
     }
 }
@@ -63,6 +62,18 @@ bool pipe_channel::dup(io_type direction, descriptor_id newfd,
     }
     d = new_d;
     return true;
+}
+
+std::size_t pipe_channel::read(const std::span<char>& buffer,
+                               std::ostream& errs) const
+{
+    const auto nread = ::read(descriptors[0], buffer.data(), buffer.size());
+    if (nread == -1) {
+        errs << "read() failed: ";
+        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
+        return static_cast<std::size_t>(-1);
+    }
+    return static_cast<std::size_t>(nread);
 }
 
 bool pipe_channel::write(const std::span<const char>& buffer,
