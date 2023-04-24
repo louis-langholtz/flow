@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <numeric> // for std::accumulate
+#include <optional>
 #include <span>
 #include <string>
 #include <type_traits>
@@ -33,7 +34,7 @@ process_id instantiate(const prototype_name& name,
                        const executable_prototype& exe_proto,
                        const std::vector<connection>& connections,
                        std::vector<channel>& channels,
-                       std::ostream& err_stream)
+                       std::ostream& errs)
 {
     auto arg_buffers = make_arg_bufs(exe_proto.arguments, exe_proto.path);
     auto argv = make_argv(arg_buffers);
@@ -61,32 +62,46 @@ process_id instantiate(const prototype_name& name,
         for (const auto& connection: connections) {
             const auto index = static_cast<std::size_t>(&connection - connections.data());
             if (const auto c = std::get_if<pipe_connection>(&connection)) {
+                auto& p = std::get<pipe_channel>(channels[index]);
+                if ((c->in.address != name) && (c->out.address != name)) {
+                    errs << name << " (unaffiliation) " << *c << " " << p << ", close in&out setup\n";
+                    const auto closed_in = p.close(io_type::in, errs);
+                    const auto closed_out = p.close(io_type::out, errs);
+                    if (!closed_in || !closed_out) {
+                        errs << ", for " << name << "\n";
+                        _exit(1);
+                    }
+                    continue;
+                }
                 if (c->in.address == name) {
-                    auto& p = std::get<pipe_channel>(channels[index]);
-                    if (!p.close(io_type::in, err_stream) ||
-                        !p.dup(io_type::out, c->in.descriptor, err_stream)) {
-                        err_stream << ", for " << name << '\n';
+                    errs << name << " " << *c << " " << p << ", close in, dup out to " << c->in.descriptor << " setup\n";
+                    if (!p.close(io_type::in, errs) || // close unused read end
+                        !p.dup(io_type::out, c->in.descriptor, errs)) {
+                        errs << ", for " << name << "\n";
                         _exit(1);
                     }
                 }
                 if (c->out.address == name) {
-                    auto& p = std::get<pipe_channel>(channels[index]);
-                    if (!p.close(io_type::out, err_stream) ||
-                        !p.dup(io_type::in, c->out.descriptor, err_stream)) {
-                        err_stream << ", for " << name << '\n';
+                    errs << name << " " << *c << " " << p << ", close out, dup in to " << c->out.descriptor << " setup\n";
+                    if (!p.close(io_type::out, errs) || // close unused write end
+                        !p.dup(io_type::in, c->out.descriptor, errs)) {
+                        errs << ", for " << name << "\n";
                         _exit(1);
                     }
                 }
             }
             else if (const auto c = std::get_if<file_connection>(&connection)) {
                 if (c->process.address == name) {
+                    errs << name << " " << *c << ", open & dup2\n";
                     const auto fd = ::open(c->file.path.c_str(), to_open_flags(c->direction));
                     if (fd == -1) {
-                        err_stream << "open file " << c->file.path << " failed: " << std::strerror(errno) << '\n';
+                        errs << "open file " << c->file.path << " failed: ";
+                        errs << std::strerror(errno) << "\n";
                         _exit(1);
                     }
                     if (::dup2(fd, int(c->process.descriptor)) == -1) {
-                        err_stream << "dup2(" << fd << "," << c->process.descriptor << ") failed: " << std::strerror(errno) << '\n';
+                        errs << "dup2(" << fd << "," << c->process.descriptor << ") failed: ";
+                        errs << std::strerror(errno) << "\n";
                         _exit(1);
                     }
                 }
@@ -98,25 +113,12 @@ process_id instantiate(const prototype_name& name,
         break;
     }
     default: // case for the spawning/parent process
-        for (const auto& connection: connections) {
-            const auto index = static_cast<std::size_t>(&connection - connections.data());
-            if (const auto c = std::get_if<pipe_connection>(&connection)) {
-                auto& p = std::get<pipe_channel>(channels[index]);
-                if (c->in.address == prototype_name{}) {
-                    p.close(io_type::in, err_stream);
-                }
-                if (c->out.address == prototype_name{}) {
-                    p.close(io_type::out, err_stream);
-                }
-            }
-        }
         break;
     }
     return pid;
 }
 
-instance instantiate(const system_prototype& system,
-                             std::ostream& err_stream)
+instance instantiate(const system_prototype& system, std::ostream& err_stream)
 {
     instance result;
     result.id = process_id(0);
@@ -144,12 +146,16 @@ instance instantiate(const system_prototype& system,
         }
     }
     for (const auto& connection: system.connections) {
+        const auto index = static_cast<std::size_t>(&connection - &(*system.connections.begin()));
         if (const auto c = std::get_if<pipe_connection>(&connection)) {
-            if ((c->in.address != prototype_name{}) && (c->out.address != prototype_name{})) {
-                const auto index = static_cast<std::size_t>(&connection - system.connections.data());
-                auto& p = std::get<pipe_channel>(channels[index]);
-                p.close(io_type::in, err_stream);
+            auto& p = std::get<pipe_channel>(channels[index]);
+            if (c->in.address != prototype_name{}) {
+                err_stream << "parent: close out of " << *c << " " << p << "\n";
                 p.close(io_type::out, err_stream);
+            }
+            if (c->out.address != prototype_name{}) {
+                err_stream << "parent: close  in of " << *c << " " << p << "\n";
+                p.close(io_type::in, err_stream);
             }
         }
     }
@@ -182,28 +188,53 @@ void wait(instance& instance, std::ostream& err_stream,
                                      [pid](const auto& e) {
             return e.second.id == pid;
         });
-        if (it != std::end(instance.children)) {
-            if (WIFEXITED(status)) {
-                if (WEXITSTATUS(status) != 0) {
-                    err_stream << it->first << " exit status=";
-                    err_stream << WEXITSTATUS(status);
-                    err_stream << '\n';
+        if (WIFEXITED(status)) {
+            if (WEXITSTATUS(status) != 0) {
+                if (it != std::end(instance.children)) {
+                    err_stream << "child=" << it->first << ", ";
                 }
-                else {
-                    if (diags == wait_diags::yes) {
-                        err_stream << "wait detected normal exit of " << it->first << '\n';
-                    }
-                }
-                it->second.id = process_id(0);
+                err_stream << "pid=" << pid;
+                err_stream << ", exit status=" << WEXITSTATUS(status);
+                err_stream << "\n";
             }
             else {
-                err_stream << "unexpected status " << status << " from process " << it->first << '\n';
+                if (diags == wait_diags::yes) {
+                    err_stream << "child=";
+                    if (it != std::end(instance.children)) {
+                        err_stream << it->first;
+                    }
+                    else {
+                        err_stream << "unknown";
+                    }
+                    err_stream << ", pid=" << pid;
+                    err_stream << ", normal exit\n";
+                }
+            }
+            if (it != std::end(instance.children)) {
+                it->second.id = process_id(0);
             }
         }
+        else if (WIFSIGNALED(status)) {
+            err_stream << "child signaled " << WTERMSIG(status) << "\n";
+        }
         else {
-            err_stream << "unknown pid " << pid << '\n';
+            err_stream << "unexpected status " << status << " from process " << it->first << '\n';
         }
     }
+}
+
+std::optional<std::size_t> find_index(const std::span<connection>& connections,
+                                      const prototype_name& in, const prototype_name& out)
+{
+    for (auto&& connection: connections) {
+        const auto index = static_cast<std::size_t>(&connection - &(*connections.begin()));
+        if (const auto c = std::get_if<pipe_connection>(&connection)) {
+            if (c->in.address == in && c->out.address == out) {
+                return index;
+            }
+        }
+    }
+    return {};
 }
 
 void touch(const file_port& file)
@@ -245,22 +276,31 @@ int main(int argc, const char * argv[])
     const auto xargs_process_name = flow::prototype_name{"xargs"};
     system.prototypes.emplace(xargs_process_name, xargs_executable);
 
-    system.connections.push_back(flow::file_connection{
-        input_file_port,
-        flow::io_type::in,
+    system.connections.push_back(flow::pipe_connection{
+        flow::prototype_port{},
         flow::prototype_port{cat_process_name, flow::descriptor_id{0}},
     });
     system.connections.push_back(flow::pipe_connection{
         flow::prototype_port{cat_process_name, flow::descriptor_id{1}},
         flow::prototype_port{xargs_process_name, flow::descriptor_id{0}},
     });
+#if 0
     system.connections.push_back(flow::file_connection{
         output_file_port,
         flow::io_type::out,
-        flow::prototype_port{xargs_process_name, flow::descriptor_id{1}}
+        flow::prototype_port{cat_process_name, flow::descriptor_id{1}}
     });
+#endif
 
     auto instance = instantiate(system, std::cerr);
+    if (const auto found = find_index(system.connections,
+                                      flow::prototype_name{}, cat_process_name)) {
+        std::cerr << "found channel\n";
+        auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
+        std::cerr << "writing to channel: " << channel << "\n";
+        channel.write("/bin\n/sbin\n", std::cerr);
+        channel.close(flow::io_type::out, std::cerr);
+    }
     wait(instance, std::cerr, flow::wait_diags::yes);
 
     std::cerr << "system ran: ";

@@ -4,7 +4,8 @@ namespace flow {
 
 std::ostream& operator<<(std::ostream& os, descriptor_id value)
 {
-    os << "fd:" << int(value);
+    const auto number = static_cast<std::underlying_type_t<descriptor_id>>(value);
+    os << number;
     return os;
 }
 

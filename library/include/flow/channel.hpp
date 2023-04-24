@@ -3,6 +3,7 @@
 
 #include <array>
 #include <ostream>
+#include <span>
 #include <type_traits> // for std::is_nothrow_move_*
 #include <variant>
 
@@ -34,12 +35,17 @@ struct pipe_channel {
     pipe_channel& operator=(const pipe_channel& other) = delete;
 
     /// @note This function is NOT thread safe in error cases.
-    bool close(io_type direction, std::ostream& os) noexcept;
+    bool close(io_type direction, std::ostream& errs) noexcept;
 
     /// @note This function is NOT thread safe in error cases.
-    bool dup(io_type direction, descriptor_id newfd, std::ostream& os) noexcept;
+    bool dup(io_type direction, descriptor_id newfd,
+             std::ostream& errs) noexcept;
 
-    friend std::ostream& operator<<(std::ostream& os, const pipe_channel& value);
+    bool write(const std::span<const char>& buffer,
+               std::ostream& errs) const;
+
+    friend std::ostream& operator<<(std::ostream& os,
+                                    const pipe_channel& value);
 
 private:
     std::array<int, 2> descriptors{-1, -1};
