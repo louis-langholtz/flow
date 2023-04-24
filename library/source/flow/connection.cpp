@@ -2,7 +2,7 @@
 
 namespace flow {
 
-std::ostream& operator<<(std::ostream& os, const file_connection& value)
+auto operator<<(std::ostream& os, const file_connection& value) -> std::ostream&
 {
     os << "file_connection{";
     os << ".file=" << value.file;
@@ -12,7 +12,7 @@ std::ostream& operator<<(std::ostream& os, const file_connection& value)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const pipe_connection& value)
+auto operator<<(std::ostream& os, const pipe_connection& value) -> std::ostream&
 {
     os << "pipe_connection{";
     os << ".in=" << value.in;

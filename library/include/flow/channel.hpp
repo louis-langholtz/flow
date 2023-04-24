@@ -41,6 +41,9 @@ struct pipe_channel {
     bool dup(io_type direction, descriptor_id newfd,
              std::ostream& errs) noexcept;
 
+    std::size_t read(const std::span<char>& buffer,
+                     std::ostream& errs) const;
+
     bool write(const std::span<const char>& buffer,
                std::ostream& errs) const;
 
