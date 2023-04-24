@@ -39,31 +39,40 @@ pipe_channel& pipe_channel::operator=(pipe_channel&& other) noexcept
     return *this;
 }
 
-bool pipe_channel::close(io_type direction, std::ostream& os) noexcept
+bool pipe_channel::close(io_type direction, std::ostream& errs) noexcept
 {
     auto& d = descriptors[int(direction)];
-    if (d != -1) {
-        if (::close(d) == -1) {
-            os << "close(" << direction << "," << d << ") failed: ";
-            os << std::strerror(errno); // NOLINT(concurrency-mt-unsafe)
-            return false;
-        }
-        d = -1;
+    if (::close(d) == -1) {
+        errs << "close(" << direction << "," << d << ") failed: ";
+        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
+        return false;
     }
+    d = -1;
     return true;
 }
 
 bool pipe_channel::dup(io_type direction, descriptor_id newfd,
-                       std::ostream& os) noexcept
+                       std::ostream& errs) noexcept
 {
     const auto new_d = int(newfd);
     auto& d = descriptors[int(direction)];
     if (dup2(d, new_d) == -1) {
-        os << "dup2(" << direction << ":" << d << "," << new_d << ") failed: ";
-        os << std::strerror(errno); // NOLINT(concurrency-mt-unsafe)
+        errs << "dup2(" << direction << ":" << d << "," << new_d << ") failed: ";
+        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
         return false;
     }
     d = new_d;
+    return true;
+}
+
+bool pipe_channel::write(const std::span<const char>& buffer,
+                         std::ostream& errs) const
+{
+    if (::write(descriptors[1], buffer.data(), buffer.size()) == -1) {
+        errs << "write(fd=" << descriptors[1] << ",siz=" << buffer.size() << ") failed: ";
+        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
+        return false;
+    }
     return true;
 }
 
