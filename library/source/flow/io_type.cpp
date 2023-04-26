@@ -15,14 +15,7 @@ int to_open_flags(io_type direction)
 
 std::ostream& operator<<(std::ostream& os, io_type value)
 {
-    switch (value) {
-    case flow::io_type::in:
-        os << "in";
-        break;
-    case flow::io_type::out:
-        os << "out";
-        break;
-    }
+    os << to_cstring(value);
     return os;
 }
 
