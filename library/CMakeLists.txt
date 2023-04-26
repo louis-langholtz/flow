@@ -1,3 +1,5 @@
+find_package(Boost)
+
 file(GLOB FLOW_SRCS "source/flow/*.cpp")
 file(GLOB FLOW_HDRS "include/flow/*.hpp")
 
@@ -13,6 +15,10 @@ set(libsrc
 
 add_library(flow ${libsrc})
 add_library(flow::flow ALIAS flow)
+
+if(Boost_FOUND)
+	target_include_directories(flow SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
+endif()
 
 target_compile_features(flow PUBLIC cxx_std_20)
 set_target_properties(flow PROPERTIES

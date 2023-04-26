@@ -70,7 +70,8 @@ process_id instantiate(const prototype_name& name,
             if (const auto c = std::get_if<pipe_connection>(&connection)) {
                 auto& p = std::get<pipe_channel>(channels[index]);
                 if ((c->in.address != name) && (c->out.address != name)) {
-                    errs << name << " (unaffiliation) " << *c << " " << p << ", close in&out setup\n";
+                    errs << name << " (unaffiliation) " << *c;
+                    errs << " " << p << ", close in & out setup\n";
                     const auto closed_in = p.close(io_type::in, errs);
                     const auto closed_out = p.close(io_type::out, errs);
                     if (!closed_in || !closed_out) {
@@ -80,7 +81,8 @@ process_id instantiate(const prototype_name& name,
                     continue;
                 }
                 if (c->in.address == name) {
-                    errs << name << " " << *c << " " << p << ", close in, dup out to " << c->in.descriptor << " setup\n";
+                    errs << name << " " << *c << " " << p;
+                    errs << ", close in, dup out to " << c->in.descriptor << " setup\n";
                     if (!p.close(io_type::in, errs) || // close unused read end
                         !p.dup(io_type::out, c->in.descriptor, errs)) {
                         errs << ", for " << name << "\n";
@@ -88,7 +90,8 @@ process_id instantiate(const prototype_name& name,
                     }
                 }
                 if (c->out.address == name) {
-                    errs << name << " " << *c << " " << p << ", close out, dup in to " << c->out.descriptor << " setup\n";
+                    errs << name << " " << *c << " " << p;
+                    errs << ", close out, dup in to " << c->out.descriptor << " setup\n";
                     if (!p.close(io_type::out, errs) || // close unused write end
                         !p.dup(io_type::in, c->out.descriptor, errs)) {
                         errs << ", for " << name << "\n";
@@ -113,10 +116,10 @@ process_id instantiate(const prototype_name& name,
                 }
             }
         }
-        if (execve(exe_proto.path.c_str(), argv.data(), envp.data()) == -1) {
-            throw std::runtime_error{std::strerror(errno)};
-        }
-        break;
+        errs.flush();
+        execve(exe_proto.path.c_str(), argv.data(), envp.data());
+        errs << "execve failed: " << std::strerror(errno) << "\n";
+        _exit(1);
     }
     default: // case for the spawning/parent process
         break;
@@ -141,10 +144,11 @@ instance instantiate(const system_prototype& system, std::ostream& err_stream)
         const auto& name = prototype_mapentry.first;
         const auto& prototype = prototype_mapentry.second;
         if (std::holds_alternative<executable_prototype>(prototype)) {
+            auto errs = temporary_fstream();
             const auto& exe_proto = std::get<executable_prototype>(prototype);
             const auto pid = instantiate(name, exe_proto, system.connections,
-                                         channels, err_stream);
-            result.children.emplace(name, instance{pid});
+                                         channels, errs);
+            result.children.emplace(name, instance{pid, std::move(errs)});
         }
         else if (std::holds_alternative<system_prototype>(prototype)) {
             const auto& sys_proto = std::get<system_prototype>(prototype);
@@ -308,11 +312,10 @@ int main(int argc, const char * argv[])
 #endif
 
     {
-        auto instance = instantiate(system, std::cerr);
+        auto errs = flow::temporary_fstream();
+        auto instance = instantiate(system, errs);
         if (const auto found = find_index(system.connections, cat_stdin)) {
-            std::cerr << "found cat stdin channel\n";
             auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
-            std::cerr << "writing to channel: " << channel << "\n";
             channel.write("/bin\n/sbin", std::cerr);
             channel.close(flow::io_type::out, std::cerr);
         }
@@ -344,6 +347,13 @@ int main(int argc, const char * argv[])
                 }
             }
         }
+        std::cerr << "Diagnostics for root instance...\n";
+        errs.seekg(0);
+        std::copy(std::istreambuf_iterator<char>(errs),
+                  std::istreambuf_iterator<char>(),
+                  std::ostream_iterator<char>(std::cerr));
+
+        show_diags(flow::prototype_name{}, instance, std::cerr);
         std::cerr << "system ran: ";
         std::cerr << ", children[" << std::size(instance.children) << "]";
         std::cerr << "\n";

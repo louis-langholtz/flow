@@ -32,6 +32,11 @@
 		99C1939C29F5774600C3F53F /* instance.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939A29F5774600C3F53F /* instance.hpp */; };
 		99C1939F29F5819A00C3F53F /* utility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939D29F5819A00C3F53F /* utility.cpp */; };
 		99C193A029F5819A00C3F53F /* utility.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939E29F5819A00C3F53F /* utility.hpp */; };
+		99C193A229F6EB4B00C3F53F /* expected.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193A129F6EB4B00C3F53F /* expected.hpp */; };
+		99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */; };
+		99C193A629F76AB800C3F53F /* descriptor_iostream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */; };
+		99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193AF29F7AFD100C3F53F /* fstream.hpp */; };
+		99C193B229F7AFF300C3F53F /* fstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C193B129F7AFF300C3F53F /* fstream.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +98,11 @@
 		99C1939A29F5774600C3F53F /* instance.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = instance.hpp; sourceTree = "<group>"; };
 		99C1939D29F5819A00C3F53F /* utility.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utility.cpp; sourceTree = "<group>"; };
 		99C1939E29F5819A00C3F53F /* utility.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = utility.hpp; sourceTree = "<group>"; };
+		99C193A129F6EB4B00C3F53F /* expected.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = expected.hpp; sourceTree = "<group>"; };
+		99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor_iostream.cpp; sourceTree = "<group>"; };
+		99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor_iostream.hpp; sourceTree = "<group>"; };
+		99C193AF29F7AFD100C3F53F /* fstream.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = fstream.hpp; sourceTree = "<group>"; };
+		99C193B129F7AFF300C3F53F /* fstream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fstream.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -179,7 +189,10 @@
 				99C1938E29F50EFD00C3F53F /* channel.hpp */,
 				99C1939229F511B700C3F53F /* connection.hpp */,
 				99940BF629F1DAE800A77461 /* descriptor_id.hpp */,
+				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
+				99C193A129F6EB4B00C3F53F /* expected.hpp */,
 				99C1938229F506C200C3F53F /* file_port.hpp */,
+				99C193AF29F7AFD100C3F53F /* fstream.hpp */,
 				99C1939A29F5774600C3F53F /* instance.hpp */,
 				99940BED29F1C9A500A77461 /* io_type.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
@@ -197,7 +210,9 @@
 				99C1938D29F50EFD00C3F53F /* channel.cpp */,
 				99C1939129F511B700C3F53F /* connection.cpp */,
 				99940BF529F1DAE800A77461 /* descriptor_id.cpp */,
+				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
 				99C1938129F506C200C3F53F /* file_port.cpp */,
+				99C193B129F7AFF300C3F53F /* fstream.cpp */,
 				99C1939929F5774600C3F53F /* instance.cpp */,
 				99940BEC29F1C9A500A77461 /* io_type.cpp */,
 				99940BF929F1F49F00A77461 /* process_id.cpp */,
@@ -220,12 +235,15 @@
 				99C1939C29F5774600C3F53F /* instance.hpp in Headers */,
 				99940BF829F1DAE800A77461 /* descriptor_id.hpp in Headers */,
 				99C1939829F5136100C3F53F /* prototype.hpp in Headers */,
+				99C193A229F6EB4B00C3F53F /* expected.hpp in Headers */,
 				99940C0029F1F73900A77461 /* prototype_name.hpp in Headers */,
 				99C193A029F5819A00C3F53F /* utility.hpp in Headers */,
+				99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */,
 				99C1939029F50EFD00C3F53F /* channel.hpp in Headers */,
 				99C1939429F511B700C3F53F /* connection.hpp in Headers */,
 				99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */,
 				99C1937C29F4D70F00C3F53F /* prototype_port.hpp in Headers */,
+				99C193A629F76AB800C3F53F /* descriptor_iostream.hpp in Headers */,
 				99C1938429F506C200C3F53F /* file_port.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -322,12 +340,14 @@
 				99C1939329F511B700C3F53F /* connection.cpp in Sources */,
 				99C1938329F506C200C3F53F /* file_port.cpp in Sources */,
 				99940BFF29F1F73900A77461 /* prototype_name.cpp in Sources */,
+				99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */,
 				99940BFB29F1F49F00A77461 /* process_id.cpp in Sources */,
 				99C1939729F5136100C3F53F /* prototype.cpp in Sources */,
 				99C1939B29F5774600C3F53F /* instance.cpp in Sources */,
 				99C1939F29F5819A00C3F53F /* utility.cpp in Sources */,
 				99C1937B29F4D70F00C3F53F /* prototype_port.cpp in Sources */,
 				99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */,
+				99C193B229F7AFF300C3F53F /* fstream.cpp in Sources */,
 				99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -346,7 +366,7 @@
 		99940BD229F1644400A77461 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -393,6 +413,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /opt/homebrew/opt/boost/include/;
+				LIBRARY_SEARCH_PATHS = /opt/homebrew/opt/boost/lib/;
 				MACOSX_DEPLOYMENT_TARGET = 13.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -404,7 +426,7 @@
 		99940BD329F1644400A77461 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -445,6 +467,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /opt/homebrew/opt/boost/include/;
+				LIBRARY_SEARCH_PATHS = /opt/homebrew/opt/boost/lib/;
 				MACOSX_DEPLOYMENT_TARGET = 13.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -477,7 +501,11 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
-				HEADER_SEARCH_PATHS = ../../library/include;
+				HEADER_SEARCH_PATHS = (
+					../../library/include,
+					/opt/homebrew/opt/boost/include/,
+				);
+				OTHER_LDFLAGS = "-lboost_iostreams";
 				PRODUCT_NAME = flow;
 				SKIP_INSTALL = YES;
 			};
@@ -490,7 +518,11 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
-				HEADER_SEARCH_PATHS = ../../library/include;
+				HEADER_SEARCH_PATHS = (
+					../../library/include,
+					/opt/homebrew/opt/boost/include/,
+				);
+				OTHER_LDFLAGS = "-lboost_iostreams";
 				PRODUCT_NAME = flow;
 				SKIP_INSTALL = YES;
 			};

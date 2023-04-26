@@ -14,12 +14,12 @@
 
 namespace flow {
 
-struct descriptor {
+struct descriptor_info {
     std::string comment;
     io_type direction;
 };
 
-using descriptor_container = std::map<descriptor_id, descriptor>;
+using descriptor_container = std::map<descriptor_id, descriptor_info>;
 
 inline const auto standard_descriptors = descriptor_container{
     {descriptor_id{0}, {"stdin", io_type::in}},
