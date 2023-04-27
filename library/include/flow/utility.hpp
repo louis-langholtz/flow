@@ -42,9 +42,19 @@ auto make_argv(const std::span<std::string>& args) -> std::vector<char*>;
 auto show_diags(const prototype_name& name, instance& object,
                 std::ostream& os) -> void;
 
-auto find_index(const std::span<connection>& connections,
-                const connection& look_for)
+auto find_channel_index(const std::span<const connection>& connections,
+                        const connection& look_for)
     -> std::optional<std::size_t>;
+
+/// @brief Finds the channel requested.
+/// @return Pointer to channel of the type requested or <code>nullptr</code>.
+template <class T>
+auto find_channel(const system_prototype& system, instance& instance,
+                  const connection& look_for) -> T*
+{
+    const auto found = find_channel_index(system.connections, look_for);
+    return found? std::get_if<T>(&(instance.channels[*found])): nullptr;
+}
 
 auto touch(const file_port& file) -> void;
 

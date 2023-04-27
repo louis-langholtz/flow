@@ -10,6 +10,9 @@
 
 namespace flow {
 
+/// @brief File connection.
+/// @note Results in a <code>file_channel</code>.
+/// @see file_channel.
 struct file_connection {
     file_port file;
     io_type direction;
@@ -29,6 +32,7 @@ auto operator<<(std::ostream& os, const file_connection& value) -> std::ostream&
 /// @brief Pipe connection.
 /// @details A unidirectional connection between prototypes.
 /// @note Results in a <code>pipe_channel</code>.
+/// @see pipe_channel.
 struct pipe_connection {
     prototype_port in;
     prototype_port out;
