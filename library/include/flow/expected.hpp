@@ -4,15 +4,14 @@
 #if !defined(__has_include) || !__has_include(<expected>)
 
 #include <initializer_list>
-#include <variant>
+#include <variant> // for std::get, std::get_if
 #include <type_traits> // for std::is_convertible_v
 #include <utility> // for std::in_place_t
 
 namespace flow {
 
 template<class E>
-class unexpected {
-public:
+struct unexpected {
     constexpr unexpected() = default;
 
     constexpr unexpected(const unexpected&) = default;
@@ -64,8 +63,7 @@ private:
 /// @brief An implementation of <code>std::expected</code> for C++20.
 /// @see https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0323r11.html
 template <class T, class E>
-class expected {
-public:
+struct expected {
     using value_type = T;
     using error_type = E;
     using unexpected_type = unexpected<E>;
@@ -78,32 +76,87 @@ public:
         !std::is_same_v<std::remove_cvref_t<U>, expected> &&
         std::is_constructible_v<T, U>, E>>
     constexpr explicit(!std::is_convertible_v<U, T>) expected(U&& v):
-        value{std::forward<U>(v)}
+        m_value{std::forward<U>(v)}
     {
         // Intentionally empty.
     }
 
     template<class G>
     constexpr expected(const unexpected<G>& error):
-        value{error.value()}
+        m_value{error.value()}
     {
         // Intentionall empty.
     }
 
     template<class G>
     constexpr expected(unexpected<G>&& other):
-        value{std::move(other.value())}
+        m_value{std::move(other.value())}
     {
         // Intentionally empty.
     }
 
+    constexpr const T* operator->() const noexcept
+    {
+        return std::get_if<T>(&m_value);
+    }
+
+    constexpr T* operator->() noexcept
+    {
+        return std::get_if<T>(&m_value);
+    }
+
+    constexpr explicit operator bool() const noexcept
+    {
+        return m_value.index() == 0u;
+    }
+
     constexpr bool has_value() const noexcept
     {
-        return value.index() == 0u;
+        return m_value.index() == 0u;
+    }
+
+    constexpr const T& value() const&
+    {
+        return std::get<T>(m_value);
+    }
+
+    constexpr T& value() &
+    {
+        return std::get<T>(m_value);
+    }
+
+    constexpr const T&& value() const&&
+    {
+        return std::get<T>(m_value);
+    }
+
+    constexpr T&& value() &&
+    {
+        return std::get<T>(m_value);
+    }
+
+    constexpr const E& error() const&
+    {
+        return std::get<E>(m_value);
+    }
+
+    constexpr E& error() &
+    {
+        return std::get<E>(m_value);
+    }
+
+    constexpr const E&& error() const&&
+    {
+        return std::get<E>(m_value);
+    }
+
+    constexpr E&& error() &&
+    {
+        return std::get<E>(m_value);
     }
 
 private:
-    std::variant<T, E> value{T{}};
+    std::variant<T, E> m_value{T{}};
 };
 
 }
