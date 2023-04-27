@@ -25,15 +25,15 @@ int main(int argc, const char * argv[])
 
     flow::system_prototype system;
 
-    flow::executable_prototype cat_executable;
-    cat_executable.path = "/bin/cat";
     const auto cat_process_name = flow::prototype_name{"cat"};
+    flow::executable_prototype cat_executable;
+    cat_executable.executable_file = "/bin/cat";
     system.prototypes.emplace(cat_process_name, cat_executable);
 
-    flow::executable_prototype xargs_executable;
-    xargs_executable.path = "/usr/bin/xargs";
-    xargs_executable.arguments = {"xargs", "ls", "-alF"};
     const auto xargs_process_name = flow::prototype_name{"xargs"};
+    flow::executable_prototype xargs_executable;
+    xargs_executable.executable_file = "/usr/bin/xargs";
+    xargs_executable.arguments = {"xargs", "ls", "-alF"};
     system.prototypes.emplace(xargs_process_name, xargs_executable);
 
     const auto cat_stdin = flow::pipe_connection{

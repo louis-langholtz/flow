@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream& os, const executable_prototype& value)
 {
     os << "executable_prototype{";
     os << ".descriptors=" << value.descriptors;
-    os << ".path=" << value.path;
+    os << ".path=" << value.executable_file;
     os << ",.working_directory=" << value.working_directory;
     // TODO: other members
     os << "}";

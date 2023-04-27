@@ -129,9 +129,18 @@ auto instantiate(const prototype_name& name,
             }
         }
     }
+    if (!exe_proto.working_directory.empty()) {
+        auto ec = std::error_code{};
+        std::filesystem::current_path(exe_proto.working_directory, ec);
+        if (ec) {
+            errs << "chdir " << exe_proto.working_directory << " failed: ";
+            errs << ec << "\n";
+        }
+    }
     errs.flush();
-    ::execve(exe_proto.path.c_str(), argv, envp);
-    errs << "execve failed: " << strerror(errno) << "\n";
+    ::execve(exe_proto.executable_file.c_str(), argv, envp);
+    errs << "execve of " << exe_proto.executable_file << "failed: " << strerror(errno) << "\n";
+    errs.flush();
     ::_exit(1);
 }
 
@@ -327,20 +336,45 @@ auto make_argv(const std::span<std::string>& args)
     return result;
 }
 
+auto show_diags(const prototype_name& name, fstream& diags,
+                std::ostream& os) -> void
+{
+    if (!diags.is_open()) {
+        os << "Diags are closed for '" << name << "'\n";
+        return;
+    }
+    if (diags.rdstate()) {
+        os << "diags stream not good for " << name << "\n";
+        return;
+    }
+    diags.seekg(0, std::ios_base::end);
+    if (diags.rdstate()) {
+        os << "diags stream not good for " << name << " after seekg\n";
+        return;
+    }
+    const auto endpos = diags.tellg();
+    switch (endpos) {
+    case -1:
+        os << "unable to tell where diags end is for " << name << "\n";
+        return;
+    case 0:
+        os << "Diags are empty for '" << name << "'\n";
+        return;
+    default:
+        break;
+    }
+    diags.seekg(0, std::ios_base::beg);
+    os << "Diagnostics for " << name << " having " << endpos << "b...\n";
+    // istream_iterator skips ws, so use istreambuf_iterator...
+    std::copy(std::istreambuf_iterator<char>(diags.rdbuf()),
+              std::istreambuf_iterator<char>(),
+              std::ostream_iterator<char>(os));
+}
+
 auto show_diags(const prototype_name& name, instance& object,
                 std::ostream& os) -> void
 {
-    if (object.diags.is_open()) {
-        object.diags.seekg(0, std::ios_base::end);
-        if (object.diags.tellg() != 0) {
-            object.diags.seekg(0, std::ios_base::beg);
-            os << "Diagnostics for " << name << "...\n";
-            // istream_iterator skips ws, so use istreambuf_iterator...
-            std::copy(std::istreambuf_iterator<char>(object.diags.rdbuf()),
-                      std::istreambuf_iterator<char>(),
-                      std::ostream_iterator<char>(os));
-        }
-    }
+    show_diags(name, object.diags, os);
     for (auto&& map_entry: object.children) {
         const auto full_name = name.value + "." + map_entry.first.value;
         show_diags(prototype_name{full_name}, map_entry.second, os);
@@ -398,7 +432,7 @@ auto instantiate(const system_prototype& system, std::ostream& err_stream)
         if (std::holds_alternative<executable_prototype>(prototype)) {
             auto errs = temporary_fstream();
             const auto& exe_proto = std::get<executable_prototype>(prototype);
-            auto arg_buffers = make_arg_bufs(exe_proto.arguments, exe_proto.path);
+            auto arg_buffers = make_arg_bufs(exe_proto.arguments, exe_proto.executable_file);
             auto env_buffers = make_arg_bufs(exe_proto.environment);
             auto argv = make_argv(arg_buffers);
             auto envp = make_argv(env_buffers);
@@ -409,6 +443,7 @@ auto instantiate(const system_prototype& system, std::ostream& err_stream)
                 result.children.emplace(name, instance{pid});
                 break;
             case process_id{0}: // child process
+                // NOTE: the following does not return!
                 instantiate(name, exe_proto, argv.data(), envp.data(),
                             system.connections, channels, errs);
             default: // case for the spawning/parent process
