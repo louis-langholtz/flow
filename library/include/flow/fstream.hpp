@@ -52,6 +52,11 @@ struct fstream: public std::iostream {
     static constexpr auto to_fopen_mode(openmode value) -> const char*;
 
     struct filebuf: public std::streambuf {
+        using int_type = typename traits_type::int_type;
+        using pos_type = typename traits_type::pos_type;
+        using off_type = typename traits_type::off_type;
+        using state_type = typename traits_type::state_type;
+
         filebuf();
         filebuf(const filebuf& other) = delete;
         filebuf(filebuf&& other) noexcept;
@@ -110,6 +115,8 @@ struct fstream: public std::iostream {
         char_type* intbuf_{};
         size_t ibs_{};
         FILE *fp{};
+        state_type st_{};
+        state_type st_last_{};
         openmode opened_mode{};
         openmode iomode{};
         bool owns_eb_{};
@@ -203,6 +210,8 @@ inline fstream::filebuf::filebuf(filebuf&& other) noexcept
     intbuf_ = other.intbuf_;
     ibs_ = other.ibs_;
     fp = other.fp;
+    st_ = other.st_;
+    st_last_ = other.st_last_;
     opened_mode = other.opened_mode;
     iomode = other.iomode;
     owns_eb_ = other.owns_eb_;
@@ -239,6 +248,8 @@ inline fstream::filebuf::filebuf(filebuf&& other) noexcept
     other.intbuf_ = nullptr;
     other.ibs_ = 0;
     other.fp = nullptr;
+    other.st_ = state_type();
+    other.st_last_ = state_type();
     other.opened_mode = 0;
     other.iomode = 0;
     other.owns_eb_ = false;
@@ -312,6 +323,8 @@ inline auto fstream::filebuf::swap(filebuf& rhs) -> void
     std::swap(intbuf_, rhs.intbuf_);
     std::swap(ibs_, rhs.ibs_);
     std::swap(fp, rhs.fp);
+    std::swap(st_, rhs.st_);
+    std::swap(st_last_, rhs.st_last_);
     std::swap(opened_mode, rhs.opened_mode);
     std::swap(iomode, rhs.iomode);
     std::swap(owns_eb_, rhs.owns_eb_);
@@ -593,7 +606,9 @@ fstream::filebuf::seekoff(off_type off, seekdir way, std::ios_base::openmode) ->
     if (::fseeko(fp, off, whence)) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
     }
-    return ftello(fp);
+    pos_type r = ftello(fp);
+    r.state(st_);
+    return r;
 }
 
 inline auto
@@ -605,6 +620,7 @@ fstream::filebuf::seekpos(pos_type sp, std::ios_base::openmode) -> pos_type
     if (::fseeko(fp, sp, SEEK_SET)) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
     }
+    st_ = sp.state();
     return sp;
 }
 
@@ -645,9 +661,10 @@ inline fstream::fstream():
 }
 
 inline fstream::fstream(fstream&& other) noexcept:
-    std::iostream{std::move(other)}, fb{std::exchange(other.fb, filebuf{})}
+    std::iostream{std::move(other)},
+    fb{std::move(other.fb)}
 {
-    // Intentionally empty.
+    set_rdbuf(&fb);
 }
 
 inline auto fstream::operator=(fstream&& other) noexcept -> fstream&
