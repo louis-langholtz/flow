@@ -13,12 +13,16 @@
 namespace flow {
 
 /// @brief File channel.
-/// @note This is intended to be a strong place-holder type.
+/// @note This is intended to be a strong place-holder/tag type.
+/// @note Instances of this type are made for <code>file_connection</code> instances.
+/// @see file_connection.
 struct file_channel {
 };
 
 /// @brief POSIX pipe.
 /// @note This class is movable but not copyable.
+/// @note Instances of this type are made for <code>pipe_connection</code> instances.
+/// @see pipe_connection.
 struct pipe_channel {
     /// @note This function is NOT thread safe in error cases.
     /// @throws std::runtime_error if the underlying OS call fails.

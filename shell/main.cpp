@@ -66,16 +66,14 @@ int main(int argc, const char * argv[])
     {
         auto errs = flow::temporary_fstream();
         auto instance = instantiate(system, errs);
-        if (const auto found = find_index(system.connections, cat_stdin)) {
-            auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
-            channel.write("/bin\n/sbin", std::cerr);
-            channel.close(flow::io_type::out, std::cerr);
+        if (const auto pipe = find_channel<flow::pipe_channel>(system, instance, cat_stdin)) {
+            pipe->write("/bin\n/sbin", std::cerr);
+            pipe->close(flow::io_type::out, std::cerr);
         }
         wait(instance, std::cerr, flow::wait_diags::none);
-        if (const auto found = find_index(system.connections, xargs_stderr)) {
-            auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
+        if (const auto pipe = find_channel<flow::pipe_channel>(system, instance, xargs_stderr)) {
             std::array<char, 1024> buffer{};
-            const auto nread = channel.read(buffer, std::cerr);
+            const auto nread = pipe->read(buffer, std::cerr);
             if (nread == static_cast<std::size_t>(-1)) {
                 std::cerr << "xargs can't read stderr\n";
             }
@@ -83,11 +81,10 @@ int main(int argc, const char * argv[])
                 std::cerr << "xargs stderr: " << buffer.data() << "\n";
             }
         }
-        if (const auto found = find_index(system.connections, xargs_stdout)) {
-            auto& channel = std::get<flow::pipe_channel>(instance.channels[*found]);
+        if (const auto pipe = find_channel<flow::pipe_channel>(system, instance, xargs_stdout)) {
             for (;;) {
                 std::array<char, 4096> buffer{};
-                const auto nread = channel.read(buffer, std::cerr);
+                const auto nread = pipe->read(buffer, std::cerr);
                 if (nread == static_cast<std::size_t>(-1)) {
                     std::cerr << "xargs can't read stdout\n";
                 }

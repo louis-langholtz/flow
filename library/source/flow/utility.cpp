@@ -347,7 +347,7 @@ auto show_diags(const prototype_name& name, instance& object,
     }
 }
 
-auto find_index(const std::span<connection>& connections,
+auto find_channel_index(const std::span<const connection>& connections,
                 const connection& look_for) -> std::optional<std::size_t>
 {
     const auto first = std::begin(connections);
