@@ -37,9 +37,9 @@ using environment_container = std::map<std::string, std::string>;
 
 struct executable_prototype {
     descriptor_container descriptors;
-    std::filesystem::path working_directory;
-    std::filesystem::path path;
+    std::filesystem::path executable_file;
     argument_container arguments;
+    std::filesystem::path working_directory;
     environment_container environment;
 };
 
