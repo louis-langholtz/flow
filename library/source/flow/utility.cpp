@@ -174,7 +174,7 @@ auto temporary_fstream() -> ext::fstream
 
 auto make_arg_bufs(const std::vector<std::string>& strings,
                    const std::string& fallback)
--> std::vector<std::string>
+    -> std::vector<std::string>
 {
     auto result = std::vector<std::string>{};
     if (strings.empty()) {
@@ -191,7 +191,7 @@ auto make_arg_bufs(const std::vector<std::string>& strings,
 }
 
 auto make_arg_bufs(const std::map<std::string, std::string>& envars)
--> std::vector<std::string>
+    -> std::vector<std::string>
 {
     auto result = std::vector<std::string>{};
     for (const auto& envar: envars) {
@@ -201,7 +201,7 @@ auto make_arg_bufs(const std::map<std::string, std::string>& envars)
 }
 
 auto make_argv(const std::span<std::string>& args)
--> std::vector<char*>
+    -> std::vector<char*>
 {
     auto result = std::vector<char*>{};
     for (auto&& arg: args) {

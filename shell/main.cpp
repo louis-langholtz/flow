@@ -35,6 +35,54 @@ int main(int argc, const char * argv[])
 {
     using namespace flow;
 
+    {
+        const auto lsof_process_name = prototype_name{"lsof"};
+        system_prototype system;
+        executable_prototype lsof_executable;
+        lsof_executable.executable_file = "/usr/sbin/lsof";
+        lsof_executable.working_directory = "/usr/local";
+        lsof_executable.arguments = {"lsof", "-p", "$$"};
+        system.prototypes.emplace(lsof_process_name, lsof_executable);
+        const auto lsof_stdout = pipe_connection{
+            prototype_port{lsof_process_name, descriptor_id{1}},
+            prototype_port{},
+        };
+        const auto lsof_stderr = pipe_connection{
+            prototype_port{lsof_process_name, descriptor_id{2}},
+            prototype_port{},
+        };
+        system.connections.push_back(lsof_stdout);
+        system.connections.push_back(lsof_stderr);
+        {
+            auto errs = temporary_fstream();
+            auto err2 = temporary_fstream();
+            auto err3 = temporary_fstream();
+            auto instance = instantiate(system, errs);
+            wait(instance, std::cerr, wait_diags::none);
+            if (const auto pipe = find_channel<pipe_channel>(system, instance, lsof_stdout)) {
+                for (;;) {
+                    std::array<char, 4096> buffer{};
+                    const auto nread = pipe->read(buffer, std::cerr);
+                    if (nread == static_cast<std::size_t>(-1)) {
+                        std::cerr << "lsof can't read stdout\n";
+                    }
+                    else if (nread != 0u) {
+                        std::cout << buffer.data();
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+            std::cerr << "Diagnostics for parent of lsof...\n";
+            errs.seekg(0);
+            std::copy(std::istreambuf_iterator<char>(errs),
+                      std::istreambuf_iterator<char>(),
+                      std::ostream_iterator<char>(std::cerr));
+            write_diags(prototype_name{}, instance, std::cerr);
+        }
+    }
+
     const auto input_file_port = file_port{"flow.in"};
 
     const auto output_file_port = file_port{"flow.out"};

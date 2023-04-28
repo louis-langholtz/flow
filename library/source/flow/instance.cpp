@@ -1,5 +1,6 @@
-#include <unistd.h> // for getpid
+#include <cstring> // for std::strcmp
 
+#include <unistd.h> // for getpid
 #include <fcntl.h> // for ::open
 
 #include "system_error_code.hpp"
@@ -11,6 +12,29 @@
 namespace flow {
 
 namespace {
+
+constexpr auto pid_buffer_size = 32u;
+using pid_buffer = std::array<char, pid_buffer_size>;
+
+auto getpid_as_char_array() -> pid_buffer
+{
+    pid_buffer buffer{};
+    std::snprintf( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                  data(buffer), size(buffer) - 1u, "%d", ::getpid());
+    return buffer;
+}
+
+auto make_substitutions(std::vector<char*>& argv)
+    -> void
+{
+    static constexpr const auto pid_request = "$$";
+    for (auto&& arg: argv) {
+        if (arg && std::strcmp(arg, pid_request) == 0) {
+            static auto pid_argv = getpid_as_char_array();
+            arg = std::data(pid_argv);
+        }
+    }
+}
 
 auto setup(const prototype_name& name,
            const pipe_connection& c,
@@ -87,13 +111,6 @@ auto instantiate(const prototype_name& name,
     // Also:
     // Close file descriptors inherited by child that it's not using.
     // See: https://stackoverflow.com/a/7976880/7410358
-    //
-    // Have to be especially careful here though!
-    // From https://man7.org/linux/man-pages/man2/fork.2.html:
-    // "child can safely call only async-signal-safe functions
-    //  (see signal-safety(7)) until such time as it calls execve(2)."
-    // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
-    // for "functions required to be async-signal-safe by POSIX.1".
     for (const auto& connection: connections) {
         const auto index = static_cast<std::size_t>(&connection - connections.data());
         if (const auto c = std::get_if<pipe_connection>(&connection)) {
@@ -181,10 +198,18 @@ auto instantiate(const system_prototype& system, std::ostream& err_stream)
                 err_stream << "fork failed: " << system_error_code(errno) << "\n";
                 result.children.emplace(name, instance{pid});
                 break;
-            case process_id{0}: // child process
+            case process_id{0}: { // child process
+                // Have to be especially careful here!
+                // From https://man7.org/linux/man-pages/man2/fork.2.html:
+                // "child can safely call only async-signal-safe functions
+                //  (see signal-safety(7)) until such time as it calls execve(2)."
+                // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
+                // for "functions required to be async-signal-safe by POSIX.1".
+                make_substitutions(argv);
                 // NOTE: the following does not return!
                 instantiate(name, exe_proto, argv.data(), envp.data(),
                             system.connections, channels, errs);
+            }
             default: // case for the spawning/parent process
                 result.children.emplace(name, instance{pid, std::move(errs)});
                 break;
