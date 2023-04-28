@@ -2,6 +2,13 @@
 
 namespace flow {
 
+auto operator<<(std::ostream& os, const wait_unknown_status&)
+    -> std::ostream&
+{
+    os << "unknown-wait-status-type";
+    return os;
+}
+
 auto operator<<(std::ostream& os, const wait_exit_status& value) -> std::ostream&
 {
     os << "exit-status=" << value.value;

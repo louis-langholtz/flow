@@ -2,11 +2,11 @@
 #define connection_hpp
 
 #include <ostream>
-#include <variant>
 
 #include "flow/file_port.hpp"
 #include "flow/io_type.hpp"
 #include "flow/prototype_port.hpp"
+#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
 
 namespace flow {
 
@@ -46,7 +46,7 @@ constexpr auto operator==(const pipe_connection& lhs,
 
 auto operator<<(std::ostream& os, const pipe_connection& value) -> std::ostream&;
 
-using connection = std::variant<pipe_connection, file_connection>;
+using connection = variant<pipe_connection, file_connection>;
 
 }
 

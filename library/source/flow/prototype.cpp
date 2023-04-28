@@ -36,15 +36,4 @@ std::ostream& operator<<(std::ostream& os, const system_prototype& value)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const prototype& value)
-{
-    if (const auto c = std::get_if<executable_prototype>(&value)) {
-        os << *c;
-    }
-    else if (const auto c = std::get_if<system_prototype>(&value)) {
-        os << *c;
-    }
-    return os;
-}
-
 }

@@ -4,13 +4,13 @@
 #include <map>
 #include <ostream>
 #include <string>
-#include <variant>
 #include <vector>
 
 #include "flow/descriptor_id.hpp"
 #include "flow/connection.hpp"
 #include "flow/io_type.hpp"
 #include "flow/prototype_name.hpp"
+#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
 
 namespace flow {
 
@@ -30,7 +30,7 @@ inline const auto standard_descriptors = descriptor_container{
 struct system_prototype;
 struct executable_prototype;
 
-using prototype = std::variant<executable_prototype, system_prototype>;
+using prototype = variant<executable_prototype, system_prototype>;
 
 using argument_container = std::vector<std::string>;
 using environment_container = std::map<std::string, std::string>;
@@ -52,7 +52,6 @@ struct system_prototype {
 std::ostream& operator<<(std::ostream& os, const descriptor_container& value);
 std::ostream& operator<<(std::ostream& os, const executable_prototype& value);
 std::ostream& operator<<(std::ostream& os, const system_prototype& value);
-std::ostream& operator<<(std::ostream& os, const prototype& value);
 
 }
 

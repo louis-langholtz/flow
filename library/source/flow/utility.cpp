@@ -16,6 +16,7 @@
 #include <sys/stat.h> // for mkfifo
 
 #include "system_error_code.hpp"
+#include "wait_result.hpp"
 #include "wait_status.hpp"
 
 #include "flow/descriptor_id.hpp"
@@ -23,6 +24,7 @@
 #include "flow/instance.hpp"
 #include "flow/prototype.hpp"
 #include "flow/utility.hpp"
+#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
 
 namespace flow {
 
@@ -149,71 +151,6 @@ auto instantiate(const prototype_name& name,
     ::_exit(1);
 }
 
-struct wait_result {
-    enum type_enum: std::size_t {no_children = 0u, has_error, has_info};
-
-    using error_t = system_error_code;
-
-    struct info_t {
-        enum status_enum: std::size_t {unknown, exit, signaled, stopped, continued};
-        process_id id;
-        wait_status status;
-    };
-
-    wait_result() noexcept = default;
-
-    wait_result(std::monostate) noexcept: wait_result{} {};
-
-    wait_result(error_t error): value{error} {}
-
-    wait_result(info_t info): value{info} {}
-
-    constexpr auto type() const noexcept -> type_enum
-    {
-        return static_cast<type_enum>(value.index());
-    }
-
-    constexpr explicit operator bool() const noexcept
-    {
-        return type() != no_children;
-    }
-
-    auto error() const& -> const error_t&
-    {
-        return std::get<error_t>(value);
-    }
-
-    auto info() const& -> const info_t&
-    {
-        return std::get<info_t>(value);
-    }
-
-private:
-    std::variant<std::monostate, error_t, info_t> value;
-};
-
-auto operator<<(std::ostream& os, const wait_status& status) -> std::ostream&
-{
-    switch (wait_result::info_t::status_enum(status.index())) {
-    case wait_result::info_t::unknown:
-        os << "unknown-wait-status-type";
-        break;
-    case wait_result::info_t::exit:
-        os << std::get<wait_exit_status>(status);
-        break;
-    case wait_result::info_t::signaled:
-        os << std::get<wait_signaled_status>(status);
-        break;
-    case wait_result::info_t::stopped:
-        os << std::get<wait_stopped_status>(status);
-        break;
-    case wait_result::info_t::continued:
-        os << std::get<wait_continued_status>(status);
-        break;
-    }
-    return os;
-}
-
 auto wait_for_child() -> wait_result
 {
     auto status = 0;
@@ -222,10 +159,10 @@ auto wait_for_child() -> wait_result
         pid = ::wait(&status);
     } while ((pid == -1) && (errno == EINTR));
     if (pid == -1 && errno == ECHILD) {
-        return std::monostate{};
+        return wait_result::no_kids_t{};
     }
     if (pid == -1) {
-        return system_error_code(errno);
+        return wait_result::error_t(errno);
     }
     if (WIFEXITED(status)) {
         return wait_result::info_t{process_id{pid},
@@ -257,7 +194,7 @@ auto handle(instance& instance, const wait_result& result,
         break;
     case wait_result::has_info: {
         const auto entry = find(instance.children, result.info().id);
-        switch (result.info().status.index()) {
+        switch (wait_result::info_t::status_enum(result.info().status.index())) {
         case wait_result::info_t::unknown:
             break;
         case wait_result::info_t::exit: {

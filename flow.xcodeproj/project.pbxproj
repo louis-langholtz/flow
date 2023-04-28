@@ -11,6 +11,9 @@
 		9943E87729FB444F002F4C26 /* system_error_code.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E87529FB444F002F4C26 /* system_error_code.hpp */; };
 		9943E87A29FBF418002F4C26 /* wait_status.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E87829FBF418002F4C26 /* wait_status.cpp */; };
 		9943E87B29FBF418002F4C26 /* wait_status.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E87929FBF418002F4C26 /* wait_status.hpp */; };
+		9943E87D29FBFA07002F4C26 /* variant.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E87C29FBF8BE002F4C26 /* variant.hpp */; };
+		9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E88229FC0763002F4C26 /* wait_result.cpp */; };
+		9943E88529FC0763002F4C26 /* wait_result.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E88329FC0763002F4C26 /* wait_result.hpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
@@ -81,6 +84,9 @@
 		9943E87529FB444F002F4C26 /* system_error_code.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_error_code.hpp; sourceTree = "<group>"; };
 		9943E87829FBF418002F4C26 /* wait_status.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wait_status.cpp; sourceTree = "<group>"; };
 		9943E87929FBF418002F4C26 /* wait_status.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = wait_status.hpp; sourceTree = "<group>"; };
+		9943E87C29FBF8BE002F4C26 /* variant.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = variant.hpp; sourceTree = "<group>"; };
+		9943E88229FC0763002F4C26 /* wait_result.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wait_result.cpp; sourceTree = "<group>"; };
+		9943E88329FC0763002F4C26 /* wait_result.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = wait_result.hpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -208,6 +214,7 @@
 				99C1937A29F4D70F00C3F53F /* prototype_port.hpp */,
 				99C1939629F5136100C3F53F /* prototype.hpp */,
 				99C1939E29F5819A00C3F53F /* utility.hpp */,
+				9943E87C29FBF8BE002F4C26 /* variant.hpp */,
 			);
 			path = flow;
 			sourceTree = "<group>";
@@ -230,6 +237,8 @@
 				9943E87429FB444F002F4C26 /* system_error_code.cpp */,
 				9943E87529FB444F002F4C26 /* system_error_code.hpp */,
 				99C1939D29F5819A00C3F53F /* utility.cpp */,
+				9943E88229FC0763002F4C26 /* wait_result.cpp */,
+				9943E88329FC0763002F4C26 /* wait_result.hpp */,
 				9943E87829FBF418002F4C26 /* wait_status.cpp */,
 				9943E87929FBF418002F4C26 /* wait_status.hpp */,
 			);
@@ -253,6 +262,8 @@
 				99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */,
 				99C1939029F50EFD00C3F53F /* channel.hpp in Headers */,
 				99C1939429F511B700C3F53F /* connection.hpp in Headers */,
+				9943E88529FC0763002F4C26 /* wait_result.hpp in Headers */,
+				9943E87D29FBFA07002F4C26 /* variant.hpp in Headers */,
 				9943E87729FB444F002F4C26 /* system_error_code.hpp in Headers */,
 				99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */,
 				99C1937C29F4D70F00C3F53F /* prototype_port.hpp in Headers */,
@@ -353,6 +364,7 @@
 				99940BF729F1DAE800A77461 /* descriptor_id.cpp in Sources */,
 				9943E87A29FBF418002F4C26 /* wait_status.cpp in Sources */,
 				9943E87629FB444F002F4C26 /* system_error_code.cpp in Sources */,
+				9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */,
 				99C1939329F511B700C3F53F /* connection.cpp in Sources */,
 				99C1938329F506C200C3F53F /* file_port.cpp in Sources */,
 				99940BFF29F1F73900A77461 /* prototype_name.cpp in Sources */,
