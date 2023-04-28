@@ -5,8 +5,9 @@
 #include <ostream>
 #include <vector>
 
+#include "ext/fstream.hpp"
+
 #include "flow/channel.hpp"
-#include "flow/fstream.hpp"
 #include "flow/process_id.hpp"
 #include "flow/prototype_name.hpp"
 

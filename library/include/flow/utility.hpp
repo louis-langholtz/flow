@@ -8,9 +8,10 @@
 #include <string>
 #include <vector>
 
+#include "ext/fstream.hpp"
+
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
-#include "flow/fstream.hpp"
 #include "flow/instance.hpp"
 #include "flow/process_id.hpp"
 
