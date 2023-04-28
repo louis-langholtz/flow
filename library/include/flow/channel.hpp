@@ -5,10 +5,10 @@
 #include <ostream>
 #include <span>
 #include <type_traits> // for std::is_nothrow_move_*
-#include <variant>
 
 #include "flow/descriptor_id.hpp"
 #include "flow/io_type.hpp"
+#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
 
 namespace flow {
 
@@ -61,7 +61,7 @@ private:
 static_assert(std::is_nothrow_move_constructible_v<pipe_channel>);
 static_assert(std::is_nothrow_move_assignable_v<pipe_channel>);
 
-using channel = std::variant<pipe_channel, file_channel>;
+using channel = variant<pipe_channel, file_channel>;
 
 std::ostream& operator<<(std::ostream& os, const file_channel& value);
 std::ostream& operator<<(std::ostream& os, const pipe_channel& value);
