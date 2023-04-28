@@ -19,6 +19,7 @@
 #include "flow/expected.hpp"
 #include "flow/instance.hpp"
 #include "flow/prototype.hpp"
+#include "flow/system_error_code.hpp"
 #include "flow/utility.hpp"
 
 namespace flow {
@@ -84,12 +85,12 @@ auto setup(const prototype_name& name,
         static constexpr auto mode_width = 5;
         errs << "open file " << c.file.path << " with mode ";
         errs << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
-        errs << " failed: " << strerror(errno) << "\n";
+        errs << " failed: " << system_error_code(errno) << "\n";
         ::_exit(1);
     }
     if (::dup2(fd, int(c.process.descriptor)) == -1) {
         errs << "dup2(" << fd << "," << c.process.descriptor << ") failed: ";
-        errs << strerror(errno) << "\n";
+        errs << system_error_code(errno) << "\n";
         ::_exit(1);
     }
 }
@@ -134,12 +135,14 @@ auto instantiate(const prototype_name& name,
         std::filesystem::current_path(exe_proto.working_directory, ec);
         if (ec) {
             errs << "chdir " << exe_proto.working_directory << " failed: ";
-            errs << ec << "\n";
+            write(errs, ec);
+            errs << "\n";
         }
     }
     errs.flush();
     ::execve(exe_proto.executable_file.c_str(), argv, envp);
-    errs << "execve of " << exe_proto.executable_file << "failed: " << strerror(errno) << "\n";
+    const auto ec = system_error_code(errno);
+    errs << "execve of " << exe_proto.executable_file << "failed: " << ec << "\n";
     errs.flush();
     ::_exit(1);
 }
@@ -196,7 +199,7 @@ using wait_status = std::variant<
 struct wait_result {
     enum type_enum: std::size_t {no_children = 0u, has_error, has_info};
 
-    using error_t = std::error_code;
+    using error_t = system_error_code;
 
     struct info_t {
         enum status_enum: std::size_t {unknown, exit, signaled, stopped, continued};
@@ -269,7 +272,7 @@ auto wait_for_child() -> wait_result
         return std::monostate{};
     }
     if (pid == -1) {
-        return std::error_code{errno, std::system_category()};
+        return system_error_code(errno);
     }
     if (WIFEXITED(status)) {
         return wait_result::info_t{process_id{pid},
@@ -288,190 +291,6 @@ auto wait_for_child() -> wait_result
             wait_continued_status{}};
     }
     return wait_result::info_t{process_id{pid}};
-}
-
-}
-
-auto strerror(int errnum) -> char *
-{
-    return std::strerror(errnum); // NOLINT(concurrency-mt-unsafe)
-}
-
-auto make_arg_bufs(const std::vector<std::string>& strings,
-                   const std::string& fallback)
--> std::vector<std::string>
-{
-    auto result = std::vector<std::string>{};
-    if (strings.empty()) {
-        if (!fallback.empty()) {
-            result.push_back(fallback);
-        }
-    }
-    else {
-        for (auto&& string: strings) {
-            result.push_back(string);
-        }
-    }
-    return result;
-}
-
-auto make_arg_bufs(const std::map<std::string, std::string>& envars)
--> std::vector<std::string>
-{
-    auto result = std::vector<std::string>{};
-    for (const auto& envar: envars) {
-        result.push_back(envar.first + "=" + envar.second);
-    }
-    return result;
-}
-
-auto make_argv(const std::span<std::string>& args)
--> std::vector<char*>
-{
-    auto result = std::vector<char*>{};
-    for (auto&& arg: args) {
-        result.push_back(arg.data());
-    }
-    result.push_back(nullptr); // last element must always be nullptr!
-    return result;
-}
-
-auto show_diags(const prototype_name& name, fstream& diags,
-                std::ostream& os) -> void
-{
-    if (!diags.is_open()) {
-        os << "Diags are closed for '" << name << "'\n";
-        return;
-    }
-    if (diags.rdstate()) {
-        os << "diags stream not good for " << name << "\n";
-        return;
-    }
-    diags.seekg(0, std::ios_base::end);
-    if (diags.rdstate()) {
-        os << "diags stream not good for " << name << " after seekg\n";
-        return;
-    }
-    const auto endpos = diags.tellg();
-    switch (endpos) {
-    case -1:
-        os << "unable to tell where diags end is for " << name << "\n";
-        return;
-    case 0:
-        os << "Diags are empty for '" << name << "'\n";
-        return;
-    default:
-        break;
-    }
-    diags.seekg(0, std::ios_base::beg);
-    os << "Diagnostics for " << name << " having " << endpos << "b...\n";
-    // istream_iterator skips ws, so use istreambuf_iterator...
-    std::copy(std::istreambuf_iterator<char>(diags.rdbuf()),
-              std::istreambuf_iterator<char>(),
-              std::ostream_iterator<char>(os));
-}
-
-auto show_diags(const prototype_name& name, instance& object,
-                std::ostream& os) -> void
-{
-    show_diags(name, object.diags, os);
-    for (auto&& map_entry: object.children) {
-        const auto full_name = name.value + "." + map_entry.first.value;
-        show_diags(prototype_name{full_name}, map_entry.second, os);
-    }
-}
-
-auto find_channel_index(const std::span<const connection>& connections,
-                const connection& look_for) -> std::optional<std::size_t>
-{
-    const auto first = std::begin(connections);
-    const auto last = std::end(connections);
-    const auto iter = std::find(first, last, look_for);
-    if (iter != last) {
-        return {std::distance(first, iter)};
-    }
-    return {};
-}
-
-auto touch(const file_port& file) -> void
-{
-    static constexpr auto flags = O_CREAT|O_WRONLY;
-    static constexpr auto mode = 0666;
-    if (const auto fd = ::open(file.path.c_str(), flags, mode); fd != -1) { // NOLINT(cppcoreguidelines-pro-type-vararg)
-        ::close(fd);
-        return;
-    }
-    throw std::runtime_error{strerror(errno)};
-}
-
-auto mkfifo(const file_port& file) -> void
-{
-    static constexpr auto fifo_mode = ::mode_t{0666};
-    if (::mkfifo(file.path.c_str(), fifo_mode) == -1) {
-        throw std::runtime_error{strerror(errno)};
-    }
-}
-
-auto instantiate(const system_prototype& system, std::ostream& err_stream)
--> instance
-{
-    instance result;
-    result.id = process_id(0);
-    std::vector<channel> channels;
-    for (auto&& connection: system.connections) {
-        if (std::holds_alternative<pipe_connection>(connection)) {
-            channels.push_back(pipe_channel{});
-        }
-        else if (std::holds_alternative<file_connection>(connection)) {
-            channels.push_back(file_channel{}); // NOLINT(modernize-use-emplace)
-        }
-    }
-    for (auto&& prototype_mapentry: system.prototypes) {
-        const auto& name = prototype_mapentry.first;
-        const auto& prototype = prototype_mapentry.second;
-        if (std::holds_alternative<executable_prototype>(prototype)) {
-            auto errs = temporary_fstream();
-            const auto& exe_proto = std::get<executable_prototype>(prototype);
-            auto arg_buffers = make_arg_bufs(exe_proto.arguments, exe_proto.executable_file);
-            auto env_buffers = make_arg_bufs(exe_proto.environment);
-            auto argv = make_argv(arg_buffers);
-            auto envp = make_argv(env_buffers);
-            const auto pid = process_id{::fork()};
-            switch (pid) {
-            case invalid_process_id:
-                err_stream << "fork failed: " << strerror(errno) << "\n";
-                result.children.emplace(name, instance{pid});
-                break;
-            case process_id{0}: // child process
-                // NOTE: the following does not return!
-                instantiate(name, exe_proto, argv.data(), envp.data(),
-                            system.connections, channels, errs);
-            default: // case for the spawning/parent process
-                result.children.emplace(name, instance{pid, std::move(errs)});
-                break;
-            }
-        }
-        else if (std::holds_alternative<system_prototype>(prototype)) {
-            const auto& sys_proto = std::get<system_prototype>(prototype);
-            result.children.emplace(name, instantiate(sys_proto, err_stream));
-        }
-    }
-    for (const auto& connection: system.connections) {
-        const auto index = static_cast<std::size_t>(&connection - &(*system.connections.begin()));
-        if (const auto c = std::get_if<pipe_connection>(&connection)) {
-            auto& p = std::get<pipe_channel>(channels[index]);
-            if (c->in.address != prototype_name{}) {
-                err_stream << "parent: close out of " << *c << " " << p << "\n";
-                p.close(io_type::out, err_stream);
-            }
-            if (c->out.address != prototype_name{}) {
-                err_stream << "parent: close  in of " << *c << " " << p << "\n";
-                p.close(io_type::in, err_stream);
-            }
-        }
-    }
-    result.channels = std::move(channels);
-    return result;
 }
 
 auto handle(instance& instance, const wait_result& result,
@@ -523,6 +342,204 @@ auto handle(instance& instance, const wait_result& result,
         break;
     }
     }
+}
+
+auto show_diags(std::ostream& os, const prototype_name& name,
+                std::iostream& diags) -> void
+{
+    if (diags.rdstate()) {
+        os << "diags stream not good for " << name << "\n";
+        return;
+    }
+    diags.seekg(0, std::ios_base::end);
+    if (diags.rdstate()) {
+        os << "diags stream not good for " << name << " after seekg\n";
+        return;
+    }
+    const auto endpos = diags.tellg();
+    switch (endpos) {
+    case -1:
+        os << "unable to tell where diags end is for " << name << "\n";
+        return;
+    case 0:
+        os << "Diags are empty for '" << name << "'\n";
+        return;
+    default:
+        break;
+    }
+    diags.seekg(0, std::ios_base::beg);
+    os << "Diagnostics for " << name << " having " << endpos << "b...\n";
+    // istream_iterator skips ws, so use istreambuf_iterator...
+    std::copy(std::istreambuf_iterator<char>(diags.rdbuf()),
+              std::istreambuf_iterator<char>(),
+              std::ostream_iterator<char>(os));
+}
+
+}
+
+auto temporary_fstream() -> fstream
+{
+    // "w+xb"
+    constexpr auto mode =
+        fstream::in|fstream::out|fstream::trunc|fstream::binary|fstream::noreplace|fstream::tmpfile;
+
+    fstream stream;
+    stream.open(std::filesystem::temp_directory_path(), mode);
+    return stream;
+}
+
+auto make_arg_bufs(const std::vector<std::string>& strings,
+                   const std::string& fallback)
+-> std::vector<std::string>
+{
+    auto result = std::vector<std::string>{};
+    if (strings.empty()) {
+        if (!fallback.empty()) {
+            result.push_back(fallback);
+        }
+    }
+    else {
+        for (auto&& string: strings) {
+            result.push_back(string);
+        }
+    }
+    return result;
+}
+
+auto make_arg_bufs(const std::map<std::string, std::string>& envars)
+-> std::vector<std::string>
+{
+    auto result = std::vector<std::string>{};
+    for (const auto& envar: envars) {
+        result.push_back(envar.first + "=" + envar.second);
+    }
+    return result;
+}
+
+auto make_argv(const std::span<std::string>& args)
+-> std::vector<char*>
+{
+    auto result = std::vector<char*>{};
+    for (auto&& arg: args) {
+        result.push_back(arg.data());
+    }
+    result.push_back(nullptr); // last element must always be nullptr!
+    return result;
+}
+
+auto write(std::ostream& os, const std::error_code& ec)
+    -> std::ostream&
+{
+    os << ec << " (" << ec.message() << ")";
+    return os;
+}
+
+auto write_diags(const prototype_name& name, instance& object,
+                std::ostream& os) -> void
+{
+    if (!object.diags.is_open()) {
+        os << "Diags are closed for '" << name << "'\n";
+    }
+    else {
+        show_diags(os, name, object.diags);
+    }
+    for (auto&& map_entry: object.children) {
+        const auto full_name = name.value + "." + map_entry.first.value;
+        write_diags(prototype_name{full_name}, map_entry.second, os);
+    }
+}
+
+auto find_channel_index(const std::span<const connection>& connections,
+                const connection& look_for) -> std::optional<std::size_t>
+{
+    const auto first = std::begin(connections);
+    const auto last = std::end(connections);
+    const auto iter = std::find(first, last, look_for);
+    if (iter != last) {
+        return {std::distance(first, iter)};
+    }
+    return {};
+}
+
+auto touch(const file_port& file) -> void
+{
+    static constexpr auto flags = O_CREAT|O_WRONLY;
+    static constexpr auto mode = 0666;
+    if (const auto fd = ::open(file.path.c_str(), flags, mode); fd != -1) { // NOLINT(cppcoreguidelines-pro-type-vararg)
+        ::close(fd);
+        return;
+    }
+    throw std::runtime_error{to_string(system_error_code(errno))};
+}
+
+auto mkfifo(const file_port& file) -> void
+{
+    static constexpr auto fifo_mode = ::mode_t{0666};
+    if (::mkfifo(file.path.c_str(), fifo_mode) == -1) {
+        throw std::runtime_error{to_string(system_error_code(errno))};
+    }
+}
+
+auto instantiate(const system_prototype& system, std::ostream& err_stream)
+-> instance
+{
+    instance result;
+    result.id = process_id(0);
+    std::vector<channel> channels;
+    for (auto&& connection: system.connections) {
+        if (std::holds_alternative<pipe_connection>(connection)) {
+            channels.push_back(pipe_channel{});
+        }
+        else if (std::holds_alternative<file_connection>(connection)) {
+            channels.push_back(file_channel{}); // NOLINT(modernize-use-emplace)
+        }
+    }
+    for (auto&& prototype_mapentry: system.prototypes) {
+        const auto& name = prototype_mapentry.first;
+        const auto& prototype = prototype_mapentry.second;
+        if (std::holds_alternative<executable_prototype>(prototype)) {
+            auto errs = temporary_fstream();
+            const auto& exe_proto = std::get<executable_prototype>(prototype);
+            auto arg_buffers = make_arg_bufs(exe_proto.arguments, exe_proto.executable_file);
+            auto env_buffers = make_arg_bufs(exe_proto.environment);
+            auto argv = make_argv(arg_buffers);
+            auto envp = make_argv(env_buffers);
+            const auto pid = process_id{::fork()};
+            switch (pid) {
+            case invalid_process_id:
+                err_stream << "fork failed: " << system_error_code(errno) << "\n";
+                result.children.emplace(name, instance{pid});
+                break;
+            case process_id{0}: // child process
+                // NOTE: the following does not return!
+                instantiate(name, exe_proto, argv.data(), envp.data(),
+                            system.connections, channels, errs);
+            default: // case for the spawning/parent process
+                result.children.emplace(name, instance{pid, std::move(errs)});
+                break;
+            }
+        }
+        else if (std::holds_alternative<system_prototype>(prototype)) {
+            const auto& sys_proto = std::get<system_prototype>(prototype);
+            result.children.emplace(name, instantiate(sys_proto, err_stream));
+        }
+    }
+    for (const auto& connection: system.connections) {
+        const auto index = static_cast<std::size_t>(&connection - &(*system.connections.begin()));
+        if (const auto c = std::get_if<pipe_connection>(&connection)) {
+            auto& p = std::get<pipe_channel>(channels[index]);
+            if (c->in.address != prototype_name{}) {
+                err_stream << "parent: close out of " << *c << " " << p << "\n";
+                p.close(io_type::out, err_stream);
+            }
+            if (c->out.address != prototype_name{}) {
+                err_stream << "parent: close  in of " << *c << " " << p << "\n";
+                p.close(io_type::in, err_stream);
+            }
+        }
+    }
+    result.channels = std::move(channels);
+    return result;
 }
 
 auto wait(instance& instance, std::ostream& err_stream, wait_diags diags) -> void
