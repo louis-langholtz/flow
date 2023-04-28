@@ -16,6 +16,7 @@
 #include <sys/stat.h> // for mkfifo
 
 #include "system_error_code.hpp"
+#include "wait_status.hpp"
 
 #include "flow/descriptor_id.hpp"
 #include "flow/expected.hpp"
@@ -147,55 +148,6 @@ auto instantiate(const prototype_name& name,
     errs.flush();
     ::_exit(1);
 }
-
-struct wait_exit_status {
-    int value{};
-};
-
-auto operator<<(std::ostream& os, const wait_exit_status& value) -> std::ostream&
-{
-    os << "exit-status=" << value.value;
-    return os;
-}
-
-struct wait_signaled_status {
-    int signal{};
-    bool core_dumped{};
-};
-
-auto operator<<(std::ostream& os, const wait_signaled_status& value) -> std::ostream&
-{
-    os << "signal=" << value.signal;
-    os << ", core-dumped=" << std::boolalpha << value.core_dumped;
-    return os;
-}
-
-struct wait_stopped_status {
-    int stop_signal{};
-};
-
-auto operator<<(std::ostream& os, const wait_stopped_status& value) -> std::ostream&
-{
-    os << "stop-signal=" << value.stop_signal;
-    return os;
-}
-
-struct wait_continued_status {
-};
-
-auto operator<<(std::ostream& os, const wait_continued_status&) -> std::ostream&
-{
-    os << "continued";
-    return os;
-}
-
-using wait_status = std::variant<
-    std::monostate,
-    wait_exit_status,
-    wait_signaled_status,
-    wait_stopped_status,
-    wait_continued_status
->;
 
 struct wait_result {
     enum type_enum: std::size_t {no_children = 0u, has_error, has_info};
