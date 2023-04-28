@@ -21,6 +21,11 @@ struct instance {
 
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
 
+struct system_prototype;
+
+auto instantiate(const system_prototype& system,
+                 std::ostream& err_stream) -> instance;
+
 }
 
 #endif /* instance_hpp */
