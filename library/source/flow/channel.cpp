@@ -8,13 +8,14 @@
 #include <unistd.h> // for pipe, close
 
 #include "flow/channel.hpp"
+#include "flow/system_error_code.hpp"
 
 namespace flow {
 
 pipe_channel::pipe_channel()
 {
     if (::pipe(descriptors.data()) == -1) {
-        throw std::runtime_error{std::strerror(errno)}; // NOLINT(concurrency-mt-unsafe)
+        throw std::runtime_error{to_string(system_error_code(errno))};
     }
 }
 
@@ -43,7 +44,7 @@ bool pipe_channel::close(io_type direction, std::ostream& errs) noexcept
     auto& d = descriptors[int(direction)];
     if (::close(d) == -1) {
         errs << "close(" << direction << "," << d << ") failed: ";
-        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
+        errs << system_error_code(errno) << "\n";
         return false;
     }
     d = -1;
@@ -57,7 +58,7 @@ bool pipe_channel::dup(io_type direction, descriptor_id newfd,
     auto& d = descriptors[int(direction)];
     if (dup2(d, new_d) == -1) {
         errs << "dup2(" << direction << ":" << d << "," << new_d << ") failed: ";
-        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
+        errs << system_error_code(errno) << "\n";
         return false;
     }
     d = new_d;
@@ -70,7 +71,7 @@ std::size_t pipe_channel::read(const std::span<char>& buffer,
     const auto nread = ::read(descriptors[0], buffer.data(), buffer.size());
     if (nread == -1) {
         errs << "read() failed: ";
-        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
+        errs << system_error_code(errno) << "\n";
         return static_cast<std::size_t>(-1);
     }
     return static_cast<std::size_t>(nread);
@@ -81,7 +82,7 @@ bool pipe_channel::write(const std::span<const char>& buffer,
 {
     if (::write(descriptors[1], buffer.data(), buffer.size()) == -1) {
         errs << "write(fd=" << descriptors[1] << ",siz=" << buffer.size() << ") failed: ";
-        errs << std::strerror(errno) << "\n"; // NOLINT(concurrency-mt-unsafe)
+        errs << system_error_code(errno) << "\n";
         return false;
     }
     return true;

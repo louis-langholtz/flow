@@ -21,8 +21,6 @@ struct instance {
 
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
 
-auto temporary_fstream() -> fstream;
-
 }
 
 #endif /* instance_hpp */

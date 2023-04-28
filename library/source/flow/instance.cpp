@@ -31,15 +31,4 @@ std::ostream& operator<<(std::ostream& os, const instance& value)
     return os;
 }
 
-auto temporary_fstream() -> fstream
-{
-    // "w+xb"
-    constexpr auto mode =
-        fstream::in|fstream::out|fstream::trunc|fstream::binary|fstream::noreplace|fstream::tmpfile;
-
-    fstream stream;
-    stream.open(std::filesystem::temp_directory_path(), mode);
-    return stream;
-}
-
 }
