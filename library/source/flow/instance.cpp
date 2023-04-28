@@ -139,6 +139,40 @@ auto instantiate(const prototype_name& name,
     ::_exit(1);
 }
 
+auto instantiate(const prototype_name& name,
+                 const executable_prototype& exe_proto,
+                 const std::vector<connection>& connections,
+                 std::vector<channel>& channels,
+                 std::ostream& diags) -> instance
+{
+    auto child_diags = temporary_fstream();
+    auto arg_buffers = make_arg_bufs(exe_proto.arguments, exe_proto.executable_file);
+    auto env_buffers = make_arg_bufs(exe_proto.environment);
+    auto argv = make_argv(arg_buffers);
+    auto envp = make_argv(env_buffers);
+    const auto pid = process_id{::fork()};
+    switch (pid) {
+    case invalid_process_id:
+        diags << "fork failed: " << system_error_code(errno) << "\n";
+        return instance{pid};
+    case process_id{0}: { // child process
+        // Have to be especially careful here!
+        // From https://man7.org/linux/man-pages/man2/fork.2.html:
+        // "child can safely call only async-signal-safe functions
+        //  (see signal-safety(7)) until such time as it calls execve(2)."
+        // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
+        // for "functions required to be async-signal-safe by POSIX.1".
+        make_substitutions(argv);
+        // NOTE: the following does not return!
+        instantiate(name, exe_proto, argv.data(), envp.data(),
+                    connections, channels, child_diags);
+    }
+    default: // case for the spawning/parent process
+        break;
+    }
+    return instance{pid, std::move(child_diags)};
+}
+
 }
 
 std::ostream& operator<<(std::ostream& os, const instance& value)
@@ -168,7 +202,7 @@ std::ostream& operator<<(std::ostream& os, const instance& value)
     return os;
 }
 
-auto instantiate(const system_prototype& system, std::ostream& err_stream)
+auto instantiate(const system_prototype& system, std::ostream& diags)
 -> instance
 {
     instance result;
@@ -182,42 +216,20 @@ auto instantiate(const system_prototype& system, std::ostream& err_stream)
             channels.push_back(file_channel{}); // NOLINT(modernize-use-emplace)
         }
     }
-    for (auto&& prototype_mapentry: system.prototypes) {
-        const auto& name = prototype_mapentry.first;
-        const auto& prototype = prototype_mapentry.second;
-        if (std::holds_alternative<executable_prototype>(prototype)) {
-            auto errs = temporary_fstream();
-            const auto& exe_proto = std::get<executable_prototype>(prototype);
-            auto arg_buffers = make_arg_bufs(exe_proto.arguments, exe_proto.executable_file);
-            auto env_buffers = make_arg_bufs(exe_proto.environment);
-            auto argv = make_argv(arg_buffers);
-            auto envp = make_argv(env_buffers);
-            const auto pid = process_id{::fork()};
-            switch (pid) {
-            case invalid_process_id:
-                err_stream << "fork failed: " << system_error_code(errno) << "\n";
-                result.children.emplace(name, instance{pid});
-                break;
-            case process_id{0}: { // child process
-                // Have to be especially careful here!
-                // From https://man7.org/linux/man-pages/man2/fork.2.html:
-                // "child can safely call only async-signal-safe functions
-                //  (see signal-safety(7)) until such time as it calls execve(2)."
-                // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
-                // for "functions required to be async-signal-safe by POSIX.1".
-                make_substitutions(argv);
-                // NOTE: the following does not return!
-                instantiate(name, exe_proto, argv.data(), envp.data(),
-                            system.connections, channels, errs);
-            }
-            default: // case for the spawning/parent process
-                result.children.emplace(name, instance{pid, std::move(errs)});
-                break;
-            }
+    for (auto&& mapentry: system.prototypes) {
+        const auto& child = mapentry.first;
+        const auto& proto = mapentry.second;
+        if (const auto p = std::get_if<executable_prototype>(&proto)) {
+            result.children.emplace(child, instantiate(child, *p,
+                                                      system.connections,
+                                                      channels, diags));
         }
-        else if (std::holds_alternative<system_prototype>(prototype)) {
-            const auto& sys_proto = std::get<system_prototype>(prototype);
-            result.children.emplace(name, instantiate(sys_proto, err_stream));
+        else if (const auto p = std::get_if<system_prototype>(&proto)) {
+            result.children.emplace(child, instantiate(*p, diags));
+        }
+        else {
+            diags << "parent: unrecognized prototype for " << child << "\n";
+            result.children.emplace(child, instance{});
         }
     }
     for (const auto& connection: system.connections) {
@@ -225,12 +237,12 @@ auto instantiate(const system_prototype& system, std::ostream& err_stream)
         if (const auto c = std::get_if<pipe_connection>(&connection)) {
             auto& p = std::get<pipe_channel>(channels[index]);
             if (c->in.address != prototype_name{}) {
-                err_stream << "parent: close out of " << *c << " " << p << "\n";
-                p.close(io_type::out, err_stream);
+                diags << "parent: close out of " << *c << " " << p << "\n";
+                p.close(io_type::out, diags);
             }
             if (c->out.address != prototype_name{}) {
-                err_stream << "parent: close  in of " << *c << " " << p << "\n";
-                p.close(io_type::in, err_stream);
+                diags << "parent: close  in of " << *c << " " << p << "\n";
+                p.close(io_type::in, diags);
             }
         }
     }
