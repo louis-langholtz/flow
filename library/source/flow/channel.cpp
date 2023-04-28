@@ -105,15 +105,4 @@ std::ostream& operator<<(std::ostream& os, const pipe_channel& value)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const channel& value)
-{
-    if (const auto c = std::get_if<pipe_channel>(&value)) {
-        os << *c;
-    }
-    else if (const auto c = std::get_if<file_channel>(&value)) {
-        os << *c;
-    }
-    return os;
-}
-
 }
