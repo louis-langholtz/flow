@@ -57,9 +57,6 @@ auto touch(const file_port& file) -> void;
 
 auto mkfifo(const file_port& file) -> void;
 
-auto instantiate(const system_prototype& system,
-                 std::ostream& err_stream) -> instance;
-
 enum class wait_diags {
     none, yes,
 };
