@@ -43,7 +43,6 @@
 		99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */; };
 		99C193A629F76AB800C3F53F /* descriptor_iostream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */; };
 		99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193AF29F7AFD100C3F53F /* fstream.hpp */; };
-		99C193B229F7AFF300C3F53F /* fstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C193B129F7AFF300C3F53F /* fstream.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -116,7 +115,6 @@
 		99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor_iostream.cpp; sourceTree = "<group>"; };
 		99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor_iostream.hpp; sourceTree = "<group>"; };
 		99C193AF29F7AFD100C3F53F /* fstream.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = fstream.hpp; sourceTree = "<group>"; };
-		99C193B129F7AFF300C3F53F /* fstream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fstream.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +136,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9943E88629FC242A002F4C26 /* ext */ = {
+			isa = PBXGroup;
+			children = (
+				99C193A129F6EB4B00C3F53F /* expected.hpp */,
+				99C193AF29F7AFD100C3F53F /* fstream.hpp */,
+			);
+			path = ext;
+			sourceTree = "<group>";
+		};
 		99940BC429F1644400A77461 = {
 			isa = PBXGroup;
 			children = (
@@ -177,6 +184,7 @@
 		99940BD829F1BC5900A77461 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				9943E88629FC242A002F4C26 /* ext */,
 				99940BF029F1CB8400A77461 /* flow */,
 			);
 			path = include;
@@ -204,9 +212,7 @@
 				99C1939229F511B700C3F53F /* connection.hpp */,
 				99940BF629F1DAE800A77461 /* descriptor_id.hpp */,
 				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
-				99C193A129F6EB4B00C3F53F /* expected.hpp */,
 				99C1938229F506C200C3F53F /* file_port.hpp */,
-				99C193AF29F7AFD100C3F53F /* fstream.hpp */,
 				99C1939A29F5774600C3F53F /* instance.hpp */,
 				99940BED29F1C9A500A77461 /* io_type.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
@@ -227,7 +233,6 @@
 				99940BF529F1DAE800A77461 /* descriptor_id.cpp */,
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
 				99C1938129F506C200C3F53F /* file_port.cpp */,
-				99C193B129F7AFF300C3F53F /* fstream.cpp */,
 				99C1939929F5774600C3F53F /* instance.cpp */,
 				99940BEC29F1C9A500A77461 /* io_type.cpp */,
 				99940BF929F1F49F00A77461 /* process_id.cpp */,
@@ -375,7 +380,6 @@
 				99C1939F29F5819A00C3F53F /* utility.cpp in Sources */,
 				99C1937B29F4D70F00C3F53F /* prototype_port.cpp in Sources */,
 				99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */,
-				99C193B229F7AFF300C3F53F /* fstream.cpp in Sources */,
 				99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -530,10 +534,10 @@
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
 				HEADER_SEARCH_PATHS = (
-					../../library/include,
+					library/include,
 					/opt/homebrew/opt/boost/include/,
 				);
-				OTHER_LDFLAGS = "-lboost_iostreams";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = flow;
 				SKIP_INSTALL = YES;
 			};
@@ -547,10 +551,10 @@
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
 				HEADER_SEARCH_PATHS = (
-					../../library/include,
+					library/include,
 					/opt/homebrew/opt/boost/include/,
 				);
-				OTHER_LDFLAGS = "-lboost_iostreams";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = flow;
 				SKIP_INSTALL = YES;
 			};
