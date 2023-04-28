@@ -15,11 +15,12 @@
 #include <sys/types.h> // for mkfifo
 #include <sys/stat.h> // for mkfifo
 
+#include "system_error_code.hpp"
+
 #include "flow/descriptor_id.hpp"
 #include "flow/expected.hpp"
 #include "flow/instance.hpp"
 #include "flow/prototype.hpp"
-#include "flow/system_error_code.hpp"
 #include "flow/utility.hpp"
 
 namespace flow {

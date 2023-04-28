@@ -7,8 +7,9 @@
 
 #include <unistd.h> // for pipe, close
 
+#include "system_error_code.hpp"
+
 #include "flow/channel.hpp"
-#include "flow/system_error_code.hpp"
 
 namespace flow {
 
