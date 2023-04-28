@@ -20,7 +20,6 @@
 #include "wait_status.hpp"
 
 #include "flow/descriptor_id.hpp"
-#include "flow/expected.hpp"
 #include "flow/instance.hpp"
 #include "flow/prototype.hpp"
 #include "flow/utility.hpp"
@@ -157,13 +156,18 @@ auto show_diags(std::ostream& os, const prototype_name& name,
 
 }
 
-auto temporary_fstream() -> fstream
+auto temporary_fstream() -> ext::fstream
 {
     // "w+xb"
     constexpr auto mode =
-        fstream::in|fstream::out|fstream::trunc|fstream::binary|fstream::noreplace|fstream::tmpfile;
+        ext::fstream::in|
+        ext::fstream::out|
+        ext::fstream::trunc|
+        ext::fstream::binary|
+        ext::fstream::noreplace|
+        ext::fstream::tmpfile;
 
-    fstream stream;
+    ext::fstream stream;
     stream.open(std::filesystem::temp_directory_path(), mode);
     return stream;
 }

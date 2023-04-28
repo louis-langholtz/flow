@@ -6,27 +6,27 @@
 #include <cstdio> // for FILE*
 #include <cstring> // for std::strlen, std::memmove
 #include <iostream>
+#ifndef NDEBUG
 #include <limits> // for std::numeric_limits
+#endif
+#include <memory> // for std::unique_ptr
 #include <streambuf>
 #include <string>
 #include <filesystem>
-#include <type_traits> // for std::make_unsigned_t
-#include <utility> // for std::exchange
+#include <utility> // for std::move
 
-#include "flow/descriptor_id.hpp"
+namespace ext {
 
-namespace flow {
-
-/// @brief File based I/O stream class.
+/// @brief File based I/O stream class for POSIX systems.
 /// @note This supports C++23's <code>noreplace</code> and a new <code>tmpfile</code>
 ///   openmode. The latter results in the stream being opened for reading/writing to a temporary file that
 ///   either never shows up in the file system, or is deleted from it right after its creation. One has to use
 ///   the open modes however from this class; not from <code>std::ios_base</code> or any derived
 ///   classes of that other than this class.
-/// @note This class's implementation derives from LLVM's handling for
-///   <code>std::fstream</code>, <code>std::__stdinbuf</code>, and <code>__stdoutbuf</code>
-///   sans support for locales.
-/// @see https://github.com/llvm/llvm-project/blob/main/libcxx/src/std_stream.h.
+/// @note Much of this class's implementation comes from LLVM's code for
+///   <code>std::fstream</code> sans support for character encodings & locales. Any code herein
+///   that may appear thrown together is likely mine or due to my effort to shoehorn LLVM's code into
+///   this class without having to provide alternatives for additional standard library classes.
 /// @see https://github.com/llvm/llvm-project/blob/main/libcxx/include/fstream.
 struct fstream: public std::iostream {
 
@@ -65,10 +65,18 @@ struct fstream: public std::iostream {
         auto operator=(filebuf&& other) noexcept -> filebuf&;
         auto swap(filebuf& rhs) -> void;
         auto is_open() const noexcept -> bool;
-        auto open(FILE* new_fp, openmode mode) noexcept -> filebuf*;
+        auto open(const char* path, openmode mode) -> filebuf*;
+        auto open(const std::filesystem::path& path, openmode mode) -> filebuf*;
+        auto open(const std::string& path, openmode mode) -> filebuf*;
         auto close() noexcept -> filebuf*;
 
     private:
+        struct fcloser {
+            auto operator()(FILE* p) const -> void {
+                ::fclose(p); // NOLINT(cppcoreguidelines-owning-memory)
+            }
+        };
+
         static constexpr auto default_buffer_size = 4096u;
         static constexpr auto extbuf_min_size = 8u;
 
@@ -114,7 +122,7 @@ struct fstream: public std::iostream {
         size_t ebs_{};
         char_type* intbuf_{};
         size_t ibs_{};
-        FILE *fp{};
+        std::unique_ptr<FILE, fcloser> fp;
         state_type st_{};
         state_type st_last_{};
         openmode opened_mode{};
@@ -132,11 +140,9 @@ struct fstream: public std::iostream {
 
     auto is_open() const -> bool;
     auto close() -> void;
-    auto open(FILE *fp, openmode mode) -> void;
-    auto open(descriptor_id id, openmode mode) -> void;
-    auto open(const char* filename, openmode mode = in|out) -> void;
-    auto open(const std::string& filename, openmode mode = in|out) -> void;
-    auto open(const std::filesystem::path& filename, openmode mode = in|out) -> void;
+    auto open(const char* path, openmode mode = in|out) -> void;
+    auto open(const std::string& path, openmode mode = in|out) -> void;
+    auto open(const std::filesystem::path& path, openmode mode = in|out) -> void;
 
 private:
     filebuf fb;
@@ -209,7 +215,7 @@ inline fstream::filebuf::filebuf(filebuf&& other) noexcept
     ebs_ = other.ebs_;
     intbuf_ = other.intbuf_;
     ibs_ = other.ibs_;
-    fp = other.fp;
+    fp = std::move(other.fp);
     st_ = other.st_;
     st_last_ = other.st_last_;
     opened_mode = other.opened_mode;
@@ -288,8 +294,8 @@ inline auto fstream::filebuf::swap(filebuf& rhs) -> void
     }
     else
     {
-        const auto ln = extbufnext_       ? extbufnext_ - extbuf_             : 0;
-        const auto le = extbufend_        ? extbufend_ - extbuf_              : 0;
+        const auto ln = extbufnext_     ? extbufnext_ - extbuf_         : 0;
+        const auto le = extbufend_      ? extbufend_ - extbuf_          : 0;
         const auto rn = rhs.extbufnext_ ? rhs.extbufnext_ - rhs.extbuf_ : 0;
         const auto re = rhs.extbufend_  ? rhs.extbufend_ - rhs.extbuf_  : 0;
         if ((extbuf_ == std::data(extbuf_min_)) && (rhs.extbuf_ != std::data(rhs.extbuf_min_)))
@@ -376,24 +382,62 @@ inline auto fstream::filebuf::is_open() const noexcept -> bool
     return fp != nullptr;
 }
 
-inline auto fstream::filebuf::open(FILE* new_fp, openmode mode) noexcept -> filebuf*
+inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
 {
     if (fp) {
         return nullptr;
     }
-    fp = new_fp;
-    if (!fp) {
+    const auto mode_cstr = to_fopen_mode(mode & ~(tmpfile));
+    if (!mode_cstr) {
         return nullptr;
     }
-    opened_mode = mode;
-    if (mode & ate) {
-        if (::fseek(fp, 0, SEEK_END) != 0) {
-            ::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
-            fp = nullptr;
+    auto new_fp = std::unique_ptr<FILE, fcloser>{};
+    if (mode & tmpfile) {
+#if defined(O_TMPFILE)
+        // TODO: translate mode to Linux/POSIX open(2) flags plus O_TMPFILE!
+        const auto fd = ::open(path, O_TMPFILE, 0666);
+#else
+        static constexpr auto buffer_size = std::size_t{1024u};
+        static constexpr char six_x[] = "XXXXXX";
+        char buffer[buffer_size];
+        const auto len = std::strlen(path);
+        const auto last_char = (len > 0u)? path[len - 1u]: '\0';
+        const auto separator = (last_char != '/')? "/": "";
+        const auto separator_len = std::strlen(separator);
+        const auto total_len = len + separator_len + std::size(six_x);
+        if (total_len >= buffer_size) {
             return nullptr;
         }
+        // Replace the following with the more readable std::format_to_n when available
+        std::copy_n(std::data(six_x), std::size(six_x),
+                    std::copy_n(separator, separator_len,
+                                std::copy_n(path, len, std::data(buffer))));
+        const auto fd = ::mkstemp(std::data(buffer));
+#endif
+        new_fp = std::unique_ptr<FILE, fcloser>{::fdopen(fd, mode_cstr)};
     }
+    else {
+        new_fp = std::unique_ptr<FILE, fcloser>{::fopen(path, mode_cstr)};
+    }
+    if (!new_fp) {
+        return nullptr;
+    }
+    if ((mode & ate) && (::fseek(new_fp.get(), 0, SEEK_END) != 0)) {
+        return nullptr;
+    }
+    fp = std::move(new_fp);
+    opened_mode = mode;
     return this;
+}
+
+inline auto fstream::filebuf::open(const std::filesystem::path& path, openmode mode) -> filebuf*
+{
+    return open(path.c_str(), mode);
+}
+
+inline auto fstream::filebuf::open(const std::string& path, openmode mode) -> filebuf*
+{
+    return open(path.c_str(), mode);
 }
 
 inline auto fstream::filebuf::close() noexcept -> filebuf*
@@ -402,12 +446,12 @@ inline auto fstream::filebuf::close() noexcept -> filebuf*
         return nullptr;
     }
     const auto sync_result = internal_sync();
-    const auto close_result = ::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+    const auto close_result = ::fclose(fp.get());
     if (sync_result || (close_result == EOF)) {
         return nullptr;
     }
+    (void) fp.release();
     opened_mode = 0;
-    fp = nullptr;
     internal_setbuf(nullptr, 0);
     return this;
 }
@@ -428,7 +472,7 @@ inline auto fstream::filebuf::underflow() -> int_type
     {
         std::memmove(this->eback(), this->egptr() - unget_sz, unget_sz * sizeof(char_type));
         size_t nmemb = static_cast<size_t>(this->egptr() - this->eback() - unget_sz);
-        nmemb = ::fread(this->eback() + unget_sz, 1, nmemb, fp);
+        nmemb = ::fread(this->eback() + unget_sz, 1, nmemb, fp.get());
         if (nmemb != 0)
         {
             this->setg(this->eback(),
@@ -484,7 +528,7 @@ inline auto fstream::filebuf::internal_overflow(int_type c) -> int_type
     }
     if (pptr() != pbase()) {
         const auto nmemb = static_cast<size_t>(this->pptr() - this->pbase());
-        if (std::fwrite(this->pbase(), sizeof(char_type), nmemb, fp) != nmemb) {
+        if (std::fwrite(this->pbase(), sizeof(char_type), nmemb, fp.get()) != nmemb) {
             return traits_type::eof();
         }
         setp(pb_save, epb_save);
@@ -532,12 +576,14 @@ inline auto fstream::filebuf::internal_setbuf(char_type* s, std::streamsize n)
     return this;
 }
 
-inline auto fstream::filebuf::setbuf(char_type* s, std::streamsize n) -> basic_streambuf<char_type, traits_type>*
+inline auto fstream::filebuf::setbuf(char_type* s, std::streamsize n)
+    -> basic_streambuf<char_type, traits_type>*
 {
     return internal_setbuf(s, n);
 }
 
-inline auto fstream::filebuf::xsputn(const char* s, std::streamsize n) -> std::streamsize
+inline auto fstream::filebuf::xsputn(const char* s, std::streamsize n)
+    -> std::streamsize
 {
     if (!(iomode & out))
     {
@@ -546,7 +592,9 @@ inline auto fstream::filebuf::xsputn(const char* s, std::streamsize n) -> std::s
         iomode = out;
     }
     assert(n >= 0);
-    return static_cast<std::streamsize>(std::fwrite(s, sizeof(char_type), static_cast<std::size_t>(n), fp));
+    const auto rv = std::fwrite(s, sizeof(char_type),
+                                static_cast<std::size_t>(n), fp.get());
+    return static_cast<std::streamsize>(rv);
 }
 
 inline auto fstream::filebuf::internal_sync() -> int
@@ -561,14 +609,14 @@ inline auto fstream::filebuf::internal_sync() -> int
                 return -1;
             }
         }
-        if (std::fflush(fp)) {
+        if (std::fflush(fp.get())) {
             return -1;
         }
     }
     else if (iomode & in)
     {
         const auto c = egptr() - gptr();
-        if (::fseeko(fp, -c, SEEK_CUR)) {
+        if (::fseeko(fp.get(), -c, SEEK_CUR)) {
             return -1;
         }
         setg(nullptr, nullptr, nullptr);
@@ -603,10 +651,10 @@ fstream::filebuf::seekoff(off_type off, seekdir way, std::ios_base::openmode) ->
     default:
         return static_cast<pos_type>(static_cast<off_type>(-1));
     }
-    if (::fseeko(fp, off, whence)) {
+    if (::fseeko(fp.get(), off, whence)) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
     }
-    pos_type r = ftello(fp);
+    pos_type r = ftello(fp.get());
     r.state(st_);
     return r;
 }
@@ -617,7 +665,7 @@ fstream::filebuf::seekpos(pos_type sp, std::ios_base::openmode) -> pos_type
     if (!fp || sync()) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
     }
-    if (::fseeko(fp, sp, SEEK_SET)) {
+    if (::fseeko(fp.get(), sp, SEEK_SET)) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
     }
     st_ = sp.state();
@@ -686,71 +734,25 @@ inline auto fstream::close() -> void
     }
 }
 
-inline auto fstream::open(FILE *fp, openmode mode) -> void
+inline auto fstream::open(const char* path, openmode mode) -> void
 {
-    if (!fb.open(fp, mode)) {
-        setstate(ios_base::failbit);
-    }
-    else {
+    if (fb.open(path, mode)) {
         clear();
     }
-}
-
-inline auto fstream::open(descriptor_id id, openmode mode) -> void
-{
-    if (const auto mode_cstr = to_fopen_mode(mode)) {
-        open(::fdopen(int(id), mode_cstr), mode);
-    }
     else {
         setstate(ios_base::failbit);
     }
 }
 
-inline auto fstream::open(const char* filename, openmode mode) -> void
+inline auto fstream::open(const std::string& path, openmode mode) -> void
 {
-    if (mode & tmpfile) {
-        mode &= (~tmpfile);
-#if defined(O_TMPFILE)
-        // TODO: translate mode to Linux/POSIX open(2) flags plus O_TMPFILE!
-        const auto fd = ::open(filename, O_TMPFILE, 0666);
-#else
-        static constexpr auto buffer_size = std::size_t{1024u};
-        static constexpr char six_x[] = "XXXXXX";
-        char buffer[buffer_size];
-        const auto len = std::strlen(filename);
-        const auto last_char = (len > 0u)? filename[len - 1u]: '\0';
-        const auto separator = (last_char != '/')? "/": "";
-        const auto separator_len = std::strlen(separator);
-        const auto total_len = len + separator_len + std::size(six_x);
-        if (total_len >= buffer_size) {
-            setstate(ios_base::failbit);
-            return;
-        }
-        // Replace the following with the more readable std::format_to_n when available
-        std::copy_n(std::data(six_x), std::size(six_x),
-                    std::copy_n(separator, separator_len,
-                                std::copy_n(filename, len, std::data(buffer))));
-        const auto fd = ::mkstemp(std::data(buffer));
-#endif
-        open(descriptor_id(fd), mode);
-    }
-    else if (const auto mode_cstr = to_fopen_mode(mode)) {
-        open(::fopen(filename, mode_cstr), mode); // NOLINT(cppcoreguidelines-owning-memory)
-    }
-    else {
-        setstate(ios_base::failbit);
-    }
+    open(path.c_str(), mode);
 }
 
-inline auto fstream::open(const std::string& filename, openmode mode) -> void
-{
-    open(filename.c_str(), mode);
-}
-
-inline auto fstream::open(const std::filesystem::path& filename,
+inline auto fstream::open(const std::filesystem::path& path,
                           openmode mode) -> void
 {
-    open(filename.c_str(), mode);
+    open(path.c_str(), mode);
 }
 
 }

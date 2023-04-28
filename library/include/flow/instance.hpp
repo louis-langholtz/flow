@@ -15,7 +15,7 @@ namespace flow {
 
 struct instance {
     process_id id{invalid_process_id};
-    fstream diags;
+    ext::fstream diags;
     std::map<prototype_name, instance> children;
     std::vector<channel> channels;
 };

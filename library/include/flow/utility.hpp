@@ -23,7 +23,7 @@ struct prototype_name;
 struct executable_prototype;
 struct system_prototype;
 
-auto temporary_fstream() -> fstream;
+auto temporary_fstream() -> ext::fstream;
 
 /// @note This is NOT an "async-signal-safe" function. So, it's not suitable for forked child to call.
 /// @see https://man7.org/linux/man-pages/man7/signal-safety.7.html
