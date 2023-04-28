@@ -1,7 +1,8 @@
 #include <sstream>
 #include <system_error>
 
-#include "flow/system_error_code.hpp"
+#include "system_error_code.hpp"
+
 #include "flow/utility.hpp"
 
 namespace flow {

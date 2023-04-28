@@ -6,6 +6,8 @@
 
 namespace flow {
 
+/// @brief System error code.
+/// @note This is an internal library type not intended for direct use by library users.
 enum class system_error_code: int;
 
 auto operator<<(std::ostream& os, system_error_code err)
