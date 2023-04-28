@@ -65,7 +65,6 @@ using channel = variant<pipe_channel, file_channel>;
 
 std::ostream& operator<<(std::ostream& os, const file_channel& value);
 std::ostream& operator<<(std::ostream& os, const pipe_channel& value);
-std::ostream& operator<<(std::ostream& os, const channel& value);
 
 }
 
