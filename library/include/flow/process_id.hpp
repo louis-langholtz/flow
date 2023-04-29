@@ -7,9 +7,12 @@
 
 namespace flow {
 
+/// @brief Process ID strong type wrapping a POSIX process ID.
 enum class process_id: std::int32_t;
 
 constexpr auto invalid_process_id = process_id{static_cast<std::underlying_type_t<process_id>>(-1)};
+
+constexpr auto no_process_id = process_id{static_cast<std::underlying_type_t<process_id>>(0)};
 
 std::ostream& operator<<(std::ostream& os, process_id value);
 
