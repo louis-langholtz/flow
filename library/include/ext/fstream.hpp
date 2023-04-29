@@ -15,6 +15,9 @@
 #include <filesystem>
 #include <utility> // for std::move
 
+#include <fcntl.h> // for O_CLOEXEC
+#include <unistd.h>
+
 namespace ext {
 
 /// @brief File based I/O stream class for POSIX systems.
@@ -33,21 +36,25 @@ struct fstream: public std::iostream {
     /// @brief Open mode.
     using openmode = std::uint32_t;
 
-    static constexpr auto app       = openmode{0x01};
-    static constexpr auto binary    = openmode{0x02};
-    static constexpr auto in        = openmode{0x04};
-    static constexpr auto out       = openmode{0x08};
-    static constexpr auto trunc     = openmode{0x10};
-    static constexpr auto ate       = openmode{0x20};
+    static constexpr auto app       = openmode{0x001};
+    static constexpr auto binary    = openmode{0x002};
+    static constexpr auto in        = openmode{0x004};
+    static constexpr auto out       = openmode{0x008};
+    static constexpr auto trunc     = openmode{0x010};
+    static constexpr auto ate       = openmode{0x020};
 
     /// @brief No-replace - provides exclusive file creation.
     /// @note Support C++23's <code>noreplace</code> open mode.
     /// @see https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2467r1.html
-    static constexpr auto noreplace = openmode{0x40};
+    static constexpr auto noreplace = openmode{0x040};
 
     /// @brief Temporary file.
     /// @note This is potentially a proposed new openmode by me!
-    static constexpr auto tmpfile = openmode{0x80};
+    static constexpr auto tmpfile = openmode{0x080};
+
+    /// @brief Close on exec.
+    /// @note This is potentially a proposed new openmode by me!
+    static constexpr auto cloexec = openmode{0x100};
 
     static constexpr auto to_fopen_mode(openmode value) -> const char*;
 
@@ -387,7 +394,7 @@ inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
     if (fp) {
         return nullptr;
     }
-    const auto mode_cstr = to_fopen_mode(mode & ~(tmpfile));
+    const auto mode_cstr = to_fopen_mode(mode & ~(tmpfile|cloexec));
     if (!mode_cstr) {
         return nullptr;
     }
@@ -395,7 +402,10 @@ inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
     if (mode & tmpfile) {
 #if defined(O_TMPFILE)
         // TODO: translate mode to Linux/POSIX open(2) flags plus O_TMPFILE!
-        const auto fd = ::open(path, O_TMPFILE, 0666);
+        auto oflags = 0;
+        oflags |= O_TMPFILE;
+        const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                               path, oflags, 0666);
 #else
         static constexpr auto buffer_size = std::size_t{1024u};
         static constexpr char six_x[] = "XXXXXX";
@@ -414,13 +424,24 @@ inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
                                 std::copy_n(path, len, std::data(buffer))));
         const auto fd = ::mkstemp(std::data(buffer));
 #endif
+        if (fd == -1) {
+            return nullptr;
+        }
         new_fp = std::unique_ptr<FILE, fcloser>{::fdopen(fd, mode_cstr)};
+        if (!new_fp) {
+            ::close(fd);
+            return nullptr;
+        }
     }
     else {
         new_fp = std::unique_ptr<FILE, fcloser>{::fopen(path, mode_cstr)};
     }
     if (!new_fp) {
         return nullptr;
+    }
+    if (mode & cloexec) {
+        ::fcntl( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                fileno(new_fp.get()), F_SETFD, FD_CLOEXEC);
     }
     if ((mode & ate) && (::fseek(new_fp.get(), 0, SEEK_END) != 0)) {
         return nullptr;
