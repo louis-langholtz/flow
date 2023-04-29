@@ -1,6 +1,6 @@
 #include <cstring> // for std::strcmp
 
-#include <unistd.h> // for getpid
+#include <unistd.h> // for getpid, setpgid
 #include <fcntl.h> // for ::open
 
 #include "system_error_code.hpp"
@@ -39,34 +39,34 @@ auto make_substitutions(std::vector<char*>& argv)
 auto setup(const prototype_name& name,
            const pipe_connection& c,
            pipe_channel& p,
-           std::ostream& errs) -> void
+           std::ostream& diags) -> void
 {
     if ((c.in.address != name) && (c.out.address != name)) {
-        errs << name << " (unaffiliation) " << c;
-        errs << " " << p << ", close in & out setup\n";
-        const auto closed_in = p.close(io_type::in, errs);
-        const auto closed_out = p.close(io_type::out, errs);
+        diags << name << " (unaffiliation) " << c;
+        diags << " " << p << ", close in & out setup\n";
+        const auto closed_in = p.close(io_type::in, diags);
+        const auto closed_out = p.close(io_type::out, diags);
         if (!closed_in || !closed_out) {
-            errs << ", for " << name << "\n";
+            diags << ", for " << name << "\n";
             ::_exit(1);
         }
         return;
     }
     if (c.in.address == name) {
-        errs << name << " " << c << " " << p;
-        errs << ", close in, dup out to " << c.in.descriptor << " setup\n";
-        if (!p.close(io_type::in, errs) || // close unused read end
-            !p.dup(io_type::out, c.in.descriptor, errs)) {
-            errs << ", for " << name << "\n";
+        diags << name << " " << c << " " << p;
+        diags << ", close in, dup out to " << c.in.descriptor << " setup\n";
+        if (!p.close(io_type::in, diags) || // close unused read end
+            !p.dup(io_type::out, c.in.descriptor, diags)) {
+            diags << ", for " << name << "\n";
             ::_exit(1);
         }
     }
     if (c.out.address == name) {
-        errs << name << " " << c << " " << p;
-        errs << ", close out, dup in to " << c.out.descriptor << " setup\n";
-        if (!p.close(io_type::out, errs) || // close unused write end
-            !p.dup(io_type::in, c.out.descriptor, errs)) {
-            errs << ", for " << name << "\n";
+        diags << name << " " << c << " " << p;
+        diags << ", close out, dup in to " << c.out.descriptor << " setup\n";
+        if (!p.close(io_type::out, diags) || // close unused write end
+            !p.dup(io_type::in, c.out.descriptor, diags)) {
+            diags << ", for " << name << "\n";
             ::_exit(1);
         }
     }
@@ -74,22 +74,22 @@ auto setup(const prototype_name& name,
 
 auto setup(const prototype_name& name,
            const file_connection& c,
-           std::ostream& errs) -> void
+           std::ostream& diags) -> void
 {
-    errs << name << " " << c << ", open & dup2\n";
+    diags << name << " " << c << ", open & dup2\n";
     const auto flags = to_open_flags(c.direction);
     const auto mode = 0600;
     const auto fd = ::open(c.file.path.c_str(), flags, mode); // NOLINT(cppcoreguidelines-pro-type-vararg)
     if (fd == -1) {
         static constexpr auto mode_width = 5;
-        errs << "open file " << c.file.path << " with mode ";
-        errs << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
-        errs << " failed: " << system_error_code(errno) << "\n";
+        diags << "open file " << c.file.path << " with mode ";
+        diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
+        diags << " failed: " << system_error_code(errno) << "\n";
         ::_exit(1);
     }
     if (::dup2(fd, int(c.process.descriptor)) == -1) {
-        errs << "dup2(" << fd << "," << c.process.descriptor << ") failed: ";
-        errs << system_error_code(errno) << "\n";
+        diags << "dup2(" << fd << "," << c.process.descriptor << ") failed: ";
+        diags << system_error_code(errno) << "\n";
         ::_exit(1);
     }
 }
@@ -101,7 +101,7 @@ auto instantiate(const prototype_name& name,
                  char * const envp[],
                  const std::vector<connection>& connections,
                  std::vector<channel>& channels,
-                 std::ostream& errs) -> void
+                 std::ostream& diags) -> void
 {
     // Deal with:
     // flow::pipe_connection{
@@ -114,11 +114,11 @@ auto instantiate(const prototype_name& name,
     for (const auto& connection: connections) {
         const auto index = static_cast<std::size_t>(&connection - connections.data());
         if (const auto c = std::get_if<pipe_connection>(&connection)) {
-            setup(name, *c, std::get<pipe_channel>(channels[index]), errs);
+            setup(name, *c, std::get<pipe_channel>(channels[index]), diags);
         }
         else if (const auto c = std::get_if<file_connection>(&connection)) {
             if (c->process.address == name) {
-                setup(name, *c, errs);
+                setup(name, *c, diags);
             }
         }
     }
@@ -126,21 +126,22 @@ auto instantiate(const prototype_name& name,
         auto ec = std::error_code{};
         std::filesystem::current_path(exe_proto.working_directory, ec);
         if (ec) {
-            errs << "chdir " << exe_proto.working_directory << " failed: ";
-            write(errs, ec);
-            errs << "\n";
+            diags << "chdir " << exe_proto.working_directory << " failed: ";
+            write(diags, ec);
+            diags << "\n";
         }
     }
-    errs.flush();
+    diags.flush();
     ::execve(exe_proto.executable_file.c_str(), argv, envp);
     const auto ec = system_error_code(errno);
-    errs << "execve of " << exe_proto.executable_file << "failed: " << ec << "\n";
-    errs.flush();
+    diags << "execve of " << exe_proto.executable_file << "failed: " << ec << "\n";
+    diags.flush();
     ::_exit(1);
 }
 
 auto instantiate(const prototype_name& name,
                  const executable_prototype& exe_proto,
+                 process_id pgrp,
                  const std::vector<connection>& connections,
                  std::vector<channel>& channels,
                  std::ostream& diags) -> instance
@@ -162,12 +163,18 @@ auto instantiate(const prototype_name& name,
         //  (see signal-safety(7)) until such time as it calls execve(2)."
         // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
         // for "functions required to be async-signal-safe by POSIX.1".
+        if (::setpgid(0, int(pgrp)) == -1) {
+            child_diags << "setpgid failed(0, " << int(pgrp) << "): ";
+            child_diags << system_error_code(errno);
+            child_diags << "\n";
+        }
         make_substitutions(argv);
         // NOTE: the following does not return!
         instantiate(name, exe_proto, argv.data(), envp.data(),
                     connections, channels, child_diags);
     }
     default: // case for the spawning/parent process
+        diags << "child " << name << " started as pid " << pid << "\n";
         break;
     }
     return instance{pid, std::move(child_diags)};
@@ -206,7 +213,7 @@ auto instantiate(const system_prototype& system, std::ostream& diags)
 -> instance
 {
     instance result;
-    result.id = process_id(0);
+    result.id = no_process_id;
     std::vector<channel> channels;
     for (auto&& connection: system.connections) {
         if (std::holds_alternative<pipe_connection>(connection)) {
@@ -220,9 +227,12 @@ auto instantiate(const system_prototype& system, std::ostream& diags)
         const auto& child = mapentry.first;
         const auto& proto = mapentry.second;
         if (const auto p = std::get_if<executable_prototype>(&proto)) {
-            result.children.emplace(child, instantiate(child, *p,
-                                                      system.connections,
-                                                      channels, diags));
+            auto kid = instantiate(child, *p, process_id(-int(result.id)),
+                                   system.connections, channels, diags);
+            if (kid.id != invalid_process_id && result.id == no_process_id) {
+                result.id = process_id(-int(kid.id));
+            }
+            result.children.emplace(child, std::move(kid));
         }
         else if (const auto p = std::get_if<system_prototype>(&proto)) {
             result.children.emplace(child, instantiate(*p, diags));

@@ -1,6 +1,7 @@
 #include <algorithm> // for std::find
 #include <cstddef> // for std::ptrdiff_t
 #include <cstdio> // for ::tmpfile, std::fclose
+#include <functional> // for std::ref
 #include <ios> // for std::boolalpha
 #include <iterator> // for std::distance
 #include <memory> // for std::unique_ptr
@@ -9,11 +10,13 @@
 #include <system_error> // for std::error_code
 
 #include <fcntl.h> // for ::open
+#include <signal.h> // for kill
 #include <stdlib.h> // for ::mkstemp, ::fork
-#include <unistd.h> // for ::close
 #include <sys/wait.h>
+#include <sys/time.h> // for setitimer
 #include <sys/types.h> // for mkfifo
 #include <sys/stat.h> // for mkfifo
+#include <unistd.h> // for ::close
 
 #include "system_error_code.hpp"
 #include "wait_result.hpp"
@@ -23,31 +26,40 @@
 #include "flow/instance.hpp"
 #include "flow/prototype.hpp"
 #include "flow/utility.hpp"
-#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
+#include "flow/variant.hpp" // for <variant>, flow::variant, ostream support
 
 namespace flow {
 
 namespace {
 
-auto find(std::map<prototype_name, instance>& instances,
-          process_id pid) -> std::map<prototype_name, instance>::value_type*
+auto find(const prototype_name& name, instance& object, process_id pid)
+    -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
 {
-    const auto it = std::find_if(std::begin(instances),
-                                 std::end(instances),
-                                 [pid](const auto& e) {
-        return e.second.id == pid;
-    });
-    return (it != std::end(instances)) ? &(*it): nullptr;
+    if (object.id == pid) {
+        return std::make_pair(name, std::ref(object));
+    }
+    for (auto&& entry: object.children) {
+        if (auto found = find(name + entry.first, entry.second, pid)) {
+            return found;
+        }
+    }
+    return {};
 }
 
 auto wait_for_child() -> wait_result
 {
     auto status = 0;
     auto pid = decltype(::wait(&status)){};
+    auto err = 0;
     do { // NOLINT(cppcoreguidelines-avoid-do-while)
+        //itimerval new_timer{};
+        //itimerval old_timer;
+        //setitimer(ITIMER_REAL, &new_timer, &old_timer);
         pid = ::wait(&status);
-    } while ((pid == -1) && (errno == EINTR));
-    if (pid == -1 && errno == ECHILD) {
+        err = errno;
+        //setitimer(ITIMER_REAL, &old_timer, nullptr);
+    } while ((pid == -1) && (err == EINTR));
+    if ((pid == -1) && (err == ECHILD)) {
         return wait_result::no_kids_t{};
     }
     if (pid == -1) {
@@ -72,18 +84,21 @@ auto wait_for_child() -> wait_result
     return wait_result::info_t{process_id{pid}};
 }
 
-auto handle(instance& instance, const wait_result& result,
-            std::ostream& err_stream, wait_diags diags) -> void
+auto handle(const prototype_name& name, instance& instance,
+            const wait_result& result, std::ostream& diags,
+            wait_mode mode) -> void
 {
     switch (result.type()) {
     case wait_result::no_children:
         break;
     case wait_result::has_error:
-        err_stream << "wait failed: " << result.error() << "\n";
+        diags << "wait failed: " << result.error() << "\n";
         break;
     case wait_result::has_info: {
-        const auto entry = find(instance.children, result.info().id);
-        switch (wait_result::info_t::status_enum(result.info().status.index())) {
+        static const auto unknown_name = prototype_name{"unknown"};
+        const auto entry = find(name, instance, result.info().id);
+        using status_enum = wait_result::info_t::status_enum;
+        switch (status_enum(result.info().status.index())) {
         case wait_result::info_t::unknown:
             break;
         case wait_result::info_t::exit: {
@@ -91,30 +106,36 @@ auto handle(instance& instance, const wait_result& result,
             if (entry) {
                 entry->second.id = process_id(0);
             }
-            if ((diags == wait_diags::yes) || (exit_status.value != 0)) {
-                err_stream << "child=" << (entry? entry->first.value: "unknown") << ", ";
-                err_stream << "pid=" << result.info().id;
-                err_stream << ", " << exit_status;
-                err_stream << "\n";
+            if ((mode == wait_mode::diagnostic) || (exit_status.value != 0)) {
+                diags << "child=" << (entry? entry->first: unknown_name);
+                diags << ", pid=" << result.info().id;
+                diags << ", " << exit_status;
+                diags << "\n";
             }
             break;
         }
         case wait_result::info_t::signaled: {
             const auto signaled_status = std::get<wait_signaled_status>(result.info().status);
-            err_stream << "child=" << (entry? entry->first.value: "unknown") << ", ";
-            err_stream << signaled_status;
+            diags << "child=" << (entry? entry->first: unknown_name);
+            diags << ", pid=" << result.info().id;
+            diags << ", " << signaled_status;
+            diags << "\n";
             break;
         }
         case wait_result::info_t::stopped: {
             const auto stopped_status = std::get<wait_stopped_status>(result.info().status);
-            err_stream << "child=" << (entry? entry->first.value: "unknown") << ", ";
-            err_stream << stopped_status;
+            diags << "child=" << (entry? entry->first: unknown_name);
+            diags << ", pid=" << result.info().id;
+            diags << ", " << stopped_status;
+            diags << "\n";
             break;
         }
         case wait_result::info_t::continued: {
             const auto continued_status = std::get<wait_continued_status>(result.info().status);
-            err_stream << "child=" << (entry? entry->first.value: "unknown") << ", ";
-            err_stream << continued_status;
+            diags << "child=" << (entry? entry->first: unknown_name);
+            diags << ", pid=" << result.info().id;
+            diags << ", " << continued_status;
+            diags << "\n";
             break;
         }
         }
@@ -154,6 +175,25 @@ auto show_diags(std::ostream& os, const prototype_name& name,
               std::ostream_iterator<char>(os));
 }
 
+auto to_posix_signal(signal sig) -> int
+{
+    switch (sig) {
+    case signal::interrupt:
+        return SIGINT;
+    case signal::terminate:
+        return SIGTERM;
+    case signal::kill:
+        return SIGKILL;
+    }
+    throw std::invalid_argument{"unknown signal"};
+}
+
+auto sigaction_cb(int sig, siginfo_t *info, void * /*ucontext*/) -> void
+{
+    const auto sender_pid = info? info->si_pid: -1;
+    std::cerr << "caught " << sig << ", from " << sender_pid << "\n";
+}
+
 }
 
 auto temporary_fstream() -> ext::fstream
@@ -165,7 +205,8 @@ auto temporary_fstream() -> ext::fstream
         ext::fstream::trunc|
         ext::fstream::binary|
         ext::fstream::noreplace|
-        ext::fstream::tmpfile;
+        ext::fstream::tmpfile|
+        ext::fstream::cloexec;
 
     ext::fstream stream;
     stream.open(std::filesystem::temp_directory_path(), mode);
@@ -228,7 +269,7 @@ auto write_diags(const prototype_name& name, instance& object,
         show_diags(os, name, object.diags);
     }
     for (auto&& map_entry: object.children) {
-        const auto full_name = name.value + "." + map_entry.first.value;
+        const auto full_name = name + map_entry.first;
         write_diags(prototype_name{full_name}, map_entry.second, os);
     }
 }
@@ -264,14 +305,62 @@ auto mkfifo(const file_port& file) -> void
     }
 }
 
-auto wait(instance& instance, std::ostream& err_stream, wait_diags diags) -> void
+auto wait(const prototype_name& name, instance& instance,
+          std::ostream& diags, wait_mode mode)
+    -> void
 {
-    if (diags == wait_diags::yes) {
-        err_stream << "wait called for " << std::size(instance.children) << " children\n";
+    if (mode == wait_mode::diagnostic) {
+        diags << "wait called for " << std::size(instance.children) << " children\n";
     }
     auto result = decltype(wait_for_child()){};
     while (bool(result = wait_for_child())) {
-        handle(instance, result, err_stream, diags);
+        handle(name, instance, result, diags, mode);
+    }
+}
+
+std::ostream& operator<<(std::ostream& os, signal s)
+{
+    switch (s) {
+    case signal::interrupt:
+        os << "sigint";
+        break;
+    case signal::terminate:
+        os << "sigterm";
+        break;
+    case signal::kill:
+        os << "sigkill";
+        break;
+    }
+    return os;
+}
+
+auto send_signal(signal sig,
+                 const prototype_name& name,
+                 const instance& instance,
+                 std::ostream& diags) -> void
+{
+    for (auto&& child: instance.children) {
+        send_signal(sig, name + child.first, child.second, diags);
+    }
+    if ((instance.id != invalid_process_id) && (instance.id != no_process_id)) {
+        diags << "sending " << sig << " to " << name << "\n";
+        if (::kill(int(instance.id), to_posix_signal(sig)) == -1) {
+            diags << "kill(" << instance.id;
+            diags << "," << to_posix_signal(sig);
+            diags << ") failed: " << system_error_code(errno);
+            diags << "\n";
+        }
+        return;
+    }
+}
+
+auto set_signal_handler(signal sig) -> void
+{
+    struct sigaction act{};
+    act.sa_sigaction = sigaction_cb;
+    act.sa_flags = SA_SIGINFO;
+    if (::sigaction(to_posix_signal(sig), &act, nullptr) == -1) {
+        throw std::system_error{errno, std::system_category()};
     }
 }
 

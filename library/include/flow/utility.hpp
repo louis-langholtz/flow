@@ -58,12 +58,27 @@ auto touch(const file_port& file) -> void;
 
 auto mkfifo(const file_port& file) -> void;
 
-enum class wait_diags {
-    none, yes,
+enum class wait_mode {
+    quiet, diagnostic,
 };
 
-auto wait(instance& instance, std::ostream& err_stream,
-          wait_diags diags = wait_diags::none) -> void;
+auto wait(const prototype_name& name, instance& instance,
+          std::ostream& diags, wait_mode mode = wait_mode::quiet) -> void;
+
+enum class signal {
+    interrupt,
+    terminate,
+    kill,
+};
+
+std::ostream& operator<<(std::ostream& os, signal s);
+
+auto send_signal(signal sig,
+                 const prototype_name& name,
+                 const instance& instance,
+                 std::ostream& diags) -> void;
+
+auto set_signal_handler(signal sig) -> void;
 
 }
 
