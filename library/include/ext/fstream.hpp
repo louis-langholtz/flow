@@ -423,6 +423,14 @@ inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
                     std::copy_n(separator, separator_len,
                                 std::copy_n(path, len, std::data(buffer))));
         const auto fd = ::mkstemp(std::data(buffer));
+        if (fd != -1) {
+            if (mode & noreplace) {
+                ::unlink(std::data(buffer));
+            }
+            else {
+                // TODO: save filepath to support linking
+            }
+        }
 #endif
         if (fd == -1) {
             return nullptr;
