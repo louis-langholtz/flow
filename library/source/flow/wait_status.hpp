@@ -1,6 +1,7 @@
 #ifndef wait_status_hpp
 #define wait_status_hpp
 
+#include <compare> // for std::strong_ordering
 #include <ostream>
 
 #include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support

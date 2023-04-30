@@ -37,60 +37,106 @@ auto make_substitutions(std::vector<char*>& argv)
 }
 
 auto setup(const prototype_name& name,
-           const pipe_connection& c,
+           const connection& c,
            pipe_channel& p,
            std::ostream& diags) -> void
 {
-    if ((c.in.address != name) && (c.out.address != name)) {
+    const auto ports = std::array<const prototype_port*, 2u>{
+        std::get_if<prototype_port>(&c.ports[0]),
+        std::get_if<prototype_port>(&c.ports[1])
+    };
+    if (!ports[0] || !ports[1]) {
+        return;
+    }
+    if ((ports[0]->address != name) && (ports[1]->address != name)) {
         diags << name << " (unaffiliation) " << c;
         diags << " " << p << ", close in & out setup\n";
-        const auto closed_in = p.close(io_type::in, diags);
-        const auto closed_out = p.close(io_type::out, diags);
+        const auto closed_in = p.close(pipe_channel::io::read, diags);
+        const auto closed_out = p.close(pipe_channel::io::write, diags);
         if (!closed_in || !closed_out) {
             diags << ", for " << name << "\n";
             ::_exit(1);
         }
         return;
     }
-    if (c.in.address == name) {
+    if (ports[0]->address == name) {
         diags << name << " " << c << " " << p;
-        diags << ", close in, dup out to " << c.in.descriptor << " setup\n";
-        if (!p.close(io_type::in, diags) || // close unused read end
-            !p.dup(io_type::out, c.in.descriptor, diags)) {
-            diags << ", for " << name << "\n";
+        diags << ", close read-side\n";
+        if (!p.close(pipe_channel::io::read, diags)) { // close unused end
+            ::_exit(1);
+        }
+        diags << name << " " << c << " " << p;
+        diags << ", dup write-side to " << ports[0]->descriptor << "\n";
+        if (!p.dup(pipe_channel::io::write, ports[0]->descriptor, diags)) {
             ::_exit(1);
         }
     }
-    if (c.out.address == name) {
+    if (ports[1]->address == name) {
         diags << name << " " << c << " " << p;
-        diags << ", close out, dup in to " << c.out.descriptor << " setup\n";
-        if (!p.close(io_type::out, diags) || // close unused write end
-            !p.dup(io_type::in, c.out.descriptor, diags)) {
-            diags << ", for " << name << "\n";
+        diags << ", close write-side\n";
+        if (!p.close(pipe_channel::io::write, diags)) { // close unused end
+            ::_exit(1);
+        }
+        diags << name << " " << c << " " << p;
+        diags << ", dup read-side to " << ports[1]->descriptor << "\n";
+        if (!p.dup(pipe_channel::io::read, ports[1]->descriptor, diags)) {
+            ::_exit(1);
+        }
+    }
+}
+
+auto to_open_flags(io_type direction) noexcept -> int
+{
+    switch (direction) {
+    case io_type::in: return O_RDONLY;
+    case io_type::out: return O_WRONLY;
+    case io_type::bidir: return O_RDWR;
+    }
+    return 0;
+}
+
+auto setup(const prototype_name& name,
+           const connection& c,
+           file_channel& p,
+           std::ostream& diags) -> void
+{
+    diags << name << " " << c << ", open & dup2\n";
+    const auto file_ports = std::array<const file_port *, 2u>{
+        std::get_if<file_port>(&c.ports[0]),
+        std::get_if<file_port>(&c.ports[1])
+    };
+    const auto& file_port = file_ports[0]? file_ports[0]: file_ports[1];
+    const auto& other_port = file_ports[0]? c.ports[1]: c.ports[0];
+    if (const auto op = std::get_if<prototype_port>(&other_port)) {
+        const auto flags = to_open_flags(p.io);
+        const auto mode = 0600;
+        const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                               file_port->path.c_str(), flags, mode);
+        if (fd == -1) {
+            static constexpr auto mode_width = 5;
+            diags << "open file " << file_port->path << " with mode ";
+            diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
+            diags << " failed: " << system_error_code(errno) << "\n";
+            ::_exit(1);
+        }
+        if (::dup2(fd, int(op->descriptor)) == -1) {
+            diags << "dup2(" << fd << "," << op->descriptor << ") failed: ";
+            diags << system_error_code(errno) << "\n";
             ::_exit(1);
         }
     }
 }
 
 auto setup(const prototype_name& name,
-           const file_connection& c,
+           const connection& c,
+           channel& channel,
            std::ostream& diags) -> void
 {
-    diags << name << " " << c << ", open & dup2\n";
-    const auto flags = to_open_flags(c.direction);
-    const auto mode = 0600;
-    const auto fd = ::open(c.file.path.c_str(), flags, mode); // NOLINT(cppcoreguidelines-pro-type-vararg)
-    if (fd == -1) {
-        static constexpr auto mode_width = 5;
-        diags << "open file " << c.file.path << " with mode ";
-        diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
-        diags << " failed: " << system_error_code(errno) << "\n";
-        ::_exit(1);
+    if (const auto p = std::get_if<pipe_channel>(&channel)) {
+        return setup(name, c, *p, diags);
     }
-    if (::dup2(fd, int(c.process.descriptor)) == -1) {
-        diags << "dup2(" << fd << "," << c.process.descriptor << ") failed: ";
-        diags << system_error_code(errno) << "\n";
-        ::_exit(1);
+    if (const auto p = std::get_if<file_channel>(&channel)) {
+        return setup(name, c, *p, diags);
     }
 }
 
@@ -112,15 +158,8 @@ auto instantiate(const prototype_name& name,
     // Close file descriptors inherited by child that it's not using.
     // See: https://stackoverflow.com/a/7976880/7410358
     for (const auto& connection: connections) {
-        const auto index = static_cast<std::size_t>(&connection - connections.data());
-        if (const auto c = std::get_if<pipe_connection>(&connection)) {
-            setup(name, *c, std::get<pipe_channel>(channels[index]), diags);
-        }
-        else if (const auto c = std::get_if<file_connection>(&connection)) {
-            if (c->process.address == name) {
-                setup(name, *c, diags);
-            }
-        }
+        const auto i = static_cast<std::size_t>(&connection - connections.data());
+        setup(name, connection, channels[i], diags);
     }
     if (!exe_proto.working_directory.empty()) {
         auto ec = std::error_code{};
@@ -215,12 +254,52 @@ auto instantiate(const system_prototype& system, std::ostream& diags)
     instance result;
     result.id = no_process_id;
     std::vector<channel> channels;
+    std::vector<std::array<io_type, 2u>> io_types;
     for (auto&& connection: system.connections) {
-        if (std::holds_alternative<pipe_connection>(connection)) {
-            channels.push_back(pipe_channel{});
+        auto ports_io = std::array<io_type, 2u>{};
+        auto have_file_port = false;
+        for (auto&& port: connection.ports) {
+            const auto i = &port - connection.ports.data();
+            if (const auto p = std::get_if<prototype_port>(&port)) {
+                if (p->address == prototype_name{}) {
+                    const auto& d_info = system.descriptors.at(p->descriptor);
+                    ports_io[i] = reverse(d_info.direction);
+                    continue;
+                }
+                const auto& child = system.prototypes.at(p->address);
+                if (const auto cp = std::get_if<system_prototype>(&child)) {
+                    const auto& d_info = cp->descriptors.at(p->descriptor);
+                    ports_io[i] = d_info.direction;
+                    continue;
+                }
+                if (const auto cp = std::get_if<executable_prototype>(&child)) {
+                    const auto& d_info = cp->descriptors.at(p->descriptor);
+                    ports_io[i] = d_info.direction;
+                    continue;
+                }
+                throw std::logic_error{"unknown proto type"};
+            }
+            if (const auto p = std::get_if<file_port>(&port)) {
+                if (have_file_port) {
+                    throw std::invalid_argument{"cant't connect file to file"};
+                }
+                have_file_port = true;
+                ports_io[i] = io_type::bidir;
+                continue;
+            }
+            throw std::logic_error{"unknown port type"};
         }
-        else if (std::holds_alternative<file_connection>(connection)) {
-            channels.push_back(file_channel{}); // NOLINT(modernize-use-emplace)
+        if (ports_io[0] == ports_io[1]) {
+            throw std::invalid_argument{"bad connection: same io unsupported"};
+        }
+        io_types.push_back(ports_io);
+        if (have_file_port) {
+            const auto io = (ports_io[0] != io_type::bidir)
+                ? ports_io[0]: ports_io[1];
+            channels.push_back(file_channel{io});
+        }
+        else {
+            channels.push_back(pipe_channel{});
         }
     }
     for (auto&& mapentry: system.prototypes) {
@@ -242,17 +321,29 @@ auto instantiate(const system_prototype& system, std::ostream& diags)
             result.children.emplace(child, instance{});
         }
     }
-    for (const auto& connection: system.connections) {
-        const auto index = static_cast<std::size_t>(&connection - &(*system.connections.begin()));
-        if (const auto c = std::get_if<pipe_connection>(&connection)) {
-            auto& p = std::get<pipe_channel>(channels[index]);
-            if (c->in.address != prototype_name{}) {
-                diags << "parent: close out of " << *c << " " << p << "\n";
-                p.close(io_type::out, diags);
+    // Only now, **after fork calls**, close parent side pipe_channels...
+    for (auto&& channel: channels) {
+        const auto i = &channel - channels.data();
+        const auto& io_pair = io_types[i];
+        const auto& connection = system.connections[i];
+        if (const auto p = std::get_if<pipe_channel>(&channel)) {
+            const auto ports = std::array<const prototype_port*, 2u>{
+                std::get_if<prototype_port>(&connection.ports[0]),
+                std::get_if<prototype_port>(&connection.ports[1])
+            };
+            const auto a_to_b = (io_pair[0] == io_type::out)
+                             || (io_pair[1] == io_type::in);
+            if (ports[0]->address != prototype_name{}) {
+                const auto pio = a_to_b? pipe_channel::io::write: pipe_channel::io::read;
+                diags << "parent: closing " << pio << " side of ";
+                diags << connection << " " << *p << "\n";
+                p->close(pio, diags);
             }
-            if (c->out.address != prototype_name{}) {
-                diags << "parent: close  in of " << *c << " " << p << "\n";
-                p.close(io_type::in, diags);
+            if (ports[1]->address != prototype_name{}) {
+                const auto pio = a_to_b? pipe_channel::io::read: pipe_channel::io::write;
+                diags << "parent: closing " << pio << " side of ";
+                diags << connection << " " << *p << "\n";
+                p->close(pio, diags);
             }
         }
     }

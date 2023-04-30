@@ -11,11 +11,12 @@ namespace flow {
 struct prototype_port {
     prototype_name address;
 
-    ///@brief Well known descriptor ID for port.
+    ///@brief Well known descriptor ID of port for applicable prototypes.
     descriptor_id descriptor{invalid_descriptor_id};
 };
 
-constexpr auto operator==(const prototype_port& lhs, const prototype_port& rhs) -> bool
+constexpr auto operator==(const prototype_port& lhs, const prototype_port& rhs)
+    -> bool
 {
     return (lhs.address == rhs.address) && (lhs.descriptor == rhs.descriptor);
 }

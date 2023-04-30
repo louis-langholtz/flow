@@ -8,7 +8,6 @@
 #include "flow/descriptor_id.hpp"
 #include "flow/file_port.hpp"
 #include "flow/instance.hpp"
-#include "flow/io_type.hpp"
 #include "flow/process_id.hpp"
 #include "flow/prototype_name.hpp"
 #include "flow/prototype_port.hpp"
@@ -31,6 +30,8 @@ auto find_channel(const system_prototype& system, instance& instance,
 
 auto do_lsof_system() -> void
 {
+    std::cerr << "Doing lsof instance...\n";
+
     const auto lsof_process_name = prototype_name{"lsof"};
     system_prototype system;
     executable_prototype lsof_executable;
@@ -38,19 +39,25 @@ auto do_lsof_system() -> void
     lsof_executable.working_directory = "/usr/local";
     lsof_executable.arguments = {"lsof", "-p", "$$"};
     system.prototypes.emplace(lsof_process_name, lsof_executable);
-    const auto lsof_stdout = pipe_connection{
+    const auto lsof_stdout = connection{
         prototype_port{lsof_process_name, descriptor_id{1}},
-        prototype_port{},
+        prototype_port{prototype_name{}, descriptor_id{1}},
     };
-    const auto lsof_stderr = pipe_connection{
+    const auto lsof_stderr = connection{
         prototype_port{lsof_process_name, descriptor_id{2}},
-        prototype_port{},
+        prototype_port{prototype_name{}, descriptor_id{2}},
     };
     system.connections.push_back(lsof_stdout);
     system.connections.push_back(lsof_stderr);
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system, diags);
+        std::cerr << "Diagnostics for parent of lsof...\n";
+        diags.seekg(0);
+        std::copy(std::istreambuf_iterator<char>(diags),
+                  std::istreambuf_iterator<char>(),
+                  std::ostream_iterator<char>(std::cerr));
+
         wait(prototype_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto pipe = find_channel<pipe_channel>(system, object, lsof_stdout)) {
             for (;;) {
@@ -67,17 +74,14 @@ auto do_lsof_system() -> void
                 }
             }
         }
-        std::cerr << "Diagnostics for parent of lsof...\n";
-        diags.seekg(0);
-        std::copy(std::istreambuf_iterator<char>(diags),
-                  std::istreambuf_iterator<char>(),
-                  std::ostream_iterator<char>(std::cerr));
         write_diags(prototype_name{}, object, std::cerr);
     }
 }
 
 auto do_ls_system() -> void
 {
+    std::cerr << "Doing ls instance...\n";
+
     const auto input_file_port = file_port{"flow.in"};
 
     const auto output_file_port = file_port{"flow.out"};
@@ -98,39 +102,37 @@ auto do_ls_system() -> void
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
     system.prototypes.emplace(xargs_process_name, xargs_executable);
 
-    const auto cat_stdin = pipe_connection{
-        prototype_port{},
+    const auto cat_stdin = connection{
+        prototype_port{prototype_name{}, descriptor_id{0}},
         prototype_port{cat_process_name, descriptor_id{0}}
     };
     system.connections.push_back(cat_stdin);
-    system.connections.push_back(pipe_connection{
+    system.connections.push_back(connection{
         prototype_port{cat_process_name, descriptor_id{1}},
         prototype_port{xargs_process_name, descriptor_id{0}},
     });
-    const auto xargs_stdout = pipe_connection{
+    const auto xargs_stdout = connection{
         prototype_port{xargs_process_name, descriptor_id{1}},
-        prototype_port{},
+        prototype_port{prototype_name{}, descriptor_id{1}},
     };
     system.connections.push_back(xargs_stdout);
-    const auto xargs_stderr = pipe_connection{
+    const auto xargs_stderr = connection{
         prototype_port{xargs_process_name, descriptor_id{2}},
-        prototype_port{},
+        prototype_port{prototype_name{}, descriptor_id{2}},
     };
     system.connections.push_back(xargs_stderr);
-#if 0
-    system.connections.push_back(file_connection{
-        output_file_port,
-        io_type::out,
-        prototype_port{cat_process_name, descriptor_id{1}}
-    });
-#endif
 
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system, diags);
+        std::cerr << "Diagnostics for root instance...\n";
+        diags.seekg(0);
+        std::copy(std::istreambuf_iterator<char>(diags),
+                  std::istreambuf_iterator<char>(),
+                  std::ostream_iterator<char>(std::cerr));
         if (const auto pipe = find_channel<pipe_channel>(system, object, cat_stdin)) {
             pipe->write("/bin\n/sbin", std::cerr);
-            pipe->close(io_type::out, std::cerr);
+            pipe->close(pipe_channel::io::write, std::cerr);
         }
         wait(prototype_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto pipe = find_channel<pipe_channel>(system, object, xargs_stderr)) {
@@ -158,11 +160,6 @@ auto do_ls_system() -> void
                 }
             }
         }
-        std::cerr << "Diagnostics for root instance...\n";
-        diags.seekg(0);
-        std::copy(std::istreambuf_iterator<char>(diags),
-                  std::istreambuf_iterator<char>(),
-                  std::ostream_iterator<char>(std::cerr));
 
         write_diags(prototype_name{}, object, std::cerr);
         std::cerr << "system ran: ";
@@ -184,7 +181,7 @@ auto do_nested_system() -> void
     executable_prototype cat_executable;
     cat_executable.executable_file = "/bin/cat";
     cat_system.prototypes.emplace(cat_process_name, cat_executable);
-    const auto cat_system_stdout = pipe_connection{
+    const auto cat_system_stdout = connection{
         prototype_port{cat_process_name, descriptor_id{1}},
         prototype_port{prototype_name{}, descriptor_id{1}},
     };
@@ -199,7 +196,7 @@ auto do_nested_system() -> void
     system_prototype system;
     system.prototypes.emplace(cat_system_name, cat_system);
     system.prototypes.emplace(xargs_system_name, xargs_system);
-    system.connections.push_back(pipe_connection{
+    system.connections.push_back(connection{
         prototype_port{cat_system_name, descriptor_id{1}},
         prototype_port{xargs_system_name, descriptor_id{0}},
     });

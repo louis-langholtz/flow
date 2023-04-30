@@ -40,11 +40,11 @@ pipe_channel& pipe_channel::operator=(pipe_channel&& other) noexcept
     return *this;
 }
 
-bool pipe_channel::close(io_type direction, std::ostream& errs) noexcept
+bool pipe_channel::close(io side, std::ostream& errs) noexcept
 {
-    auto& d = descriptors[int(direction)];
+    auto& d = descriptors[int(side)];
     if (::close(d) == -1) {
-        errs << "close(" << direction << "," << d << ") failed: ";
+        errs << "close(" << side << "," << d << ") failed: ";
         errs << system_error_code(errno) << "\n";
         return false;
     }
@@ -52,13 +52,13 @@ bool pipe_channel::close(io_type direction, std::ostream& errs) noexcept
     return true;
 }
 
-bool pipe_channel::dup(io_type direction, descriptor_id newfd,
+bool pipe_channel::dup(io side, descriptor_id newfd,
                        std::ostream& errs) noexcept
 {
     const auto new_d = int(newfd);
-    auto& d = descriptors[int(direction)];
+    auto& d = descriptors[int(side)];
     if (dup2(d, new_d) == -1) {
-        errs << "dup2(" << direction << ":" << d << "," << new_d << ") failed: ";
+        errs << "dup2(" << side << ":" << d << "," << new_d << ") failed: ";
         errs << system_error_code(errno) << "\n";
         return false;
     }
@@ -92,6 +92,13 @@ bool pipe_channel::write(const std::span<const char>& buffer,
 std::ostream& operator<<(std::ostream& os, const file_channel&)
 {
     os << "file_channel{}";
+    return os;
+}
+
+auto operator<<(std::ostream& os, pipe_channel::io value)
+    -> std::ostream&
+{
+    os << ((value == pipe_channel::io::read) ? "read": "write");
     return os;
 }
 

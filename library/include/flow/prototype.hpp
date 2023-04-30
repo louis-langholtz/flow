@@ -10,7 +10,7 @@
 #include "flow/connection.hpp"
 #include "flow/io_type.hpp"
 #include "flow/prototype_name.hpp"
-#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
+#include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
 
@@ -30,13 +30,16 @@ inline const auto standard_descriptors = descriptor_container{
 struct system_prototype;
 struct executable_prototype;
 
-using prototype = variant<executable_prototype, system_prototype>;
+using prototype = variant<
+    system_prototype,
+    executable_prototype
+>;
 
 using argument_container = std::vector<std::string>;
 using environment_container = std::map<std::string, std::string>;
 
 struct executable_prototype {
-    descriptor_container descriptors;
+    descriptor_container descriptors{standard_descriptors};
     std::filesystem::path executable_file;
     argument_container arguments;
     std::filesystem::path working_directory;
@@ -44,7 +47,7 @@ struct executable_prototype {
 };
 
 struct system_prototype {
-    descriptor_container descriptors;
+    descriptor_container descriptors{standard_descriptors};
     std::map<prototype_name, prototype> prototypes;
     std::vector<connection> connections;
 };
