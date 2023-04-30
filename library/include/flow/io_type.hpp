@@ -5,18 +5,28 @@
 
 namespace flow {
 
-enum class io_type: int { in = 0, out = 1};
+enum class io_type: unsigned {
+    in = 0x01u, out = 0x02u, bidir = 0x03u};
 
-constexpr auto to_cstring(io_type direction) -> const char*
+constexpr auto reverse(io_type io) noexcept -> io_type
 {
-    switch (direction) {
-    case io_type::in: return "in";
-    case io_type::out: return "out";
+    switch (io) {
+    case io_type::in: return io_type::out;
+    case io_type::out: return io_type::in;
+    case io_type::bidir: return io_type::bidir;
     }
-    return "";
+    return io;
 }
 
-int to_open_flags(io_type direction);
+constexpr auto to_cstring(io_type io) -> const char*
+{
+    switch (io) {
+    case io_type::in: return "read";
+    case io_type::out: return "write";
+    case io_type::bidir: return "read+write";
+    }
+    return "unknown";
+}
 
 std::ostream& operator<<(std::ostream& os, io_type value);
 

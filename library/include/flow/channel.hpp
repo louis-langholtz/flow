@@ -17,6 +17,7 @@ namespace flow {
 /// @note Instances of this type are made for <code>file_connection</code> instances.
 /// @see file_connection.
 struct file_channel {
+    io_type io{};
 };
 
 /// @brief POSIX pipe.
@@ -24,6 +25,9 @@ struct file_channel {
 /// @note Instances of this type are made for <code>pipe_connection</code> instances.
 /// @see pipe_connection.
 struct pipe_channel {
+
+    enum class io: unsigned {read = 0u, write = 1u};
+
     /// @note This function is NOT thread safe in error cases.
     /// @throws std::runtime_error if the underlying OS call fails.
     pipe_channel();
@@ -39,10 +43,10 @@ struct pipe_channel {
     pipe_channel& operator=(const pipe_channel& other) = delete;
 
     /// @note This function is NOT thread safe in error cases.
-    bool close(io_type direction, std::ostream& errs) noexcept;
+    bool close(io side, std::ostream& errs) noexcept;
 
     /// @note This function is NOT thread safe in error cases.
-    bool dup(io_type direction, descriptor_id newfd,
+    bool dup(io side, descriptor_id newfd,
              std::ostream& errs) noexcept;
 
     std::size_t read(const std::span<char>& buffer,
@@ -55,6 +59,7 @@ struct pipe_channel {
                                     const pipe_channel& value);
 
 private:
+    /// @brief First element is read side of pipe, second is write side.
     std::array<int, 2> descriptors{-1, -1};
 };
 
@@ -63,8 +68,12 @@ static_assert(std::is_nothrow_move_assignable_v<pipe_channel>);
 
 using channel = variant<pipe_channel, file_channel>;
 
-std::ostream& operator<<(std::ostream& os, const file_channel& value);
-std::ostream& operator<<(std::ostream& os, const pipe_channel& value);
+auto operator<<(std::ostream& os, const file_channel& value) -> std::ostream&;
+
+auto operator<<(std::ostream& os, pipe_channel::io value)
+    -> std::ostream&;
+
+auto operator<<(std::ostream& os, const pipe_channel& value) -> std::ostream&;
 
 }
 
