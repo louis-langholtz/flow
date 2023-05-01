@@ -11,19 +11,22 @@ struct prototype_name {
     std::string value;
 };
 
-constexpr auto operator==(const prototype_name& lhs, const prototype_name& rhs) noexcept
+constexpr auto operator==(const prototype_name& lhs,
+                          const prototype_name& rhs) noexcept
 {
     return lhs.value == rhs.value;
 }
 
-constexpr auto operator<(const prototype_name& lhs, const prototype_name& rhs) noexcept
+constexpr auto operator<(const prototype_name& lhs,
+                         const prototype_name& rhs) noexcept
 {
     return lhs.value < rhs.value;
 }
 
-std::ostream& operator<<(std::ostream& os, const prototype_name& name);
+auto operator<<(std::ostream& os, const prototype_name& name) -> std::ostream&;
 
-prototype_name operator+(const prototype_name& lhs, const prototype_name& rhs);
+auto operator+(const prototype_name& lhs, const prototype_name& rhs)
+    -> prototype_name;
 
 }
 

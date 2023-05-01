@@ -2,7 +2,7 @@
 
 namespace flow {
 
-std::ostream& operator<<(std::ostream& os, const prototype_port& value)
+auto operator<<(std::ostream& os, const prototype_port& value) -> std::ostream&
 {
     os << "prototype_port{";
     os << value.address;

@@ -11,8 +11,9 @@
 namespace flow {
 
 /// @brief Descriptor stream buffer.
-/// @note Some of this class's implementation derives from Nicolai M. Josuttis handling for
-///   <code>boost::fdinbuf</code> and <code>boost::fdoutbuf</code>.
+/// @note Some of this class's implementation derives from Nicolai M.
+///   Josuttis handling for <code>boost::fdinbuf</code> and
+///   <code>boost::fdoutbuf</code>.
 /// @see http://www.josuttis.com/cppcode/fdstream.hpp.
 struct descriptor_streambuf: public std::streambuf {
 public:
@@ -29,9 +30,10 @@ public:
     }
 
 protected:
-    int_type underflow() override;
-    int_type overflow(int_type c = traits_type::eof()) override;
-    std::streamsize xsputn(const char_type* s, std::streamsize n) override;
+    auto underflow() -> int_type override;
+    auto overflow(int_type c = traits_type::eof()) -> int_type override;
+    auto xsputn(const char_type* s, std::streamsize n)
+        -> std::streamsize override;
     // TODO: override sync()
 
 private:

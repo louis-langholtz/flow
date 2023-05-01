@@ -274,12 +274,26 @@ auto write_diags(const prototype_name& name, instance& object,
     }
 }
 
-auto find_channel_index(const std::span<const connection>& connections,
+auto find_index(const std::span<const connection>& connections,
                 const connection& look_for) -> std::optional<std::size_t>
 {
     const auto first = std::begin(connections);
     const auto last = std::end(connections);
     const auto iter = std::find(first, last, look_for);
+    if (iter != last) {
+        return {std::distance(first, iter)};
+    }
+    return {};
+}
+
+auto find_index(const std::span<const connection>& connections,
+                const port& look_for) -> std::optional<std::size_t>
+{
+    const auto first = std::begin(connections);
+    const auto last = std::end(connections);
+    const auto iter = std::find_if(first, last, [&look_for](const auto& c){
+        return c.ports[0] == look_for || c.ports[1] == look_for;
+    });
     if (iter != last) {
         return {std::distance(first, iter)};
     }
@@ -310,7 +324,9 @@ auto wait(const prototype_name& name, instance& instance,
     -> void
 {
     if (mode == wait_mode::diagnostic) {
-        diags << "wait called for " << std::size(instance.children) << " children\n";
+        diags << "wait called for instance with total of ";
+        diags << total_descendants(instance) << " descendants, ";
+        diags << total_channels(instance) << " channels.\n";
     }
     auto result = decltype(wait_for_child()){};
     while (bool(result = wait_for_child())) {
@@ -318,7 +334,7 @@ auto wait(const prototype_name& name, instance& instance,
     }
 }
 
-std::ostream& operator<<(std::ostream& os, signal s)
+auto operator<<(std::ostream& os, signal s) -> std::ostream&
 {
     switch (s) {
     case signal::interrupt:

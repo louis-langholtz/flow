@@ -15,13 +15,14 @@ struct prototype_port {
     descriptor_id descriptor{invalid_descriptor_id};
 };
 
-constexpr auto operator==(const prototype_port& lhs, const prototype_port& rhs)
-    -> bool
+constexpr auto operator==(const prototype_port& lhs,
+                          const prototype_port& rhs) -> bool
 {
     return (lhs.address == rhs.address) && (lhs.descriptor == rhs.descriptor);
 }
 
-std::ostream& operator<<(std::ostream& os, const prototype_port& value);
+auto operator<<(std::ostream& os, const prototype_port& value)
+    -> std::ostream&;
 
 }
 
