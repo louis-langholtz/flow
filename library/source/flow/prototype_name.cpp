@@ -2,13 +2,14 @@
 
 namespace flow {
 
-std::ostream& operator<<(std::ostream& os, const prototype_name& name)
+auto operator<<(std::ostream& os, const prototype_name& name) -> std::ostream&
 {
     os << name.value;
     return os;
 }
 
-prototype_name operator+(const prototype_name& lhs, const prototype_name& rhs)
+auto operator+(const prototype_name& lhs, const prototype_name& rhs)
+    -> prototype_name
 {
     auto result = std::string{};
     result += lhs.value;

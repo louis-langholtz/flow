@@ -4,7 +4,7 @@
 
 namespace flow {
 
-std::ostream& operator<<(std::ostream& os, io_type value)
+auto operator<<(std::ostream& os, io_type value) -> std::ostream&
 {
     os << to_cstring(value);
     return os;

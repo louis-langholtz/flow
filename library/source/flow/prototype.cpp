@@ -2,7 +2,8 @@
 
 namespace flow {
 
-std::ostream& operator<<(std::ostream& os, const descriptor_container& value)
+auto operator<<(std::ostream& os, const descriptor_container& value)
+    -> std::ostream&
 {
     os << "{";
     for (auto&& entry: value) {
@@ -17,7 +18,8 @@ std::ostream& operator<<(std::ostream& os, const descriptor_container& value)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const executable_prototype& value)
+auto operator<<(std::ostream& os, const executable_prototype& value)
+    -> std::ostream&
 {
     os << "executable_prototype{";
     os << ".descriptors=" << value.descriptors;
@@ -28,7 +30,8 @@ std::ostream& operator<<(std::ostream& os, const executable_prototype& value)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const system_prototype& value)
+auto operator<<(std::ostream& os, const system_prototype& value)
+    -> std::ostream&
 {
     os << "system_prototype{";
     os << ".descriptors=" << value.descriptors;

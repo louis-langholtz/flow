@@ -2,7 +2,7 @@
 
 namespace flow {
 
-std::ostream& operator<<(std::ostream& os, const file_port& value)
+auto operator<<(std::ostream& os, const file_port& value) -> std::ostream&
 {
     os << value.path;
     return os;

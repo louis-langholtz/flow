@@ -52,9 +52,12 @@ struct system_prototype {
     std::vector<connection> connections;
 };
 
-std::ostream& operator<<(std::ostream& os, const descriptor_container& value);
-std::ostream& operator<<(std::ostream& os, const executable_prototype& value);
-std::ostream& operator<<(std::ostream& os, const system_prototype& value);
+auto operator<<(std::ostream& os, const descriptor_container& value)
+    -> std::ostream&;
+auto operator<<(std::ostream& os, const executable_prototype& value)
+    -> std::ostream&;
+auto operator<<(std::ostream& os, const system_prototype& value)
+    -> std::ostream&;
 
 }
 

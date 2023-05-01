@@ -34,13 +34,13 @@ pipe_channel::~pipe_channel() noexcept
     }
 }
 
-pipe_channel& pipe_channel::operator=(pipe_channel&& other) noexcept
+auto pipe_channel::operator=(pipe_channel&& other) noexcept -> pipe_channel&
 {
     descriptors = std::exchange(other.descriptors, {-1, -1});
     return *this;
 }
 
-bool pipe_channel::close(io side, std::ostream& errs) noexcept
+auto pipe_channel::close(io side, std::ostream& errs) noexcept -> bool
 {
     auto& d = descriptors[int(side)];
     if (::close(d) == -1) {
@@ -52,8 +52,8 @@ bool pipe_channel::close(io side, std::ostream& errs) noexcept
     return true;
 }
 
-bool pipe_channel::dup(io side, descriptor_id newfd,
-                       std::ostream& errs) noexcept
+auto pipe_channel::dup(io side, descriptor_id newfd,
+                       std::ostream& errs) noexcept -> bool
 {
     const auto new_d = int(newfd);
     auto& d = descriptors[int(side)];
@@ -66,8 +66,8 @@ bool pipe_channel::dup(io side, descriptor_id newfd,
     return true;
 }
 
-std::size_t pipe_channel::read(const std::span<char>& buffer,
-                               std::ostream& errs) const
+auto pipe_channel::read(const std::span<char>& buffer,
+                        std::ostream& errs) const -> std::size_t
 {
     const auto nread = ::read(descriptors[0], buffer.data(), buffer.size());
     if (nread == -1) {
@@ -78,8 +78,8 @@ std::size_t pipe_channel::read(const std::span<char>& buffer,
     return static_cast<std::size_t>(nread);
 }
 
-bool pipe_channel::write(const std::span<const char>& buffer,
-                         std::ostream& errs) const
+auto pipe_channel::write(const std::span<const char>& buffer,
+                         std::ostream& errs) const -> bool
 {
     if (::write(descriptors[1], buffer.data(), buffer.size()) == -1) {
         errs << "write(fd=" << descriptors[1] << ",siz=" << buffer.size() << ") failed: ";

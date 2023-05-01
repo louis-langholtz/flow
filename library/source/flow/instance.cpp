@@ -241,15 +241,35 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
                   const std::span<channel>& parent_channels)
     -> connection_result
 {
+    static const auto unequal_sizes_error =
+        "size of parent connections not equal size of parent channels";
+    static const auto no_file_file_error =
+        "cant't connect file to file";
+    static const auto same_iotypes_error =
+        "bad connection: same io unsupported";
+    static const auto same_ports_error =
+        "connection must have different ports";
+    static const auto not_closed_error =
+        "system must be closed";
+
+    if (conn.ports[0] == conn.ports[1]) {
+        throw std::invalid_argument{same_ports_error};
+    }
+    if (std::size(parent_connections) != std::size(parent_channels)) {
+        throw std::invalid_argument{unequal_sizes_error};
+    }
+
     auto ports_io = connection_io_types{};
     auto have_file_port = false;
-    auto enclosure_descriptor = invalid_descriptor_id;
+    auto enclosure_descriptors = std::array<descriptor_id, 2u>{
+        invalid_descriptor_id, invalid_descriptor_id
+    };
     for (auto&& port: conn.ports) {
         const auto i = &port - conn.ports.data();
         if (const auto p = std::get_if<prototype_port>(&port)) {
             if (p->address == prototype_name{}) {
                 const auto& d_info = system.descriptors.at(p->descriptor);
-                enclosure_descriptor = p->descriptor;
+                enclosure_descriptors[i] = p->descriptor;
                 ports_io[i] = reverse(d_info.direction);
                 continue;
             }
@@ -268,7 +288,7 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
         }
         if (const auto p = std::get_if<file_port>(&port)) {
             if (have_file_port) {
-                throw std::invalid_argument{"cant't connect file to file"};
+                throw std::invalid_argument{no_file_file_error};
             }
             have_file_port = true;
             ports_io[i] = io_type::bidir;
@@ -277,24 +297,20 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
         throw std::logic_error{"unknown port type"};
     }
     if (ports_io[0] == ports_io[1]) {
-        throw std::invalid_argument{"bad connection: same io unsupported"};
+        throw std::invalid_argument{same_iotypes_error};
     }
     if (have_file_port) {
         const auto io = (ports_io[0] != io_type::bidir)
             ? ports_io[0]: ports_io[1];
         return {ports_io, file_channel{io}};
     }
-    if (enclosure_descriptor != invalid_descriptor_id) {
-        for (auto&& c: parent_connections) {
-            const auto i = &c - parent_connections.data();
-            const auto ports = make_ports<prototype_port>(c);
-            for (auto&& port: ports) {
-                if (port &&
-                    port->address == name &&
-                    port->descriptor == enclosure_descriptor) {
-                    return {ports_io, reference_channel{&parent_channels[i]}};
-                }
+    for (auto&& descriptor_id: enclosure_descriptors) {
+        if (descriptor_id != invalid_descriptor_id) {
+            const auto look_for = prototype_port{name, descriptor_id};
+            if (const auto found = find_index(parent_connections, look_for)) {
+                return {ports_io, reference_channel{&parent_channels[*found]}};
             }
+            // throw std::invalid_argument{not_closed_error};
         }
     }
     return {ports_io, pipe_channel{}};
@@ -324,7 +340,7 @@ auto make_child(const prototype_name& name,
 
 }
 
-std::ostream& operator<<(std::ostream& os, const instance& value)
+auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 {
     os << "instance{";
     os << ".id=" << value.id;
@@ -351,11 +367,29 @@ std::ostream& operator<<(std::ostream& os, const instance& value)
     return os;
 }
 
+auto total_descendants(const instance& object) -> std::size_t
+{
+    auto result = std::size_t{0};
+    for (auto&& child: object.children) {
+        result += total_descendants(child.second) + 1u;
+    }
+    return result;
+}
+
+auto total_channels(const instance& object) -> std::size_t
+{
+    auto result = std::size(object.channels);
+    for (auto&& child: object.children) {
+        result += total_channels(child.second);
+    }
+    return result;
+}
+
 auto instantiate(const prototype_name& name, const system_prototype& system,
                  std::ostream& diags,
                  const std::span<const connection>& parent_connections,
                  const std::span<channel>& parent_channels)
--> instance
+    -> instance
 {
     instance result;
     result.id = no_process_id;
@@ -397,6 +431,14 @@ auto instantiate(const prototype_name& name, const system_prototype& system,
                 diags << connection << " " << *p << "\n";
                 p->close(pio, diags);
             }
+            continue;
+        }
+        if (const auto p = std::get_if<reference_channel>(&channel)) {
+            diags << "parent: channel[" << i << "] is reference";
+            if (p->other) {
+                diags << " to " << *(p->other);
+            }
+            diags << ".\n";
         }
     }
     result.channels = std::move(channels);

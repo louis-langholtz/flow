@@ -4,13 +4,9 @@
 #include <array>
 #include <ostream>
 
-#include "flow/file_port.hpp"
-#include "flow/prototype_port.hpp"
-#include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
+#include "flow/port.hpp"
 
 namespace flow {
-
-using port = variant<prototype_port, file_port>;
 
 struct connection {
     std::array<port, 2u> ports;

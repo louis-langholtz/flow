@@ -6,11 +6,9 @@
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
 #include "flow/descriptor_id.hpp"
-#include "flow/file_port.hpp"
 #include "flow/instance.hpp"
 #include "flow/process_id.hpp"
 #include "flow/prototype_name.hpp"
-#include "flow/prototype_port.hpp"
 #include "flow/prototype.hpp"
 #include "flow/utility.hpp"
 
@@ -24,7 +22,7 @@ template <class T>
 auto find_channel(const system_prototype& system, instance& instance,
                   const connection& look_for) -> T*
 {
-    const auto found = find_channel_index(system.connections, look_for);
+    const auto found = find_index(system.connections, look_for);
     return found? std::get_if<T>(&(instance.channels[*found])): nullptr;
 }
 
@@ -182,49 +180,55 @@ auto do_nested_system() -> void
     const auto xargs_system_name = prototype_name{"xargs-system"};
     const auto xargs_process_name = prototype_name{"xargs-process"};
 
-    system_prototype cat_system;
-    executable_prototype cat_executable;
-    cat_executable.executable_file = "/bin/cat";
-    cat_system.prototypes.emplace(cat_process_name, cat_executable);
-    cat_system.connections.push_back(connection{
-        prototype_port{prototype_name{}, descriptor_id{0}},
-        prototype_port{cat_process_name, descriptor_id{0}}
-    });
-    cat_system.connections.push_back(connection{
-        prototype_port{cat_process_name, descriptor_id{1}},
-        prototype_port{prototype_name{}, descriptor_id{1}},
-    });
+    system_prototype system;
 
-    system_prototype xargs_system;
-    executable_prototype xargs_executable;
-    xargs_executable.executable_file = "/usr/bin/xargs";
-    xargs_executable.arguments = {"xargs", "ls", "-alF"};
-    xargs_system.prototypes.emplace(xargs_process_name, xargs_executable);
-    xargs_system.connections.push_back(connection{
-        prototype_port{prototype_name{}, descriptor_id{0}},
-        prototype_port{xargs_process_name, descriptor_id{0}}
-    });
-    xargs_system.connections.push_back(connection{
-        prototype_port{xargs_process_name, descriptor_id{1}},
-        prototype_port{prototype_name{}, descriptor_id{1}},
-    });
+    {
+        system_prototype cat_system;
+        executable_prototype cat_executable;
+        cat_executable.executable_file = "/bin/cat";
+        cat_system.prototypes.emplace(cat_process_name, cat_executable);
+        cat_system.connections.push_back(connection{
+            prototype_port{prototype_name{}, descriptor_id{0}},
+            prototype_port{cat_process_name, descriptor_id{0}}
+        });
+        cat_system.connections.push_back(connection{
+            prototype_port{cat_process_name, descriptor_id{1}},
+            prototype_port{prototype_name{}, descriptor_id{1}},
+        });
+        system.prototypes.emplace(cat_system_name, cat_system);
+    }
+
+    {
+        system_prototype xargs_system;
+        executable_prototype xargs_executable;
+        xargs_executable.executable_file = "/usr/bin/xargs";
+        xargs_executable.arguments = {"xargs", "ls", "-alF"};
+        xargs_system.prototypes.emplace(xargs_process_name, xargs_executable);
+        xargs_system.connections.push_back(connection{
+            prototype_port{prototype_name{}, descriptor_id{0}},
+            prototype_port{xargs_process_name, descriptor_id{0}}
+        });
+        xargs_system.connections.push_back(connection{
+            prototype_port{xargs_process_name, descriptor_id{1}},
+            prototype_port{prototype_name{}, descriptor_id{1}},
+        });
+        system.prototypes.emplace(xargs_system_name, xargs_system);
+    }
 
     const auto system_stdin = connection{
         prototype_port{prototype_name{}, descriptor_id{0}},
         prototype_port{cat_system_name, descriptor_id{0}},
     };
+    const auto catout_to_xargsin = connection{
+        prototype_port{cat_system_name, descriptor_id{1}},
+        prototype_port{xargs_system_name, descriptor_id{0}},
+    };
     const auto system_stdout = connection{
         prototype_port{xargs_system_name, descriptor_id{1}},
         prototype_port{prototype_name{}, descriptor_id{1}},
     };
-    system_prototype system;
-    system.prototypes.emplace(cat_system_name, cat_system);
-    system.prototypes.emplace(xargs_system_name, xargs_system);
     system.connections.push_back(system_stdin);
-    system.connections.push_back(connection{
-        prototype_port{cat_system_name, descriptor_id{1}},
-        prototype_port{xargs_system_name, descriptor_id{0}},
-    });
+    system.connections.push_back(catout_to_xargsin);
     system.connections.push_back(system_stdout);
 
     {
@@ -261,12 +265,16 @@ auto do_nested_system() -> void
                 }
             }
         }
+        write_diags(prototype_name{}, object, std::cerr);
+        std::cerr << "system ran: ";
+        std::cerr << ", children[" << std::size(object.children) << "]";
+        std::cerr << "\n";
     }
 }
 
 }
 
-int main(int argc, const char * argv[])
+auto main(int argc, const char * argv[]) -> int
 {
     using namespace flow;
     set_signal_handler(signal::interrupt);

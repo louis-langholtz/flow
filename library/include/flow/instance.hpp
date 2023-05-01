@@ -17,10 +17,11 @@ namespace flow {
 struct instance {
 
     /// @brief Process ID.
-    /// @note This shall be <code>invalid_process_id</code> for default or failed instances,
-    /// <code>no_process_id</code> for system instances, less-than
-    /// <code>no_process_id</code> for the process group of the children, or
-    /// hold the POSIX process ID of the child process running for the instance.
+    /// @note This shall be <code>invalid_process_id</code> for default or
+    /// failed instances, <code>no_process_id</code> for system instances,
+    /// less-than <code>no_process_id</code> for the process group of the
+    /// children, or hold the POSIX process ID of the child process running
+    /// for the instance.
     process_id id{invalid_process_id};
 
     /// @brief Diagnostics stream.
@@ -35,6 +36,9 @@ struct instance {
 };
 
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
+
+auto total_descendants(const instance& object) -> std::size_t;
+auto total_channels(const instance& object) -> std::size_t;
 
 struct system_prototype;
 

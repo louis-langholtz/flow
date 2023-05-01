@@ -5,7 +5,7 @@
 
 namespace flow {
 
-descriptor_streambuf::int_type descriptor_streambuf::underflow()
+auto descriptor_streambuf::underflow() -> int_type
 {
     if (gptr() < egptr()) {
         return traits_type::to_int_type(*gptr());
@@ -24,8 +24,7 @@ descriptor_streambuf::int_type descriptor_streambuf::underflow()
     return traits_type::to_int_type(*gptr());
 }
 
-descriptor_streambuf::int_type
-descriptor_streambuf::overflow(int_type c)
+auto descriptor_streambuf::overflow(int_type c) -> int_type
 {
     if (!traits_type::eq_int_type(c, traits_type::eof()))
     {
@@ -37,8 +36,8 @@ descriptor_streambuf::overflow(int_type c)
     return traits_type::not_eof(c);
 }
 
-std::streamsize
-descriptor_streambuf::xsputn(const char_type* s, std::streamsize n)
+auto descriptor_streambuf::xsputn(const char_type* s, std::streamsize n)
+    -> std::streamsize
 {
     return ::write(int(id), s, n);
 }

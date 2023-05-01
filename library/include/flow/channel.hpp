@@ -9,7 +9,7 @@
 
 #include "flow/descriptor_id.hpp"
 #include "flow/io_type.hpp"
-#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
+#include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
 
@@ -37,27 +37,27 @@ struct pipe_channel {
 
     ~pipe_channel() noexcept;
 
-    pipe_channel& operator=(pipe_channel&& other) noexcept;
+    auto operator=(pipe_channel&& other) noexcept -> pipe_channel&;
 
     // This class is not meant to be copied!
     pipe_channel(const pipe_channel& other) = delete;
-    pipe_channel& operator=(const pipe_channel& other) = delete;
+    auto operator=(const pipe_channel& other) -> pipe_channel& = delete;
 
     /// @note This function is NOT thread safe in error cases.
-    bool close(io side, std::ostream& errs) noexcept;
+    auto close(io side, std::ostream& errs) noexcept -> bool;
 
     /// @note This function is NOT thread safe in error cases.
-    bool dup(io side, descriptor_id newfd,
-             std::ostream& errs) noexcept;
+    auto dup(io side, descriptor_id newfd,
+             std::ostream& errs) noexcept -> bool;
 
-    std::size_t read(const std::span<char>& buffer,
-                     std::ostream& errs) const;
+    auto read(const std::span<char>& buffer, std::ostream& errs) const
+        -> std::size_t;
 
-    bool write(const std::span<const char>& buffer,
-               std::ostream& errs) const;
+    auto write(const std::span<const char>& buffer, std::ostream& errs) const
+        -> bool;
 
-    friend std::ostream& operator<<(std::ostream& os,
-                                    const pipe_channel& value);
+    friend auto operator<<(std::ostream& os, const pipe_channel& value)
+        -> std::ostream&;
 
 private:
     /// @brief First element is read side of pipe, second is write side.

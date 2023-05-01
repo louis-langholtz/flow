@@ -25,20 +25,23 @@ struct system_prototype;
 
 auto temporary_fstream() -> ext::fstream;
 
-/// @note This is NOT an "async-signal-safe" function. So, it's not suitable for forked child to call.
+/// @note This is NOT an "async-signal-safe" function. So, it's not suitable
+/// for forked child to call.
 /// @see https://man7.org/linux/man-pages/man7/signal-safety.7.html
 auto make_arg_bufs(const std::vector<std::string>& strings,
                    const std::string& fallback = {})
     -> std::vector<std::string>;
 
-/// @note This is NOT an "async-signal-safe" function. So, it's not suitable for forked child to call.
+/// @note This is NOT an "async-signal-safe" function. So, it's not suitable
+/// for forked child to call.
 /// @see https://man7.org/linux/man-pages/man7/signal-safety.7.html
 auto make_arg_bufs(const std::map<std::string, std::string>& envars)
     -> std::vector<std::string>;
 
 /// @brief Makes a vector that's compatible for use with <code>execve</code>'s
 ///   <code>argv</code> parameter.
-/// @note This is NOT an "async-signal-safe" function. So, it's not suitable for forked child to call.
+/// @note This is NOT an "async-signal-safe" function. So, it's not suitable
+/// for forked child to call.
 /// @see https://man7.org/linux/man-pages/man7/signal-safety.7.html
 auto make_argv(const std::span<std::string>& args)
     -> std::vector<char*>;
@@ -50,9 +53,12 @@ auto write(std::ostream& os, const std::error_code& ec)
 auto write_diags(const prototype_name& name, instance& object,
                  std::ostream& os) -> void;
 
-auto find_channel_index(const std::span<const connection>& connections,
-                        const connection& look_for)
+auto find_index(const std::span<const connection>& connections,
+                const connection& look_for)
     -> std::optional<std::size_t>;
+
+auto find_index(const std::span<const connection>& connections,
+                const port& look_for) -> std::optional<std::size_t>;
 
 auto touch(const file_port& file) -> void;
 
@@ -71,7 +77,7 @@ enum class signal {
     kill,
 };
 
-std::ostream& operator<<(std::ostream& os, signal s);
+auto operator<<(std::ostream& os, signal s) -> std::ostream&;
 
 auto send_signal(signal sig,
                  const prototype_name& name,
