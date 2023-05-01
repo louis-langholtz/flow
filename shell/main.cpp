@@ -51,7 +51,9 @@ auto do_lsof_system() -> void
     system.connections.push_back(lsof_stderr);
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system, diags);
+        auto parent_channels = std::vector<channel>{};
+        auto object = instantiate(prototype_name{}, system, diags,
+                                  std::vector<connection>{}, parent_channels);
         std::cerr << "Diagnostics for parent of lsof...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
@@ -124,7 +126,10 @@ auto do_ls_system() -> void
 
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system, diags);
+        auto parent_channels = std::vector<channel>{};
+        auto object = instantiate(prototype_name{}, system, diags,
+                                  std::vector<connection>{},
+                                  parent_channels);
         std::cerr << "Diagnostics for root instance...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
@@ -181,35 +186,81 @@ auto do_nested_system() -> void
     executable_prototype cat_executable;
     cat_executable.executable_file = "/bin/cat";
     cat_system.prototypes.emplace(cat_process_name, cat_executable);
-    const auto cat_system_stdout = connection{
+    cat_system.connections.push_back(connection{
+        prototype_port{prototype_name{}, descriptor_id{0}},
+        prototype_port{cat_process_name, descriptor_id{0}}
+    });
+    cat_system.connections.push_back(connection{
         prototype_port{cat_process_name, descriptor_id{1}},
         prototype_port{prototype_name{}, descriptor_id{1}},
-    };
-    cat_system.connections.push_back(cat_system_stdout);
+    });
 
     system_prototype xargs_system;
     executable_prototype xargs_executable;
     xargs_executable.executable_file = "/usr/bin/xargs";
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
     xargs_system.prototypes.emplace(xargs_process_name, xargs_executable);
+    xargs_system.connections.push_back(connection{
+        prototype_port{prototype_name{}, descriptor_id{0}},
+        prototype_port{xargs_process_name, descriptor_id{0}}
+    });
+    xargs_system.connections.push_back(connection{
+        prototype_port{xargs_process_name, descriptor_id{1}},
+        prototype_port{prototype_name{}, descriptor_id{1}},
+    });
 
+    const auto system_stdin = connection{
+        prototype_port{prototype_name{}, descriptor_id{0}},
+        prototype_port{cat_system_name, descriptor_id{0}},
+    };
+    const auto system_stdout = connection{
+        prototype_port{xargs_system_name, descriptor_id{1}},
+        prototype_port{prototype_name{}, descriptor_id{1}},
+    };
     system_prototype system;
     system.prototypes.emplace(cat_system_name, cat_system);
     system.prototypes.emplace(xargs_system_name, xargs_system);
+    system.connections.push_back(system_stdin);
     system.connections.push_back(connection{
         prototype_port{cat_system_name, descriptor_id{1}},
         prototype_port{xargs_system_name, descriptor_id{0}},
     });
+    system.connections.push_back(system_stdout);
 
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system, diags);
+        auto parent_channels = std::vector<channel>{};
+        auto object = instantiate(prototype_name{}, system, diags,
+                                  std::vector<connection>{},
+                                  parent_channels);
         std::cerr << "Diagnostics for nested instance...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(std::cerr));
+        if (const auto pipe = find_channel<pipe_channel>(system, object, system_stdin)) {
+            pipe->write("/bin\n/sbin", std::cerr);
+            pipe->close(pipe_channel::io::write, std::cerr);
+        }
+        else {
+            std::cerr << "can't find " << system_stdin << "\n";
+        }
         wait(prototype_name{}, object, std::cerr, wait_mode::diagnostic);
+        if (const auto pipe = find_channel<pipe_channel>(system, object, system_stdout)) {
+            for (;;) {
+                std::array<char, 4096> buffer{};
+                const auto nread = pipe->read(buffer, std::cerr);
+                if (nread == static_cast<std::size_t>(-1)) {
+                    std::cerr << "ls can't read stdout\n";
+                }
+                else if (nread != 0u) {
+                    std::cout << buffer.data();
+                }
+                else {
+                    break;
+                }
+            }
+        }
     }
 }
 

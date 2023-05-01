@@ -8,6 +8,7 @@
 #include "ext/fstream.hpp"
 
 #include "flow/channel.hpp"
+#include "flow/connection.hpp"
 #include "flow/process_id.hpp"
 #include "flow/prototype_name.hpp"
 
@@ -37,8 +38,10 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
 
 struct system_prototype;
 
-auto instantiate(const system_prototype& system,
-                 std::ostream& diags) -> instance;
+auto instantiate(const prototype_name& name, const system_prototype& system,
+                 std::ostream& diags,
+                 const std::span<const connection>& parent_connections,
+                 const std::span<channel>& parent_channels) -> instance;
 
 }
 
