@@ -36,15 +36,21 @@ auto make_substitutions(std::vector<char*>& argv)
     }
 }
 
+template <class T>
+auto make_ports(const connection& c) -> std::array<const T*, 2u>
+{
+    return {
+        std::get_if<T>(&c.ports[0]), // NOLINT(readability-container-data-pointer)
+        std::get_if<T>(&c.ports[1])
+    };
+}
+
 auto setup(const prototype_name& name,
            const connection& c,
            pipe_channel& p,
            std::ostream& diags) -> void
 {
-    const auto ports = std::array<const prototype_port*, 2u>{
-        std::get_if<prototype_port>(&c.ports[0]),
-        std::get_if<prototype_port>(&c.ports[1])
-    };
+    const auto ports = make_ports<prototype_port>(c);
     if (!ports[0] || !ports[1]) {
         return;
     }
@@ -101,10 +107,7 @@ auto setup(const prototype_name& name,
            std::ostream& diags) -> void
 {
     diags << name << " " << c << ", open & dup2\n";
-    const auto file_ports = std::array<const file_port *, 2u>{
-        std::get_if<file_port>(&c.ports[0]),
-        std::get_if<file_port>(&c.ports[1])
-    };
+    const auto file_ports = make_ports<file_port>(c);
     const auto& file_port = file_ports[0]? file_ports[0]: file_ports[1];
     const auto& other_port = file_ports[0]? c.ports[1]: c.ports[0];
     if (const auto op = std::get_if<prototype_port>(&other_port)) {
@@ -133,11 +136,21 @@ auto setup(const prototype_name& name,
            std::ostream& diags) -> void
 {
     if (const auto p = std::get_if<pipe_channel>(&channel)) {
-        return setup(name, c, *p, diags);
+        setup(name, c, *p, diags);
+        return;
     }
     if (const auto p = std::get_if<file_channel>(&channel)) {
-        return setup(name, c, *p, diags);
+        setup(name, c, *p, diags);
+        return;
     }
+    if (auto p = std::get_if<reference_channel>(&channel)) {
+        diags << "found reference channel, referencing " << p->other << "\n";
+        if (p->other) {
+            setup(name, c, *(p->other), diags);
+        }
+        return;
+    }
+    diags << "found UNKNOWN channel type!!!!\n";
 }
 
 [[noreturn]]
@@ -145,8 +158,8 @@ auto instantiate(const prototype_name& name,
                  const executable_prototype& exe_proto,
                  char * const argv[],
                  char * const envp[],
-                 const std::vector<connection>& connections,
-                 std::vector<channel>& channels,
+                 const std::span<const connection>& connections,
+                 const std::span<channel>& channels,
                  std::ostream& diags) -> void
 {
     // Deal with:
@@ -181,8 +194,8 @@ auto instantiate(const prototype_name& name,
 auto instantiate(const prototype_name& name,
                  const executable_prototype& exe_proto,
                  process_id pgrp,
-                 const std::vector<connection>& connections,
-                 std::vector<channel>& channels,
+                 const std::span<const connection>& connections,
+                 const std::span<channel>& channels,
                  std::ostream& diags) -> instance
 {
     auto child_diags = temporary_fstream();
@@ -219,6 +232,96 @@ auto instantiate(const prototype_name& name,
     return instance{pid, std::move(child_diags)};
 }
 
+using connection_io_types = std::array<io_type, 2u>;
+using connection_result = std::pair<connection_io_types, channel>;
+
+auto make_channel(const prototype_name& name, const system_prototype& system,
+                  const connection& conn,
+                  const std::span<const connection>& parent_connections,
+                  const std::span<channel>& parent_channels)
+    -> connection_result
+{
+    auto ports_io = connection_io_types{};
+    auto have_file_port = false;
+    auto enclosure_descriptor = invalid_descriptor_id;
+    for (auto&& port: conn.ports) {
+        const auto i = &port - conn.ports.data();
+        if (const auto p = std::get_if<prototype_port>(&port)) {
+            if (p->address == prototype_name{}) {
+                const auto& d_info = system.descriptors.at(p->descriptor);
+                enclosure_descriptor = p->descriptor;
+                ports_io[i] = reverse(d_info.direction);
+                continue;
+            }
+            const auto& child = system.prototypes.at(p->address);
+            if (const auto cp = std::get_if<system_prototype>(&child)) {
+                const auto& d_info = cp->descriptors.at(p->descriptor);
+                ports_io[i] = d_info.direction;
+                continue;
+            }
+            if (const auto cp = std::get_if<executable_prototype>(&child)) {
+                const auto& d_info = cp->descriptors.at(p->descriptor);
+                ports_io[i] = d_info.direction;
+                continue;
+            }
+            throw std::logic_error{"unknown proto type"};
+        }
+        if (const auto p = std::get_if<file_port>(&port)) {
+            if (have_file_port) {
+                throw std::invalid_argument{"cant't connect file to file"};
+            }
+            have_file_port = true;
+            ports_io[i] = io_type::bidir;
+            continue;
+        }
+        throw std::logic_error{"unknown port type"};
+    }
+    if (ports_io[0] == ports_io[1]) {
+        throw std::invalid_argument{"bad connection: same io unsupported"};
+    }
+    if (have_file_port) {
+        const auto io = (ports_io[0] != io_type::bidir)
+            ? ports_io[0]: ports_io[1];
+        return {ports_io, file_channel{io}};
+    }
+    if (enclosure_descriptor != invalid_descriptor_id) {
+        for (auto&& c: parent_connections) {
+            const auto i = &c - parent_connections.data();
+            const auto ports = make_ports<prototype_port>(c);
+            for (auto&& port: ports) {
+                if (port &&
+                    port->address == name &&
+                    port->descriptor == enclosure_descriptor) {
+                    return {ports_io, reference_channel{&parent_channels[i]}};
+                }
+            }
+        }
+    }
+    return {ports_io, pipe_channel{}};
+}
+
+auto make_child(const prototype_name& name,
+                const prototype& proto,
+                process_id& pgrp,
+                const std::span<const connection>& connections,
+                const std::span<channel>& channels,
+                std::ostream& diags) -> instance
+{
+    if (const auto p = std::get_if<executable_prototype>(&proto)) {
+        auto kid = instantiate(name, *p, process_id(-int(pgrp)),
+                               connections, channels, diags);
+        if (kid.id != invalid_process_id && pgrp == no_process_id) {
+            pgrp = process_id(-int(kid.id));
+        }
+        return kid;
+    }
+    if (const auto p = std::get_if<system_prototype>(&proto)) {
+        return instantiate(name, *p, diags, connections, channels);
+    }
+    diags << "parent: unrecognized prototype for " << name << "\n";
+    return {};
+}
+
 }
 
 std::ostream& operator<<(std::ostream& os, const instance& value)
@@ -248,89 +351,38 @@ std::ostream& operator<<(std::ostream& os, const instance& value)
     return os;
 }
 
-auto instantiate(const system_prototype& system, std::ostream& diags)
+auto instantiate(const prototype_name& name, const system_prototype& system,
+                 std::ostream& diags,
+                 const std::span<const connection>& parent_connections,
+                 const std::span<channel>& parent_channels)
 -> instance
 {
     instance result;
     result.id = no_process_id;
     std::vector<channel> channels;
-    std::vector<std::array<io_type, 2u>> io_types;
+    std::vector<connection_io_types> io_types;
     for (auto&& connection: system.connections) {
-        auto ports_io = std::array<io_type, 2u>{};
-        auto have_file_port = false;
-        for (auto&& port: connection.ports) {
-            const auto i = &port - connection.ports.data();
-            if (const auto p = std::get_if<prototype_port>(&port)) {
-                if (p->address == prototype_name{}) {
-                    const auto& d_info = system.descriptors.at(p->descriptor);
-                    ports_io[i] = reverse(d_info.direction);
-                    continue;
-                }
-                const auto& child = system.prototypes.at(p->address);
-                if (const auto cp = std::get_if<system_prototype>(&child)) {
-                    const auto& d_info = cp->descriptors.at(p->descriptor);
-                    ports_io[i] = d_info.direction;
-                    continue;
-                }
-                if (const auto cp = std::get_if<executable_prototype>(&child)) {
-                    const auto& d_info = cp->descriptors.at(p->descriptor);
-                    ports_io[i] = d_info.direction;
-                    continue;
-                }
-                throw std::logic_error{"unknown proto type"};
-            }
-            if (const auto p = std::get_if<file_port>(&port)) {
-                if (have_file_port) {
-                    throw std::invalid_argument{"cant't connect file to file"};
-                }
-                have_file_port = true;
-                ports_io[i] = io_type::bidir;
-                continue;
-            }
-            throw std::logic_error{"unknown port type"};
-        }
-        if (ports_io[0] == ports_io[1]) {
-            throw std::invalid_argument{"bad connection: same io unsupported"};
-        }
-        io_types.push_back(ports_io);
-        if (have_file_port) {
-            const auto io = (ports_io[0] != io_type::bidir)
-                ? ports_io[0]: ports_io[1];
-            channels.push_back(file_channel{io});
-        }
-        else {
-            channels.push_back(pipe_channel{});
-        }
+        auto connection_result = make_channel(name, system, connection,
+                                              parent_connections,
+                                              parent_channels);
+        io_types.push_back(connection_result.first);
+        channels.push_back(std::move(connection_result.second));
     }
     for (auto&& mapentry: system.prototypes) {
         const auto& child = mapentry.first;
         const auto& proto = mapentry.second;
-        if (const auto p = std::get_if<executable_prototype>(&proto)) {
-            auto kid = instantiate(child, *p, process_id(-int(result.id)),
-                                   system.connections, channels, diags);
-            if (kid.id != invalid_process_id && result.id == no_process_id) {
-                result.id = process_id(-int(kid.id));
-            }
-            result.children.emplace(child, std::move(kid));
-        }
-        else if (const auto p = std::get_if<system_prototype>(&proto)) {
-            result.children.emplace(child, instantiate(*p, diags));
-        }
-        else {
-            diags << "parent: unrecognized prototype for " << child << "\n";
-            result.children.emplace(child, instance{});
-        }
+        auto kid = make_child(child, proto, result.id,
+                              system.connections, channels, diags);
+        result.children.emplace(child, std::move(kid));
     }
-    // Only now, **after fork calls**, close parent side pipe_channels...
+    // Only now, after making child processes,
+    // close parent side of pipe_channels...
     for (auto&& channel: channels) {
         const auto i = &channel - channels.data();
         const auto& io_pair = io_types[i];
         const auto& connection = system.connections[i];
         if (const auto p = std::get_if<pipe_channel>(&channel)) {
-            const auto ports = std::array<const prototype_port*, 2u>{
-                std::get_if<prototype_port>(&connection.ports[0]),
-                std::get_if<prototype_port>(&connection.ports[1])
-            };
+            const auto ports = make_ports<prototype_port>(connection);
             const auto a_to_b = (io_pair[0] == io_type::out)
                              || (io_pair[1] == io_type::in);
             if (ports[0]->address != prototype_name{}) {

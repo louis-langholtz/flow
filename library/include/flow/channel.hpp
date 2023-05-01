@@ -2,6 +2,7 @@
 #define channel_hpp
 
 #include <array>
+#include <functional> // for std::reference_wrapper
 #include <ostream>
 #include <span>
 #include <type_traits> // for std::is_nothrow_move_*
@@ -66,7 +67,14 @@ private:
 static_assert(std::is_nothrow_move_constructible_v<pipe_channel>);
 static_assert(std::is_nothrow_move_assignable_v<pipe_channel>);
 
-using channel = variant<pipe_channel, file_channel>;
+struct reference_channel;
+
+using channel = variant<file_channel, pipe_channel, reference_channel>;
+
+struct reference_channel {
+    /// @brief Non-owning pointer to referenced channel.
+    channel *other;
+};
 
 auto operator<<(std::ostream& os, const file_channel& value) -> std::ostream&;
 
@@ -74,6 +82,9 @@ auto operator<<(std::ostream& os, pipe_channel::io value)
     -> std::ostream&;
 
 auto operator<<(std::ostream& os, const pipe_channel& value) -> std::ostream&;
+
+auto operator<<(std::ostream& os, const reference_channel& value)
+    -> std::ostream&;
 
 }
 

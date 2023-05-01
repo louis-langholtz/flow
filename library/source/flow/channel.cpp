@@ -89,7 +89,7 @@ bool pipe_channel::write(const std::span<const char>& buffer,
     return true;
 }
 
-std::ostream& operator<<(std::ostream& os, const file_channel&)
+auto operator<<(std::ostream& os, const file_channel&) -> std::ostream&
 {
     os << "file_channel{}";
     return os;
@@ -102,12 +102,23 @@ auto operator<<(std::ostream& os, pipe_channel::io value)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const pipe_channel& value)
+auto operator<<(std::ostream& os, const pipe_channel& value) -> std::ostream&
 {
     os << "pipe_channel{";
     os << value.descriptors[0];
     os << ",";
     os << value.descriptors[1];
+    os << "}";
+    return os;
+}
+
+auto operator<<(std::ostream& os, const reference_channel& value)
+    -> std::ostream&
+{
+    os << "reference_channel{";
+    if (value.other) {
+        os << *value.other;
+    }
     os << "}";
     return os;
 }
