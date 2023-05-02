@@ -20,6 +20,13 @@ if(Boost_FOUND)
 	target_include_directories(flow SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
 endif()
 
+target_compile_options(flow PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/W4>
+  $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic -Werror>
+  $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -Wpedantic -Werror>
+  $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -Wpedantic -Werror>
+)
+
 target_compile_features(flow PUBLIC cxx_std_20)
 set_target_properties(flow PROPERTIES
 	OUTPUT_NAME "flow"

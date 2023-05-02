@@ -250,8 +250,7 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
         "bad connection: same io unsupported";
     static const auto same_ports_error =
         "connection must have different ports";
-    static const auto not_closed_error =
-        "system must be closed";
+    // static const auto not_closed_error = "system must be closed";
 
     if (conn.ports[0] == conn.ports[1]) {
         throw std::invalid_argument{same_ports_error};
