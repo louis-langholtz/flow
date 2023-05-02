@@ -73,7 +73,7 @@ using channel = variant<file_channel, pipe_channel, reference_channel>;
 
 struct reference_channel {
     /// @brief Non-owning pointer to referenced channel.
-    channel *other;
+    channel *other{};
 };
 
 auto operator<<(std::ostream& os, const file_channel& value) -> std::ostream&;

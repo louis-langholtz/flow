@@ -15,6 +15,7 @@
 
 namespace flow {
 
+/// @brief Instance of a <code>system</code>.
 struct instance {
 
     /// @brief Process ID.
@@ -26,7 +27,8 @@ struct instance {
     process_id id{invalid_process_id};
 
     /// @brief Diagnostics stream.
-    /// @note This should be unique to this instance's process ID.
+    /// @note Make this unique to this instance's process ID to avoid racy
+    ///   or disordered output.
     ext::fstream diags{nulldev_fstream()};
 
     /// @brief Sub-instances - or children - of this instance.

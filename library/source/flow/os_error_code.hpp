@@ -1,5 +1,5 @@
-#ifndef system_error_hpp
-#define system_error_hpp
+#ifndef os_error_code_hpp
+#define os_error_code_hpp
 
 #include <ostream>
 #include <string>
@@ -17,4 +17,4 @@ auto to_string(os_error_code err) -> std::string;
 
 }
 
-#endif /* system_error_hpp */
+#endif /* os_error_code_hpp */
