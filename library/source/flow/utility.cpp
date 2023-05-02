@@ -312,7 +312,7 @@ auto find_index(const std::span<const connection>& connections,
     return {};
 }
 
-auto touch(const file_port& file) -> void
+auto touch(const file_endpoint& file) -> void
 {
     static constexpr auto flags = O_CREAT|O_WRONLY;
     static constexpr auto mode = 0666;
@@ -323,7 +323,7 @@ auto touch(const file_port& file) -> void
     throw std::runtime_error{to_string(system_error_code(errno))};
 }
 
-auto mkfifo(const file_port& file) -> void
+auto mkfifo(const file_endpoint& file) -> void
 {
     static constexpr auto fifo_mode = ::mode_t{0666};
     if (::mkfifo(file.path.c_str(), fifo_mode) == -1) {

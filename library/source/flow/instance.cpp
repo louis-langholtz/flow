@@ -108,7 +108,7 @@ auto setup(const prototype_name& name,
            std::ostream& diags) -> void
 {
     diags << name << " " << c << ", open & dup2\n";
-    const auto file_ports = make_ports<file_port>(c);
+    const auto file_ports = make_ports<file_endpoint>(c);
     const auto& file_port = file_ports[0]? file_ports[0]: file_ports[1];
     const auto& other_port = file_ports[0]? c.ends[1]: c.ends[0];
     if (const auto op = std::get_if<prototype_port>(&other_port)) {
@@ -286,7 +286,7 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
             }
             throw std::logic_error{"unknown proto type"};
         }
-        if (const auto p = std::get_if<file_port>(&port)) {
+        if (const auto p = std::get_if<file_endpoint>(&port)) {
             if (have_file_port) {
                 throw std::invalid_argument{no_file_file_error};
             }

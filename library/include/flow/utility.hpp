@@ -16,7 +16,7 @@
 
 namespace flow {
 
-struct file_port;
+struct file_endpoint;
 struct instance;
 struct prototype_name;
 struct executable_prototype;
@@ -60,9 +60,9 @@ auto find_index(const std::span<const connection>& connections,
 auto find_index(const std::span<const connection>& connections,
                 const endpoint& look_for) -> std::optional<std::size_t>;
 
-auto touch(const file_port& file) -> void;
+auto touch(const file_endpoint& file) -> void;
 
-auto mkfifo(const file_port& file) -> void;
+auto mkfifo(const file_endpoint& file) -> void;
 
 enum class wait_mode {
     quiet, diagnostic,
