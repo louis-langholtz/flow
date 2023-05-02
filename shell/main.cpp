@@ -9,7 +9,7 @@
 #include "flow/instance.hpp"
 #include "flow/process_id.hpp"
 #include "flow/system_name.hpp"
-#include "flow/prototype.hpp"
+#include "flow/system.hpp"
 #include "flow/utility.hpp"
 
 namespace {
