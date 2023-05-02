@@ -82,9 +82,9 @@ auto do_ls_system() -> void
 {
     std::cerr << "Doing ls instance...\n";
 
-    const auto input_file_port = file_port{"flow.in"};
+    const auto input_file_port = file_endpoint{"flow.in"};
 
-    const auto output_file_port = file_port{"flow.out"};
+    const auto output_file_port = file_endpoint{"flow.out"};
     touch(output_file_port);
     std::cerr << "running in " << std::filesystem::current_path() << '\n';
 

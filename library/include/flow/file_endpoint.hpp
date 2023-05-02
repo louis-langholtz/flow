@@ -6,16 +6,16 @@
 
 namespace flow {
 
-struct file_port {
+struct file_endpoint {
     std::filesystem::path path;
 };
 
-constexpr auto operator==(const file_port& lhs, const file_port& rhs) -> bool
+constexpr auto operator==(const file_endpoint& lhs, const file_endpoint& rhs) -> bool
 {
     return lhs.path == rhs.path;
 }
 
-std::ostream& operator<<(std::ostream& os, const file_port& value);
+std::ostream& operator<<(std::ostream& os, const file_endpoint& value);
 
 }
 
