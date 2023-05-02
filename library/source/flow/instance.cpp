@@ -41,8 +41,8 @@ template <class T>
 auto make_ports(const connection& c) -> std::array<const T*, 2u>
 {
     return {
-        std::get_if<T>(&c.ports[0]), // NOLINT(readability-container-data-pointer)
-        std::get_if<T>(&c.ports[1])
+        std::get_if<T>(&c.ends[0]), // NOLINT(readability-container-data-pointer)
+        std::get_if<T>(&c.ends[1])
     };
 }
 
@@ -110,7 +110,7 @@ auto setup(const prototype_name& name,
     diags << name << " " << c << ", open & dup2\n";
     const auto file_ports = make_ports<file_port>(c);
     const auto& file_port = file_ports[0]? file_ports[0]: file_ports[1];
-    const auto& other_port = file_ports[0]? c.ports[1]: c.ports[0];
+    const auto& other_port = file_ports[0]? c.ends[1]: c.ends[0];
     if (const auto op = std::get_if<prototype_port>(&other_port)) {
         const auto flags = to_open_flags(p.io);
         const auto mode = 0600;
@@ -252,7 +252,7 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
         "connection must have different ports";
     // static const auto not_closed_error = "system must be closed";
 
-    if (conn.ports[0] == conn.ports[1]) {
+    if (conn.ends[0] == conn.ends[1]) {
         throw std::invalid_argument{same_ports_error};
     }
     if (std::size(parent_connections) != std::size(parent_channels)) {
@@ -264,8 +264,8 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
     auto enclosure_descriptors = std::array<descriptor_id, 2u>{
         invalid_descriptor_id, invalid_descriptor_id
     };
-    for (auto&& port: conn.ports) {
-        const auto i = &port - conn.ports.data();
+    for (auto&& port: conn.ends) {
+        const auto i = &port - conn.ends.data();
         if (const auto p = std::get_if<prototype_port>(&port)) {
             if (p->address == prototype_name{}) {
                 const auto& d_info = system.descriptors.at(p->descriptor);
