@@ -242,7 +242,9 @@ auto do_nested_system() -> void
         std::copy(std::istreambuf_iterator<char>(diags),
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(std::cerr));
-        if (const auto pipe = find_channel<pipe_channel>(system, object, system_stdin)) {
+        pretty_print(std::cerr, object);
+        if (const auto pipe = find_channel<pipe_channel>(system, object,
+                                                         system_stdin)) {
             pipe->write("/bin\n/sbin", std::cerr);
             pipe->close(pipe_channel::io::write, std::cerr);
         }
@@ -264,6 +266,9 @@ auto do_nested_system() -> void
                     break;
                 }
             }
+        }
+        else {
+            std::cerr << "can't find " << system_stdout << "\n";
         }
         write_diags(prototype_name{}, object, std::cerr);
         std::cerr << "system ran: ";

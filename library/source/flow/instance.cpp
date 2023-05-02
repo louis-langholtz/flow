@@ -3,6 +3,7 @@
 #include <unistd.h> // for getpid, setpgid
 #include <fcntl.h> // for ::open
 
+#include "indenting_ostreambuf.hpp"
 #include "system_error_code.hpp"
 
 #include "flow/instance.hpp"
@@ -226,7 +227,7 @@ auto instantiate(const prototype_name& name,
                     connections, channels, child_diags);
     }
     default: // case for the spawning/parent process
-        diags << "child " << name << " started as pid " << pid << "\n";
+        diags << "child '" << name << "' started as pid " << pid << "\n";
         break;
     }
     return instance{pid, std::move(child_diags)};
@@ -367,6 +368,40 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
     return os;
 }
 
+auto pretty_print(std::ostream& os, const instance& value) -> void
+{
+    os << "{\n";
+    os << "  .id=" << value.id << ",\n";
+    if (value.children.empty()) {
+        os << "  .children={},\n";
+    }
+    else {
+        os << "  .children={\n";
+        for (auto&& entry: value.children) {
+            os << "    {\n";
+            os << "      .first='" << entry.first << "',\n";
+            os << "      .second=";
+            {
+                const detail::indenting_ostreambuf child_indent{os, {6, false}};
+                pretty_print(os, entry.second);
+            }
+            os << "    },\n";
+        }
+        os << "  },\n";
+    }
+    if (value.channels.empty()) {
+        os << "  .channels={}\n";
+    }
+    else {
+        os << "  .channels={\n";
+        for (auto&& channel: value.channels) {
+            os << "    " << channel << ",\n";
+        }
+        os << "  }\n";
+    }
+    os << "}\n";
+}
+
 auto total_descendants(const instance& object) -> std::size_t
 {
     auto result = std::size_t{0};
@@ -421,20 +456,20 @@ auto instantiate(const prototype_name& name, const system_prototype& system,
                              || (io_pair[1] == io_type::in);
             if (ports[0]->address != prototype_name{}) {
                 const auto pio = a_to_b? pipe_channel::io::write: pipe_channel::io::read;
-                diags << "parent: closing " << pio << " side of ";
+                diags << "parent '" << name << "': closing " << pio << " side of ";
                 diags << connection << " " << *p << "\n";
                 p->close(pio, diags);
             }
             if (ports[1]->address != prototype_name{}) {
                 const auto pio = a_to_b? pipe_channel::io::read: pipe_channel::io::write;
-                diags << "parent: closing " << pio << " side of ";
+                diags << "parent '" << name << "': closing " << pio << " side of ";
                 diags << connection << " " << *p << "\n";
                 p->close(pio, diags);
             }
             continue;
         }
         if (const auto p = std::get_if<reference_channel>(&channel)) {
-            diags << "parent: channel[" << i << "] is reference";
+            diags << "parent '" << name << "': channel[" << i << "] is reference";
             if (p->other) {
                 diags << " to " << *(p->other);
             }

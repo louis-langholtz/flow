@@ -116,8 +116,9 @@ auto operator<<(std::ostream& os, const reference_channel& value)
     -> std::ostream&
 {
     os << "reference_channel{";
+    os << value.other;
     if (value.other) {
-        os << *value.other;
+        os << ", " << *value.other;
     }
     os << "}";
     return os;
