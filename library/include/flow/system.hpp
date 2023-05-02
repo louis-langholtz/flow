@@ -30,7 +30,7 @@ inline const auto standard_descriptors = descriptor_container{
 struct system_prototype;
 struct executable_prototype;
 
-using prototype = variant<
+using system = variant<
     system_prototype,
     executable_prototype
 >;
@@ -48,7 +48,7 @@ struct executable_prototype {
 
 struct system_prototype {
     descriptor_container descriptors{standard_descriptors};
-    std::map<system_name, prototype> prototypes;
+    std::map<system_name, system> prototypes;
     std::vector<connection> connections;
 };
 

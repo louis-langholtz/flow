@@ -7,7 +7,7 @@
 #include "system_error_code.hpp"
 
 #include "flow/instance.hpp"
-#include "flow/prototype.hpp"
+#include "flow/system.hpp"
 #include "flow/utility.hpp"
 
 namespace flow {
@@ -317,7 +317,7 @@ auto make_channel(const system_name& name, const system_prototype& system,
 }
 
 auto make_child(const system_name& name,
-                const prototype& proto,
+                const system& proto,
                 process_id& pgrp,
                 const std::span<const connection>& connections,
                 const std::span<channel>& channels,

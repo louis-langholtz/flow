@@ -24,7 +24,7 @@
 
 #include "flow/descriptor_id.hpp"
 #include "flow/instance.hpp"
-#include "flow/prototype.hpp"
+#include "flow/system.hpp"
 #include "flow/utility.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, ostream support
 
