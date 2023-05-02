@@ -8,7 +8,7 @@
 #include "flow/descriptor_id.hpp"
 #include "flow/instance.hpp"
 #include "flow/process_id.hpp"
-#include "flow/prototype_name.hpp"
+#include "flow/system_name.hpp"
 #include "flow/prototype.hpp"
 #include "flow/utility.hpp"
 
@@ -30,7 +30,7 @@ auto do_lsof_system() -> void
 {
     std::cerr << "Doing lsof instance...\n";
 
-    const auto lsof_process_name = prototype_name{"lsof"};
+    const auto lsof_process_name = system_name{"lsof"};
     system_prototype system;
     executable_prototype lsof_executable;
     lsof_executable.executable_file = "/usr/sbin/lsof";
@@ -39,18 +39,18 @@ auto do_lsof_system() -> void
     system.prototypes.emplace(lsof_process_name, lsof_executable);
     const auto lsof_stdout = connection{
         prototype_endpoint{lsof_process_name, descriptor_id{1}},
-        prototype_endpoint{prototype_name{}, descriptor_id{1}},
+        prototype_endpoint{system_name{}, descriptor_id{1}},
     };
     const auto lsof_stderr = connection{
         prototype_endpoint{lsof_process_name, descriptor_id{2}},
-        prototype_endpoint{prototype_name{}, descriptor_id{2}},
+        prototype_endpoint{system_name{}, descriptor_id{2}},
     };
     system.connections.push_back(lsof_stdout);
     system.connections.push_back(lsof_stderr);
     {
         auto diags = temporary_fstream();
         auto parent_channels = std::vector<channel>{};
-        auto object = instantiate(prototype_name{}, system, diags,
+        auto object = instantiate(system_name{}, system, diags,
                                   std::vector<connection>{}, parent_channels);
         std::cerr << "Diagnostics for parent of lsof...\n";
         diags.seekg(0);
@@ -58,7 +58,7 @@ auto do_lsof_system() -> void
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(std::cerr));
 
-        wait(prototype_name{}, object, std::cerr, wait_mode::diagnostic);
+        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto pipe = find_channel<pipe_channel>(system, object, lsof_stdout)) {
             for (;;) {
                 std::array<char, 4096> buffer{};
@@ -74,7 +74,7 @@ auto do_lsof_system() -> void
                 }
             }
         }
-        write_diags(prototype_name{}, object, std::cerr);
+        write_diags(system_name{}, object, std::cerr);
     }
 }
 
@@ -90,12 +90,12 @@ auto do_ls_system() -> void
 
     system_prototype system;
 
-    const auto cat_process_name = prototype_name{"cat"};
+    const auto cat_process_name = system_name{"cat"};
     executable_prototype cat_executable;
     cat_executable.executable_file = "/bin/cat";
     system.prototypes.emplace(cat_process_name, cat_executable);
 
-    const auto xargs_process_name = prototype_name{"xargs"};
+    const auto xargs_process_name = system_name{"xargs"};
     executable_prototype xargs_executable;
     xargs_executable.executable_file = "/usr/bin/xargs";
     xargs_executable.working_directory = "/fee/fii/foo/fum";
@@ -103,7 +103,7 @@ auto do_ls_system() -> void
     system.prototypes.emplace(xargs_process_name, xargs_executable);
 
     const auto cat_stdin = connection{
-        prototype_endpoint{prototype_name{}, descriptor_id{0}},
+        prototype_endpoint{system_name{}, descriptor_id{0}},
         prototype_endpoint{cat_process_name, descriptor_id{0}}
     };
     system.connections.push_back(cat_stdin);
@@ -113,19 +113,19 @@ auto do_ls_system() -> void
     });
     const auto xargs_stdout = connection{
         prototype_endpoint{xargs_process_name, descriptor_id{1}},
-        prototype_endpoint{prototype_name{}, descriptor_id{1}},
+        prototype_endpoint{system_name{}, descriptor_id{1}},
     };
     system.connections.push_back(xargs_stdout);
     const auto xargs_stderr = connection{
         prototype_endpoint{xargs_process_name, descriptor_id{2}},
-        prototype_endpoint{prototype_name{}, descriptor_id{2}},
+        prototype_endpoint{system_name{}, descriptor_id{2}},
     };
     system.connections.push_back(xargs_stderr);
 
     {
         auto diags = temporary_fstream();
         auto parent_channels = std::vector<channel>{};
-        auto object = instantiate(prototype_name{}, system, diags,
+        auto object = instantiate(system_name{}, system, diags,
                                   std::vector<connection>{},
                                   parent_channels);
         std::cerr << "Diagnostics for root instance...\n";
@@ -137,7 +137,7 @@ auto do_ls_system() -> void
             pipe->write("/bin\n/sbin", std::cerr);
             pipe->close(pipe_channel::io::write, std::cerr);
         }
-        wait(prototype_name{}, object, std::cerr, wait_mode::diagnostic);
+        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto pipe = find_channel<pipe_channel>(system, object, xargs_stderr)) {
             std::array<char, 1024> buffer{};
             const auto nread = pipe->read(buffer, std::cerr);
@@ -164,7 +164,7 @@ auto do_ls_system() -> void
             }
         }
 
-        write_diags(prototype_name{}, object, std::cerr);
+        write_diags(system_name{}, object, std::cerr);
         std::cerr << "system ran: ";
         std::cerr << ", children[" << std::size(object.children) << "]";
         std::cerr << "\n";
@@ -175,10 +175,10 @@ auto do_nested_system() -> void
 {
     std::cerr << "Doing nested instance...\n";
 
-    const auto cat_system_name = prototype_name{"cat-system"};
-    const auto cat_process_name = prototype_name{"cat-process"};
-    const auto xargs_system_name = prototype_name{"xargs-system"};
-    const auto xargs_process_name = prototype_name{"xargs-process"};
+    const auto cat_system_name = system_name{"cat-system"};
+    const auto cat_process_name = system_name{"cat-process"};
+    const auto xargs_system_name = system_name{"xargs-system"};
+    const auto xargs_process_name = system_name{"xargs-process"};
 
     system_prototype system;
 
@@ -188,12 +188,12 @@ auto do_nested_system() -> void
         cat_executable.executable_file = "/bin/cat";
         cat_system.prototypes.emplace(cat_process_name, cat_executable);
         cat_system.connections.push_back(connection{
-            prototype_endpoint{prototype_name{}, descriptor_id{0}},
+            prototype_endpoint{system_name{}, descriptor_id{0}},
             prototype_endpoint{cat_process_name, descriptor_id{0}}
         });
         cat_system.connections.push_back(connection{
             prototype_endpoint{cat_process_name, descriptor_id{1}},
-            prototype_endpoint{prototype_name{}, descriptor_id{1}},
+            prototype_endpoint{system_name{}, descriptor_id{1}},
         });
         system.prototypes.emplace(cat_system_name, cat_system);
     }
@@ -205,18 +205,18 @@ auto do_nested_system() -> void
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
         xargs_system.prototypes.emplace(xargs_process_name, xargs_executable);
         xargs_system.connections.push_back(connection{
-            prototype_endpoint{prototype_name{}, descriptor_id{0}},
+            prototype_endpoint{system_name{}, descriptor_id{0}},
             prototype_endpoint{xargs_process_name, descriptor_id{0}}
         });
         xargs_system.connections.push_back(connection{
             prototype_endpoint{xargs_process_name, descriptor_id{1}},
-            prototype_endpoint{prototype_name{}, descriptor_id{1}},
+            prototype_endpoint{system_name{}, descriptor_id{1}},
         });
         system.prototypes.emplace(xargs_system_name, xargs_system);
     }
 
     const auto system_stdin = connection{
-        prototype_endpoint{prototype_name{}, descriptor_id{0}},
+        prototype_endpoint{system_name{}, descriptor_id{0}},
         prototype_endpoint{cat_system_name, descriptor_id{0}},
     };
     const auto catout_to_xargsin = connection{
@@ -225,7 +225,7 @@ auto do_nested_system() -> void
     };
     const auto system_stdout = connection{
         prototype_endpoint{xargs_system_name, descriptor_id{1}},
-        prototype_endpoint{prototype_name{}, descriptor_id{1}},
+        prototype_endpoint{system_name{}, descriptor_id{1}},
     };
     system.connections.push_back(system_stdin);
     system.connections.push_back(catout_to_xargsin);
@@ -234,7 +234,7 @@ auto do_nested_system() -> void
     {
         auto diags = temporary_fstream();
         auto parent_channels = std::vector<channel>{};
-        auto object = instantiate(prototype_name{}, system, diags,
+        auto object = instantiate(system_name{}, system, diags,
                                   std::vector<connection>{},
                                   parent_channels);
         std::cerr << "Diagnostics for nested instance...\n";
@@ -251,7 +251,7 @@ auto do_nested_system() -> void
         else {
             std::cerr << "can't find " << system_stdin << "\n";
         }
-        wait(prototype_name{}, object, std::cerr, wait_mode::diagnostic);
+        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto pipe = find_channel<pipe_channel>(system, object, system_stdout)) {
             for (;;) {
                 std::array<char, 4096> buffer{};
@@ -270,7 +270,7 @@ auto do_nested_system() -> void
         else {
             std::cerr << "can't find " << system_stdout << "\n";
         }
-        write_diags(prototype_name{}, object, std::cerr);
+        write_diags(system_name{}, object, std::cerr);
         std::cerr << "system ran: ";
         std::cerr << ", children[" << std::size(object.children) << "]";
         std::cerr << "\n";

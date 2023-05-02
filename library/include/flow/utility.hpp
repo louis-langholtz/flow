@@ -18,7 +18,7 @@ namespace flow {
 
 struct file_endpoint;
 struct instance;
-struct prototype_name;
+struct system_name;
 struct executable_prototype;
 struct system_prototype;
 
@@ -50,7 +50,7 @@ auto write(std::ostream& os, const std::error_code& ec)
     -> std::ostream&;
 
 /// @brief Outputs diagnostics information to the given output stream.
-auto write_diags(const prototype_name& name, instance& object,
+auto write_diags(const system_name& name, instance& object,
                  std::ostream& os) -> void;
 
 auto find_index(const std::span<const connection>& connections,
@@ -68,7 +68,7 @@ enum class wait_mode {
     quiet, diagnostic,
 };
 
-auto wait(const prototype_name& name, instance& instance,
+auto wait(const system_name& name, instance& instance,
           std::ostream& diags, wait_mode mode = wait_mode::quiet) -> void;
 
 enum class signal {
@@ -80,7 +80,7 @@ enum class signal {
 auto operator<<(std::ostream& os, signal s) -> std::ostream&;
 
 auto send_signal(signal sig,
-                 const prototype_name& name,
+                 const system_name& name,
                  const instance& instance,
                  std::ostream& diags) -> void;
 

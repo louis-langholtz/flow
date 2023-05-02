@@ -32,7 +32,7 @@ namespace flow {
 
 namespace {
 
-auto find(const prototype_name& name, instance& object, process_id pid)
+auto find(const system_name& name, instance& object, process_id pid)
     -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
 {
     if (object.id == pid) {
@@ -84,7 +84,7 @@ auto wait_for_child() -> wait_result
     return wait_result::info_t{process_id{pid}};
 }
 
-auto handle(const prototype_name& name, instance& instance,
+auto handle(const system_name& name, instance& instance,
             const wait_result& result, std::ostream& diags,
             wait_mode mode) -> void
 {
@@ -95,7 +95,7 @@ auto handle(const prototype_name& name, instance& instance,
         diags << "wait failed: " << result.error() << "\n";
         break;
     case wait_result::has_info: {
-        static const auto unknown_name = prototype_name{"unknown"};
+        static const auto unknown_name = system_name{"unknown"};
         const auto entry = find(name, instance, result.info().id);
         using status_enum = wait_result::info_t::status_enum;
         switch (status_enum(result.info().status.index())) {
@@ -144,7 +144,7 @@ auto handle(const prototype_name& name, instance& instance,
     }
 }
 
-auto show_diags(std::ostream& os, const prototype_name& name,
+auto show_diags(std::ostream& os, const system_name& name,
                 std::iostream& diags) -> void
 {
     if (diags.rdstate()) {
@@ -271,7 +271,7 @@ auto write(std::ostream& os, const std::error_code& ec)
     return os;
 }
 
-auto write_diags(const prototype_name& name, instance& object,
+auto write_diags(const system_name& name, instance& object,
                 std::ostream& os) -> void
 {
     if (!object.diags.is_open()) {
@@ -282,7 +282,7 @@ auto write_diags(const prototype_name& name, instance& object,
     }
     for (auto&& map_entry: object.children) {
         const auto full_name = name + map_entry.first;
-        write_diags(prototype_name{full_name}, map_entry.second, os);
+        write_diags(system_name{full_name}, map_entry.second, os);
     }
 }
 
@@ -331,7 +331,7 @@ auto mkfifo(const file_endpoint& file) -> void
     }
 }
 
-auto wait(const prototype_name& name, instance& instance,
+auto wait(const system_name& name, instance& instance,
           std::ostream& diags, wait_mode mode)
     -> void
 {
@@ -363,7 +363,7 @@ auto operator<<(std::ostream& os, signal s) -> std::ostream&
 }
 
 auto send_signal(signal sig,
-                 const prototype_name& name,
+                 const system_name& name,
                  const instance& instance,
                  std::ostream& diags) -> void
 {
