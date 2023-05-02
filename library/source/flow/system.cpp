@@ -30,7 +30,7 @@ auto operator<<(std::ostream& os, const executable_system& value)
     return os;
 }
 
-auto operator<<(std::ostream& os, const system_prototype& value)
+auto operator<<(std::ostream& os, const custom_system& value)
     -> std::ostream&
 {
     os << "system_prototype{";

@@ -19,7 +19,7 @@ using namespace flow;
 /// @brief Finds the channel requested.
 /// @return Pointer to channel of the type requested or <code>nullptr</code>.
 template <class T>
-auto find_channel(const system_prototype& system, instance& instance,
+auto find_channel(const custom_system& system, instance& instance,
                   const connection& look_for) -> T*
 {
     const auto found = find_index(system.connections, look_for);
@@ -31,7 +31,7 @@ auto do_lsof_system() -> void
     std::cerr << "Doing lsof instance...\n";
 
     const auto lsof_process_name = system_name{"lsof"};
-    system_prototype system;
+    custom_system system;
     executable_system lsof_executable;
     lsof_executable.executable_file = "/usr/sbin/lsof";
     lsof_executable.working_directory = "/usr/local";
@@ -88,7 +88,7 @@ auto do_ls_system() -> void
     touch(output_file_endpoint);
     std::cerr << "running in " << std::filesystem::current_path() << '\n';
 
-    system_prototype system;
+    custom_system system;
 
     const auto cat_process_name = system_name{"cat"};
     executable_system cat_executable;
@@ -180,10 +180,10 @@ auto do_nested_system() -> void
     const auto xargs_system_name = system_name{"xargs-system"};
     const auto xargs_process_name = system_name{"xargs-process"};
 
-    system_prototype system;
+    custom_system system;
 
     {
-        system_prototype cat_system;
+        custom_system cat_system;
         executable_system cat_executable;
         cat_executable.executable_file = "/bin/cat";
         cat_system.prototypes.emplace(cat_process_name, cat_executable);
@@ -199,7 +199,7 @@ auto do_nested_system() -> void
     }
 
     {
-        system_prototype xargs_system;
+        custom_system xargs_system;
         executable_system xargs_executable;
         xargs_executable.executable_file = "/usr/bin/xargs";
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
