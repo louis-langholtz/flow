@@ -1,6 +1,7 @@
 #ifndef fstream_hpp
 #define fstream_hpp
 
+#include <algorithm> // for std::copy_n
 #include <cassert>
 #include <cstdint> // for std::uint32_t
 #include <cstdio> // for FILE*

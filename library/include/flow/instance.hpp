@@ -11,6 +11,7 @@
 #include "flow/connection.hpp"
 #include "flow/process_id.hpp"
 #include "flow/prototype_name.hpp"
+#include "flow/utility.hpp"
 
 namespace flow {
 
@@ -26,13 +27,13 @@ struct instance {
 
     /// @brief Diagnostics stream.
     /// @note This should be unique to this instance's process ID.
-    ext::fstream diags;
+    ext::fstream diags{nulldev_fstream()};
 
     /// @brief Sub-instances - or children - of this instance.
-    std::map<prototype_name, instance> children;
+    std::map<prototype_name, instance> children{};
 
     /// @brief Channels made for this instance.
-    std::vector<channel> channels;
+    std::vector<channel> channels{};
 };
 
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;

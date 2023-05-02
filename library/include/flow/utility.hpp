@@ -12,7 +12,6 @@
 
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
-#include "flow/instance.hpp"
 #include "flow/process_id.hpp"
 
 namespace flow {
@@ -24,6 +23,7 @@ struct executable_prototype;
 struct system_prototype;
 
 auto temporary_fstream() -> ext::fstream;
+auto nulldev_fstream() -> ext::fstream;
 
 /// @note This is NOT an "async-signal-safe" function. So, it's not suitable
 /// for forked child to call.

@@ -213,6 +213,18 @@ auto temporary_fstream() -> ext::fstream
     return stream;
 }
 
+auto nulldev_fstream() -> ext::fstream
+{
+    static constexpr auto dev_null_path = "/dev/null";
+    constexpr auto mode =
+        ext::fstream::in|
+        ext::fstream::out;
+
+    ext::fstream stream;
+    stream.open(dev_null_path, mode);
+    return stream;
+}
+
 auto make_arg_bufs(const std::vector<std::string>& strings,
                    const std::string& fallback)
     -> std::vector<std::string>

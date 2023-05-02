@@ -19,8 +19,8 @@ struct wait_result {
 
     struct info_t {
         enum status_enum: unsigned {unknown, exit, signaled, stopped, continued};
-        process_id id;
-        wait_status status;
+        process_id id{invalid_process_id};
+        wait_status status{wait_unknown_status{}};
     };
 
     wait_result() noexcept = default;

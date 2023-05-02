@@ -549,9 +549,15 @@
 					library/include,
 					/opt/homebrew/opt/boost/include/,
 				);
+				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = flow;
 				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-Wpedantic",
+				);
 			};
 			name = Debug;
 		};
@@ -566,9 +572,15 @@
 					library/include,
 					/opt/homebrew/opt/boost/include/,
 				);
+				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = flow;
 				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-Wpedantic",
+				);
 			};
 			name = Release;
 		};
