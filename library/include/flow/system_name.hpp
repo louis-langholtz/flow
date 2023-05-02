@@ -1,5 +1,5 @@
-#ifndef process_name_hpp
-#define process_name_hpp
+#ifndef system_name_hpp
+#define system_name_hpp
 
 #include <ostream>
 #include <string>
@@ -30,4 +30,4 @@ auto operator+(const system_name& lhs, const system_name& rhs)
 
 }
 
-#endif /* process_name_hpp */
+#endif /* system_name_hpp */
