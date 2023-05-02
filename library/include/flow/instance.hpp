@@ -43,9 +43,9 @@ auto pretty_print(std::ostream& os, const instance& value) -> void;
 auto total_descendants(const instance& object) -> std::size_t;
 auto total_channels(const instance& object) -> std::size_t;
 
-struct system_prototype;
+struct custom_system;
 
-auto instantiate(const system_name& name, const system_prototype& system,
+auto instantiate(const system_name& name, const custom_system& system,
                  std::ostream& diags,
                  const std::span<const connection>& parent_connections,
                  const std::span<channel>& parent_channels) -> instance;

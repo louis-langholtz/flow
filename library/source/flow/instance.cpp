@@ -236,7 +236,7 @@ auto instantiate(const system_name& name,
 using connection_io_types = std::array<io_type, 2u>;
 using connection_result = std::pair<connection_io_types, channel>;
 
-auto make_channel(const system_name& name, const system_prototype& system,
+auto make_channel(const system_name& name, const custom_system& system,
                   const connection& conn,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
@@ -274,7 +274,7 @@ auto make_channel(const system_name& name, const system_prototype& system,
                 continue;
             }
             const auto& child = system.prototypes.at(p->address);
-            if (const auto cp = std::get_if<system_prototype>(&child)) {
+            if (const auto cp = std::get_if<custom_system>(&child)) {
                 const auto& d_info = cp->descriptors.at(p->descriptor);
                 ends_io[i] = d_info.direction;
                 continue;
@@ -331,7 +331,7 @@ auto make_child(const system_name& name,
         }
         return kid;
     }
-    if (const auto p = std::get_if<system_prototype>(&proto)) {
+    if (const auto p = std::get_if<custom_system>(&proto)) {
         return instantiate(name, *p, diags, connections, channels);
     }
     diags << "parent: unrecognized prototype for " << name << "\n";
@@ -419,7 +419,7 @@ auto total_channels(const instance& object) -> std::size_t
     return result;
 }
 
-auto instantiate(const system_name& name, const system_prototype& system,
+auto instantiate(const system_name& name, const custom_system& system,
                  std::ostream& diags,
                  const std::span<const connection>& parent_connections,
                  const std::span<channel>& parent_channels)

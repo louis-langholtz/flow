@@ -27,11 +27,11 @@ inline const auto standard_descriptors = descriptor_container{
     {descriptor_id{2}, {"stderr", io_type::out}},
 };
 
-struct system_prototype;
+struct custom_system;
 struct executable_system;
 
 using system = variant<
-    system_prototype,
+    custom_system,
     executable_system
 >;
 
@@ -46,7 +46,7 @@ struct executable_system {
     environment_container environment;
 };
 
-struct system_prototype {
+struct custom_system {
     descriptor_container descriptors{standard_descriptors};
     std::map<system_name, system> prototypes;
     std::vector<connection> connections;
@@ -56,7 +56,7 @@ auto operator<<(std::ostream& os, const descriptor_container& value)
     -> std::ostream&;
 auto operator<<(std::ostream& os, const executable_system& value)
     -> std::ostream&;
-auto operator<<(std::ostream& os, const system_prototype& value)
+auto operator<<(std::ostream& os, const custom_system& value)
     -> std::ostream&;
 
 }
