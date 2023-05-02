@@ -156,7 +156,7 @@ auto setup(const system_name& name,
 
 [[noreturn]]
 auto instantiate(const system_name& name,
-                 const executable_prototype& exe_proto,
+                 const executable_system& exe_proto,
                  char * const argv[],
                  char * const envp[],
                  const std::span<const connection>& connections,
@@ -193,7 +193,7 @@ auto instantiate(const system_name& name,
 }
 
 auto instantiate(const system_name& name,
-                 const executable_prototype& exe_proto,
+                 const executable_system& exe_proto,
                  process_id pgrp,
                  const std::span<const connection>& connections,
                  const std::span<channel>& channels,
@@ -279,7 +279,7 @@ auto make_channel(const system_name& name, const system_prototype& system,
                 ends_io[i] = d_info.direction;
                 continue;
             }
-            if (const auto cp = std::get_if<executable_prototype>(&child)) {
+            if (const auto cp = std::get_if<executable_system>(&child)) {
                 const auto& d_info = cp->descriptors.at(p->descriptor);
                 ends_io[i] = d_info.direction;
                 continue;
@@ -323,7 +323,7 @@ auto make_child(const system_name& name,
                 const std::span<channel>& channels,
                 std::ostream& diags) -> instance
 {
-    if (const auto p = std::get_if<executable_prototype>(&proto)) {
+    if (const auto p = std::get_if<executable_system>(&proto)) {
         auto kid = instantiate(name, *p, process_id(-int(pgrp)),
                                connections, channels, diags);
         if (kid.id != invalid_process_id && pgrp == no_process_id) {
