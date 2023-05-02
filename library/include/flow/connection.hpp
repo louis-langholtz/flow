@@ -4,12 +4,12 @@
 #include <array>
 #include <ostream>
 
-#include "flow/port.hpp"
+#include "flow/endpoint.hpp"
 
 namespace flow {
 
 struct connection {
-    std::array<port, 2u> ends;
+    std::array<endpoint, 2u> ends;
 };
 
 constexpr auto operator==(const connection& lhs,

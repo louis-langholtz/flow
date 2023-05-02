@@ -58,7 +58,7 @@ auto find_index(const std::span<const connection>& connections,
     -> std::optional<std::size_t>;
 
 auto find_index(const std::span<const connection>& connections,
-                const port& look_for) -> std::optional<std::size_t>;
+                const endpoint& look_for) -> std::optional<std::size_t>;
 
 auto touch(const file_port& file) -> void;
 

@@ -299,7 +299,7 @@ auto find_index(const std::span<const connection>& connections,
 }
 
 auto find_index(const std::span<const connection>& connections,
-                const port& look_for) -> std::optional<std::size_t>
+                const endpoint& look_for) -> std::optional<std::size_t>
 {
     const auto first = std::begin(connections);
     const auto last = std::end(connections);
