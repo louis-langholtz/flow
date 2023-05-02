@@ -7,8 +7,8 @@ auto operator<<(std::ostream& os, const connection& value)
 {
     os << "connection{";
     auto prepend = "";
-    for (auto&& port: value.ends) {
-        os << prepend << port;
+    for (auto&& end: value.ends) {
+        os << prepend << end;
         prepend = ",";
     }
     os << "}";

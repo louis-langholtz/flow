@@ -4,7 +4,7 @@ namespace flow {
 
 auto operator<<(std::ostream& os, const prototype_endpoint& value) -> std::ostream&
 {
-    os << "prototype_port{";
+    os << "prototype_endpoint{";
     os << value.address;
     os << ':';
     os << value.descriptor;

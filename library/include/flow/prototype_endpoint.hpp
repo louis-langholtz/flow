@@ -1,5 +1,5 @@
-#ifndef process_port_hpp
-#define process_port_hpp
+#ifndef process_endpoint_hpp
+#define process_endpoint_hpp
 
 #include <ostream>
 
@@ -26,4 +26,4 @@ auto operator<<(std::ostream& os, const prototype_endpoint& value)
 
 }
 
-#endif /* process_port_hpp */
+#endif /* process_endpoint_hpp */
