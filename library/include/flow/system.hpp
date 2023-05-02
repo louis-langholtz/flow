@@ -48,7 +48,7 @@ struct executable_system {
 
 struct custom_system {
     descriptor_container descriptors{standard_descriptors};
-    std::map<system_name, system> prototypes;
+    std::map<system_name, system> subsystems;
     std::vector<connection> connections;
 };
 
