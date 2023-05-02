@@ -36,7 +36,7 @@ auto do_lsof_system() -> void
     lsof_executable.executable_file = "/usr/sbin/lsof";
     lsof_executable.working_directory = "/usr/local";
     lsof_executable.arguments = {"lsof", "-p", "$$"};
-    system.prototypes.emplace(lsof_process_name, lsof_executable);
+    system.subsystems.emplace(lsof_process_name, lsof_executable);
     const auto lsof_stdout = connection{
         system_endpoint{lsof_process_name, descriptor_id{1}},
         system_endpoint{system_name{}, descriptor_id{1}},
@@ -93,14 +93,14 @@ auto do_ls_system() -> void
     const auto cat_process_name = system_name{"cat"};
     executable_system cat_executable;
     cat_executable.executable_file = "/bin/cat";
-    system.prototypes.emplace(cat_process_name, cat_executable);
+    system.subsystems.emplace(cat_process_name, cat_executable);
 
     const auto xargs_process_name = system_name{"xargs"};
     executable_system xargs_executable;
     xargs_executable.executable_file = "/usr/bin/xargs";
     xargs_executable.working_directory = "/fee/fii/foo/fum";
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
-    system.prototypes.emplace(xargs_process_name, xargs_executable);
+    system.subsystems.emplace(xargs_process_name, xargs_executable);
 
     const auto cat_stdin = connection{
         system_endpoint{system_name{}, descriptor_id{0}},
@@ -186,7 +186,7 @@ auto do_nested_system() -> void
         custom_system cat_system;
         executable_system cat_executable;
         cat_executable.executable_file = "/bin/cat";
-        cat_system.prototypes.emplace(cat_process_name, cat_executable);
+        cat_system.subsystems.emplace(cat_process_name, cat_executable);
         cat_system.connections.push_back(connection{
             system_endpoint{system_name{}, descriptor_id{0}},
             system_endpoint{cat_process_name, descriptor_id{0}}
@@ -195,7 +195,7 @@ auto do_nested_system() -> void
             system_endpoint{cat_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
-        system.prototypes.emplace(cat_system_name, cat_system);
+        system.subsystems.emplace(cat_system_name, cat_system);
     }
 
     {
@@ -203,7 +203,7 @@ auto do_nested_system() -> void
         executable_system xargs_executable;
         xargs_executable.executable_file = "/usr/bin/xargs";
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
-        xargs_system.prototypes.emplace(xargs_process_name, xargs_executable);
+        xargs_system.subsystems.emplace(xargs_process_name, xargs_executable);
         xargs_system.connections.push_back(connection{
             system_endpoint{system_name{}, descriptor_id{0}},
             system_endpoint{xargs_process_name, descriptor_id{0}}
@@ -212,7 +212,7 @@ auto do_nested_system() -> void
             system_endpoint{xargs_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
-        system.prototypes.emplace(xargs_system_name, xargs_system);
+        system.subsystems.emplace(xargs_system_name, xargs_system);
     }
 
     const auto system_stdin = connection{

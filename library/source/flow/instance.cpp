@@ -273,7 +273,7 @@ auto make_channel(const system_name& name, const custom_system& system,
                 ends_io[i] = reverse(d_info.direction);
                 continue;
             }
-            const auto& child = system.prototypes.at(p->address);
+            const auto& child = system.subsystems.at(p->address);
             if (const auto cp = std::get_if<custom_system>(&child)) {
                 const auto& d_info = cp->descriptors.at(p->descriptor);
                 ends_io[i] = d_info.direction;
@@ -334,7 +334,7 @@ auto make_child(const system_name& name,
     if (const auto p = std::get_if<custom_system>(&proto)) {
         return instantiate(name, *p, diags, connections, channels);
     }
-    diags << "parent: unrecognized prototype for " << name << "\n";
+    diags << "parent: unrecognized system type for " << name << "\n";
     return {};
 }
 
@@ -436,7 +436,7 @@ auto instantiate(const system_name& name, const custom_system& system,
         io_types.push_back(connection_result.first);
         channels.push_back(std::move(connection_result.second));
     }
-    for (auto&& mapentry: system.prototypes) {
+    for (auto&& mapentry: system.subsystems) {
         const auto& child = mapentry.first;
         const auto& proto = mapentry.second;
         auto kid = make_child(child, proto, result.id,
