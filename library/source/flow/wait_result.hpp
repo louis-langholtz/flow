@@ -1,7 +1,7 @@
 #ifndef wait_result_hpp
 #define wait_result_hpp
 
-#include "system_error_code.hpp"
+#include "os_error_code.hpp"
 #include "wait_status.hpp"
 
 #include "flow/process_id.hpp"
@@ -15,7 +15,7 @@ struct wait_result {
     struct no_kids_t {
     };
 
-    using error_t = system_error_code;
+    using error_t = os_error_code;
 
     struct info_t {
         enum status_enum: unsigned {unknown, exit, signaled, stopped, continued};

@@ -18,7 +18,7 @@
 #include <sys/stat.h> // for mkfifo
 #include <unistd.h> // for ::close
 
-#include "system_error_code.hpp"
+#include "os_error_code.hpp"
 #include "wait_result.hpp"
 #include "wait_status.hpp"
 
@@ -320,14 +320,14 @@ auto touch(const file_endpoint& file) -> void
         ::close(fd);
         return;
     }
-    throw std::runtime_error{to_string(system_error_code(errno))};
+    throw std::runtime_error{to_string(os_error_code(errno))};
 }
 
 auto mkfifo(const file_endpoint& file) -> void
 {
     static constexpr auto fifo_mode = ::mode_t{0666};
     if (::mkfifo(file.path.c_str(), fifo_mode) == -1) {
-        throw std::runtime_error{to_string(system_error_code(errno))};
+        throw std::runtime_error{to_string(os_error_code(errno))};
     }
 }
 
@@ -375,7 +375,7 @@ auto send_signal(signal sig,
         if (::kill(int(instance.id), to_posix_signal(sig)) == -1) {
             diags << "kill(" << instance.id;
             diags << "," << to_posix_signal(sig);
-            diags << ") failed: " << system_error_code(errno);
+            diags << ") failed: " << os_error_code(errno);
             diags << "\n";
         }
         return;

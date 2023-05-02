@@ -4,7 +4,7 @@
 #include <fcntl.h> // for ::open
 
 #include "indenting_ostreambuf.hpp"
-#include "system_error_code.hpp"
+#include "os_error_code.hpp"
 
 #include "flow/instance.hpp"
 #include "flow/system.hpp"
@@ -120,12 +120,12 @@ auto setup(const system_name& name,
             static constexpr auto mode_width = 5;
             diags << "open file " << file_end->path << " with mode ";
             diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
-            diags << " failed: " << system_error_code(errno) << "\n";
+            diags << " failed: " << os_error_code(errno) << "\n";
             ::_exit(1);
         }
         if (::dup2(fd, int(op->descriptor)) == -1) {
             diags << "dup2(" << fd << "," << op->descriptor << ") failed: ";
-            diags << system_error_code(errno) << "\n";
+            diags << os_error_code(errno) << "\n";
             ::_exit(1);
         }
     }
@@ -186,7 +186,7 @@ auto instantiate(const system_name& name,
     }
     diags.flush();
     ::execve(exe_proto.executable_file.c_str(), argv, envp);
-    const auto ec = system_error_code(errno);
+    const auto ec = os_error_code(errno);
     diags << "execve of " << exe_proto.executable_file << "failed: " << ec << "\n";
     diags.flush();
     ::_exit(1);
@@ -207,7 +207,7 @@ auto instantiate(const system_name& name,
     const auto pid = process_id{::fork()};
     switch (pid) {
     case invalid_process_id:
-        diags << "fork failed: " << system_error_code(errno) << "\n";
+        diags << "fork failed: " << os_error_code(errno) << "\n";
         return instance{pid};
     case process_id{0}: { // child process
         // Have to be especially careful here!
@@ -218,7 +218,7 @@ auto instantiate(const system_name& name,
         // for "functions required to be async-signal-safe by POSIX.1".
         if (::setpgid(0, int(pgrp)) == -1) {
             child_diags << "setpgid failed(0, " << int(pgrp) << "): ";
-            child_diags << system_error_code(errno);
+            child_diags << os_error_code(errno);
             child_diags << "\n";
         }
         make_substitutions(argv);
