@@ -4,12 +4,12 @@
 #include <ostream>
 
 #include "flow/descriptor_id.hpp"
-#include "flow/prototype_name.hpp"
+#include "flow/system_name.hpp"
 
 namespace flow {
 
 struct prototype_endpoint {
-    prototype_name address;
+    system_name address;
 
     ///@brief Well known descriptor ID of endpoint for applicable prototypes.
     descriptor_id descriptor{invalid_descriptor_id};

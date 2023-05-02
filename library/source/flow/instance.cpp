@@ -46,7 +46,7 @@ auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
     };
 }
 
-auto setup(const prototype_name& name,
+auto setup(const system_name& name,
            const connection& c,
            pipe_channel& p,
            std::ostream& diags) -> void
@@ -102,7 +102,7 @@ auto to_open_flags(io_type direction) noexcept -> int
     return 0;
 }
 
-auto setup(const prototype_name& name,
+auto setup(const system_name& name,
            const connection& c,
            file_channel& p,
            std::ostream& diags) -> void
@@ -131,7 +131,7 @@ auto setup(const prototype_name& name,
     }
 }
 
-auto setup(const prototype_name& name,
+auto setup(const system_name& name,
            const connection& c,
            channel& channel,
            std::ostream& diags) -> void
@@ -155,7 +155,7 @@ auto setup(const prototype_name& name,
 }
 
 [[noreturn]]
-auto instantiate(const prototype_name& name,
+auto instantiate(const system_name& name,
                  const executable_prototype& exe_proto,
                  char * const argv[],
                  char * const envp[],
@@ -192,7 +192,7 @@ auto instantiate(const prototype_name& name,
     ::_exit(1);
 }
 
-auto instantiate(const prototype_name& name,
+auto instantiate(const system_name& name,
                  const executable_prototype& exe_proto,
                  process_id pgrp,
                  const std::span<const connection>& connections,
@@ -236,7 +236,7 @@ auto instantiate(const prototype_name& name,
 using connection_io_types = std::array<io_type, 2u>;
 using connection_result = std::pair<connection_io_types, channel>;
 
-auto make_channel(const prototype_name& name, const system_prototype& system,
+auto make_channel(const system_name& name, const system_prototype& system,
                   const connection& conn,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
@@ -267,7 +267,7 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
     for (auto&& end: conn.ends) {
         const auto i = &end - conn.ends.data();
         if (const auto p = std::get_if<prototype_endpoint>(&end)) {
-            if (p->address == prototype_name{}) {
+            if (p->address == system_name{}) {
                 const auto& d_info = system.descriptors.at(p->descriptor);
                 enclosure_descriptors[i] = p->descriptor;
                 ends_io[i] = reverse(d_info.direction);
@@ -316,7 +316,7 @@ auto make_channel(const prototype_name& name, const system_prototype& system,
     return {ends_io, pipe_channel{}};
 }
 
-auto make_child(const prototype_name& name,
+auto make_child(const system_name& name,
                 const prototype& proto,
                 process_id& pgrp,
                 const std::span<const connection>& connections,
@@ -419,7 +419,7 @@ auto total_channels(const instance& object) -> std::size_t
     return result;
 }
 
-auto instantiate(const prototype_name& name, const system_prototype& system,
+auto instantiate(const system_name& name, const system_prototype& system,
                  std::ostream& diags,
                  const std::span<const connection>& parent_connections,
                  const std::span<channel>& parent_channels)
@@ -453,13 +453,13 @@ auto instantiate(const prototype_name& name, const system_prototype& system,
             const auto ends = make_endpoints<prototype_endpoint>(connection);
             const auto a_to_b = (io_pair[0] == io_type::out)
                              || (io_pair[1] == io_type::in);
-            if (ends[0]->address != prototype_name{}) {
+            if (ends[0]->address != system_name{}) {
                 const auto pio = a_to_b? pipe_channel::io::write: pipe_channel::io::read;
                 diags << "parent '" << name << "': closing " << pio << " side of ";
                 diags << connection << " " << *p << "\n";
                 p->close(pio, diags);
             }
-            if (ends[1]->address != prototype_name{}) {
+            if (ends[1]->address != system_name{}) {
                 const auto pio = a_to_b? pipe_channel::io::read: pipe_channel::io::write;
                 diags << "parent '" << name << "': closing " << pio << " side of ";
                 diags << connection << " " << *p << "\n";

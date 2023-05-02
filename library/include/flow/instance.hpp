@@ -10,7 +10,7 @@
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
 #include "flow/process_id.hpp"
-#include "flow/prototype_name.hpp"
+#include "flow/system_name.hpp"
 #include "flow/utility.hpp"
 
 namespace flow {
@@ -30,7 +30,7 @@ struct instance {
     ext::fstream diags{nulldev_fstream()};
 
     /// @brief Sub-instances - or children - of this instance.
-    std::map<prototype_name, instance> children{};
+    std::map<system_name, instance> children{};
 
     /// @brief Channels made for this instance.
     std::vector<channel> channels{};
@@ -45,7 +45,7 @@ auto total_channels(const instance& object) -> std::size_t;
 
 struct system_prototype;
 
-auto instantiate(const prototype_name& name, const system_prototype& system,
+auto instantiate(const system_name& name, const system_prototype& system,
                  std::ostream& diags,
                  const std::span<const connection>& parent_connections,
                  const std::span<channel>& parent_channels) -> instance;

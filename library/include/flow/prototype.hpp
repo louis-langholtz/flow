@@ -9,7 +9,7 @@
 #include "flow/descriptor_id.hpp"
 #include "flow/connection.hpp"
 #include "flow/io_type.hpp"
-#include "flow/prototype_name.hpp"
+#include "flow/system_name.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
@@ -48,7 +48,7 @@ struct executable_prototype {
 
 struct system_prototype {
     descriptor_container descriptors{standard_descriptors};
-    std::map<prototype_name, prototype> prototypes;
+    std::map<system_name, prototype> prototypes;
     std::vector<connection> connections;
 };
 
