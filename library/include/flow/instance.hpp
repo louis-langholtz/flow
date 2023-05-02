@@ -37,6 +37,8 @@ struct instance {
 
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
 
+auto pretty_print(std::ostream& os, const instance& value) -> void;
+
 auto total_descendants(const instance& object) -> std::size_t;
 auto total_channels(const instance& object) -> std::size_t;
 
