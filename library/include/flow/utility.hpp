@@ -19,7 +19,7 @@ namespace flow {
 struct file_endpoint;
 struct instance;
 struct system_name;
-struct executable_prototype;
+struct executable_system;
 struct system_prototype;
 
 auto temporary_fstream() -> ext::fstream;

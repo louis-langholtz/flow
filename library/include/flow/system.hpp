@@ -28,17 +28,17 @@ inline const auto standard_descriptors = descriptor_container{
 };
 
 struct system_prototype;
-struct executable_prototype;
+struct executable_system;
 
 using system = variant<
     system_prototype,
-    executable_prototype
+    executable_system
 >;
 
 using argument_container = std::vector<std::string>;
 using environment_container = std::map<std::string, std::string>;
 
-struct executable_prototype {
+struct executable_system {
     descriptor_container descriptors{standard_descriptors};
     std::filesystem::path executable_file;
     argument_container arguments;
@@ -54,7 +54,7 @@ struct system_prototype {
 
 auto operator<<(std::ostream& os, const descriptor_container& value)
     -> std::ostream&;
-auto operator<<(std::ostream& os, const executable_prototype& value)
+auto operator<<(std::ostream& os, const executable_system& value)
     -> std::ostream&;
 auto operator<<(std::ostream& os, const system_prototype& value)
     -> std::ostream&;

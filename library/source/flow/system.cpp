@@ -18,7 +18,7 @@ auto operator<<(std::ostream& os, const descriptor_container& value)
     return os;
 }
 
-auto operator<<(std::ostream& os, const executable_prototype& value)
+auto operator<<(std::ostream& os, const executable_system& value)
     -> std::ostream&
 {
     os << "executable_prototype{";

@@ -32,7 +32,7 @@ auto do_lsof_system() -> void
 
     const auto lsof_process_name = system_name{"lsof"};
     system_prototype system;
-    executable_prototype lsof_executable;
+    executable_system lsof_executable;
     lsof_executable.executable_file = "/usr/sbin/lsof";
     lsof_executable.working_directory = "/usr/local";
     lsof_executable.arguments = {"lsof", "-p", "$$"};
@@ -91,12 +91,12 @@ auto do_ls_system() -> void
     system_prototype system;
 
     const auto cat_process_name = system_name{"cat"};
-    executable_prototype cat_executable;
+    executable_system cat_executable;
     cat_executable.executable_file = "/bin/cat";
     system.prototypes.emplace(cat_process_name, cat_executable);
 
     const auto xargs_process_name = system_name{"xargs"};
-    executable_prototype xargs_executable;
+    executable_system xargs_executable;
     xargs_executable.executable_file = "/usr/bin/xargs";
     xargs_executable.working_directory = "/fee/fii/foo/fum";
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
@@ -184,7 +184,7 @@ auto do_nested_system() -> void
 
     {
         system_prototype cat_system;
-        executable_prototype cat_executable;
+        executable_system cat_executable;
         cat_executable.executable_file = "/bin/cat";
         cat_system.prototypes.emplace(cat_process_name, cat_executable);
         cat_system.connections.push_back(connection{
@@ -200,7 +200,7 @@ auto do_nested_system() -> void
 
     {
         system_prototype xargs_system;
-        executable_prototype xargs_executable;
+        executable_system xargs_executable;
         xargs_executable.executable_file = "/usr/bin/xargs";
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
         xargs_system.prototypes.emplace(xargs_process_name, xargs_executable);
