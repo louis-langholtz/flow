@@ -1,8 +1,8 @@
-#include "flow/prototype_endpoint.hpp"
+#include "flow/system_endpoint.hpp"
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const prototype_endpoint& value) -> std::ostream&
+auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
 {
     os << "prototype_endpoint{";
     os << value.address;

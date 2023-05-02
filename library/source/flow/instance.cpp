@@ -51,7 +51,7 @@ auto setup(const system_name& name,
            pipe_channel& p,
            std::ostream& diags) -> void
 {
-    const auto ends = make_endpoints<prototype_endpoint>(c);
+    const auto ends = make_endpoints<system_endpoint>(c);
     if (!ends[0] || !ends[1]) {
         return;
     }
@@ -111,7 +111,7 @@ auto setup(const system_name& name,
     const auto file_ends = make_endpoints<file_endpoint>(c);
     const auto& file_end = file_ends[0]? file_ends[0]: file_ends[1];
     const auto& other_end = file_ends[0]? c.ends[1]: c.ends[0];
-    if (const auto op = std::get_if<prototype_endpoint>(&other_end)) {
+    if (const auto op = std::get_if<system_endpoint>(&other_end)) {
         const auto flags = to_open_flags(p.io);
         const auto mode = 0600;
         const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
@@ -266,7 +266,7 @@ auto make_channel(const system_name& name, const custom_system& system,
     };
     for (auto&& end: conn.ends) {
         const auto i = &end - conn.ends.data();
-        if (const auto p = std::get_if<prototype_endpoint>(&end)) {
+        if (const auto p = std::get_if<system_endpoint>(&end)) {
             if (p->address == system_name{}) {
                 const auto& d_info = system.descriptors.at(p->descriptor);
                 enclosure_descriptors[i] = p->descriptor;
@@ -306,7 +306,7 @@ auto make_channel(const system_name& name, const custom_system& system,
     }
     for (auto&& descriptor_id: enclosure_descriptors) {
         if (descriptor_id != invalid_descriptor_id) {
-            const auto look_for = prototype_endpoint{name, descriptor_id};
+            const auto look_for = system_endpoint{name, descriptor_id};
             if (const auto found = find_index(parent_connections, look_for)) {
                 return {ends_io, reference_channel{&parent_channels[*found]}};
             }
@@ -450,7 +450,7 @@ auto instantiate(const system_name& name, const custom_system& system,
         const auto& io_pair = io_types[i];
         const auto& connection = system.connections[i];
         if (const auto p = std::get_if<pipe_channel>(&channel)) {
-            const auto ends = make_endpoints<prototype_endpoint>(connection);
+            const auto ends = make_endpoints<system_endpoint>(connection);
             const auto a_to_b = (io_pair[0] == io_type::out)
                              || (io_pair[1] == io_type::in);
             if (ends[0]->address != system_name{}) {

@@ -8,20 +8,20 @@
 
 namespace flow {
 
-struct prototype_endpoint {
+struct system_endpoint {
     system_name address;
 
     ///@brief Well known descriptor ID of endpoint for applicable prototypes.
     descriptor_id descriptor{invalid_descriptor_id};
 };
 
-constexpr auto operator==(const prototype_endpoint& lhs,
-                          const prototype_endpoint& rhs) -> bool
+constexpr auto operator==(const system_endpoint& lhs,
+                          const system_endpoint& rhs) -> bool
 {
     return (lhs.address == rhs.address) && (lhs.descriptor == rhs.descriptor);
 }
 
-auto operator<<(std::ostream& os, const prototype_endpoint& value)
+auto operator<<(std::ostream& os, const system_endpoint& value)
     -> std::ostream&;
 
 }
