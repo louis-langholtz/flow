@@ -10,7 +10,7 @@ namespace flow {
 /// @brief Port.
 /// @details Ports are connection endpoints to the variety of entities
 /// available that provide endpoints for connections.
-using port = variant<prototype_port, file_port>;
+using endpoint = variant<prototype_port, file_port>;
 
 }
 

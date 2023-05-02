@@ -14,7 +14,7 @@
 		9943E87D29FBFA07002F4C26 /* variant.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E87C29FBF8BE002F4C26 /* variant.hpp */; };
 		9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E88229FC0763002F4C26 /* wait_result.cpp */; };
 		9943E88529FC0763002F4C26 /* wait_result.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E88329FC0763002F4C26 /* wait_result.hpp */; };
-		9943E88C2A005069002F4C26 /* port.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E88B2A005069002F4C26 /* port.hpp */; };
+		9943E88C2A005069002F4C26 /* endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E88B2A005069002F4C26 /* endpoint.hpp */; };
 		9943E88F2A0068C6002F4C26 /* indenting_ostreambuf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E88D2A0068C6002F4C26 /* indenting_ostreambuf.cpp */; };
 		9943E8902A0068C6002F4C26 /* indenting_ostreambuf.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E88E2A0068C6002F4C26 /* indenting_ostreambuf.hpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
@@ -89,7 +89,7 @@
 		9943E87C29FBF8BE002F4C26 /* variant.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = variant.hpp; sourceTree = "<group>"; };
 		9943E88229FC0763002F4C26 /* wait_result.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wait_result.cpp; sourceTree = "<group>"; };
 		9943E88329FC0763002F4C26 /* wait_result.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = wait_result.hpp; sourceTree = "<group>"; };
-		9943E88B2A005069002F4C26 /* port.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = port.hpp; sourceTree = "<group>"; };
+		9943E88B2A005069002F4C26 /* endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = endpoint.hpp; sourceTree = "<group>"; };
 		9943E88D2A0068C6002F4C26 /* indenting_ostreambuf.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = indenting_ostreambuf.cpp; sourceTree = "<group>"; };
 		9943E88E2A0068C6002F4C26 /* indenting_ostreambuf.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = indenting_ostreambuf.hpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -221,7 +221,7 @@
 				99C1938229F506C200C3F53F /* file_port.hpp */,
 				99C1939A29F5774600C3F53F /* instance.hpp */,
 				99940BED29F1C9A500A77461 /* io_type.hpp */,
-				9943E88B2A005069002F4C26 /* port.hpp */,
+				9943E88B2A005069002F4C26 /* endpoint.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
 				99940BFE29F1F73900A77461 /* prototype_name.hpp */,
 				99C1937A29F4D70F00C3F53F /* prototype_port.hpp */,
@@ -283,7 +283,7 @@
 				99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */,
 				99C1937C29F4D70F00C3F53F /* prototype_port.hpp in Headers */,
 				9943E87B29FBF418002F4C26 /* wait_status.hpp in Headers */,
-				9943E88C2A005069002F4C26 /* port.hpp in Headers */,
+				9943E88C2A005069002F4C26 /* endpoint.hpp in Headers */,
 				99C193A629F76AB800C3F53F /* descriptor_iostream.hpp in Headers */,
 				99C1938429F506C200C3F53F /* file_port.hpp in Headers */,
 			);

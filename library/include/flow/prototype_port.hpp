@@ -11,7 +11,7 @@ namespace flow {
 struct prototype_port {
     prototype_name address;
 
-    ///@brief Well known descriptor ID of port for applicable prototypes.
+    ///@brief Well known descriptor ID of endpoint for applicable prototypes.
     descriptor_id descriptor{invalid_descriptor_id};
 };
 
