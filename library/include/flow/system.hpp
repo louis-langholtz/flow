@@ -1,5 +1,5 @@
-#ifndef prototype_hpp
-#define prototype_hpp
+#ifndef system_hpp
+#define system_hpp
 
 #include <map>
 #include <ostream>
@@ -61,4 +61,4 @@ auto operator<<(std::ostream& os, const custom_system& value)
 
 }
 
-#endif /* prototype_hpp */
+#endif /* system_hpp */

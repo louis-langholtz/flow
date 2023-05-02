@@ -21,7 +21,7 @@ auto operator<<(std::ostream& os, const descriptor_container& value)
 auto operator<<(std::ostream& os, const executable_system& value)
     -> std::ostream&
 {
-    os << "executable_prototype{";
+    os << "executable_system{";
     os << ".descriptors=" << value.descriptors;
     os << ".path=" << value.executable_file;
     os << ",.working_directory=" << value.working_directory;
@@ -33,7 +33,7 @@ auto operator<<(std::ostream& os, const executable_system& value)
 auto operator<<(std::ostream& os, const custom_system& value)
     -> std::ostream&
 {
-    os << "system_prototype{";
+    os << "custom_system{";
     os << ".descriptors=" << value.descriptors;
     os << "}";
     return os;
