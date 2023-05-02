@@ -1,5 +1,5 @@
-#ifndef port_hpp
-#define port_hpp
+#ifndef endpoint_hpp
+#define endpoint_hpp
 
 #include "flow/file_endpoint.hpp"
 #include "flow/prototype_endpoint.hpp"
@@ -7,11 +7,11 @@
 
 namespace flow {
 
-/// @brief Port.
-/// @details Ports are connection endpoints to the variety of entities
-/// available that provide endpoints for connections.
+/// @brief Endpoint.
+/// @details These are connection end points to the variety of entities
+/// available that provide end points for connections.
 using endpoint = variant<prototype_endpoint, file_endpoint>;
 
 }
 
-#endif /* port_hpp */
+#endif /* endpoint_hpp */

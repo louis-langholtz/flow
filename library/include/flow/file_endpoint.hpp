@@ -1,5 +1,5 @@
-#ifndef file_port_hpp
-#define file_port_hpp
+#ifndef file_endpoint_hpp
+#define file_endpoint_hpp
 
 #include <filesystem>
 #include <ostream>
@@ -19,4 +19,4 @@ std::ostream& operator<<(std::ostream& os, const file_endpoint& value);
 
 }
 
-#endif /* file_port_hpp */
+#endif /* file_endpoint_hpp */
