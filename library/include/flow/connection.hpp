@@ -9,13 +9,13 @@
 namespace flow {
 
 struct connection {
-    std::array<port, 2u> ports;
+    std::array<port, 2u> ends;
 };
 
 constexpr auto operator==(const connection& lhs,
                           const connection& rhs) noexcept -> bool
 {
-    return lhs.ports == rhs.ports;
+    return lhs.ends == rhs.ends;
 }
 
 auto operator<<(std::ostream& os, const connection& value)

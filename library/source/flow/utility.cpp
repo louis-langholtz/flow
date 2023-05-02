@@ -304,7 +304,7 @@ auto find_index(const std::span<const connection>& connections,
     const auto first = std::begin(connections);
     const auto last = std::end(connections);
     const auto iter = std::find_if(first, last, [&look_for](const auto& c){
-        return c.ports[0] == look_for || c.ports[1] == look_for;
+        return c.ends[0] == look_for || c.ends[1] == look_for;
     });
     if (iter != last) {
         return {std::distance(first, iter)};
