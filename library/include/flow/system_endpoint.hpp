@@ -1,5 +1,5 @@
-#ifndef process_endpoint_hpp
-#define process_endpoint_hpp
+#ifndef system_endpoint_hpp
+#define system_endpoint_hpp
 
 #include <ostream>
 
@@ -11,7 +11,7 @@ namespace flow {
 struct system_endpoint {
     system_name address;
 
-    ///@brief Well known descriptor ID of endpoint for applicable prototypes.
+    ///@brief Well known descriptor ID of endpoint for systems.
     descriptor_id descriptor{invalid_descriptor_id};
 };
 
@@ -26,4 +26,4 @@ auto operator<<(std::ostream& os, const system_endpoint& value)
 
 }
 
-#endif /* process_endpoint_hpp */
+#endif /* system_endpoint_hpp */
