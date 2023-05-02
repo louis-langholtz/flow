@@ -38,12 +38,12 @@ auto do_lsof_system() -> void
     lsof_executable.arguments = {"lsof", "-p", "$$"};
     system.prototypes.emplace(lsof_process_name, lsof_executable);
     const auto lsof_stdout = connection{
-        prototype_port{lsof_process_name, descriptor_id{1}},
-        prototype_port{prototype_name{}, descriptor_id{1}},
+        prototype_endpoint{lsof_process_name, descriptor_id{1}},
+        prototype_endpoint{prototype_name{}, descriptor_id{1}},
     };
     const auto lsof_stderr = connection{
-        prototype_port{lsof_process_name, descriptor_id{2}},
-        prototype_port{prototype_name{}, descriptor_id{2}},
+        prototype_endpoint{lsof_process_name, descriptor_id{2}},
+        prototype_endpoint{prototype_name{}, descriptor_id{2}},
     };
     system.connections.push_back(lsof_stdout);
     system.connections.push_back(lsof_stderr);
@@ -103,22 +103,22 @@ auto do_ls_system() -> void
     system.prototypes.emplace(xargs_process_name, xargs_executable);
 
     const auto cat_stdin = connection{
-        prototype_port{prototype_name{}, descriptor_id{0}},
-        prototype_port{cat_process_name, descriptor_id{0}}
+        prototype_endpoint{prototype_name{}, descriptor_id{0}},
+        prototype_endpoint{cat_process_name, descriptor_id{0}}
     };
     system.connections.push_back(cat_stdin);
     system.connections.push_back(connection{
-        prototype_port{cat_process_name, descriptor_id{1}},
-        prototype_port{xargs_process_name, descriptor_id{0}},
+        prototype_endpoint{cat_process_name, descriptor_id{1}},
+        prototype_endpoint{xargs_process_name, descriptor_id{0}},
     });
     const auto xargs_stdout = connection{
-        prototype_port{xargs_process_name, descriptor_id{1}},
-        prototype_port{prototype_name{}, descriptor_id{1}},
+        prototype_endpoint{xargs_process_name, descriptor_id{1}},
+        prototype_endpoint{prototype_name{}, descriptor_id{1}},
     };
     system.connections.push_back(xargs_stdout);
     const auto xargs_stderr = connection{
-        prototype_port{xargs_process_name, descriptor_id{2}},
-        prototype_port{prototype_name{}, descriptor_id{2}},
+        prototype_endpoint{xargs_process_name, descriptor_id{2}},
+        prototype_endpoint{prototype_name{}, descriptor_id{2}},
     };
     system.connections.push_back(xargs_stderr);
 
@@ -188,12 +188,12 @@ auto do_nested_system() -> void
         cat_executable.executable_file = "/bin/cat";
         cat_system.prototypes.emplace(cat_process_name, cat_executable);
         cat_system.connections.push_back(connection{
-            prototype_port{prototype_name{}, descriptor_id{0}},
-            prototype_port{cat_process_name, descriptor_id{0}}
+            prototype_endpoint{prototype_name{}, descriptor_id{0}},
+            prototype_endpoint{cat_process_name, descriptor_id{0}}
         });
         cat_system.connections.push_back(connection{
-            prototype_port{cat_process_name, descriptor_id{1}},
-            prototype_port{prototype_name{}, descriptor_id{1}},
+            prototype_endpoint{cat_process_name, descriptor_id{1}},
+            prototype_endpoint{prototype_name{}, descriptor_id{1}},
         });
         system.prototypes.emplace(cat_system_name, cat_system);
     }
@@ -205,27 +205,27 @@ auto do_nested_system() -> void
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
         xargs_system.prototypes.emplace(xargs_process_name, xargs_executable);
         xargs_system.connections.push_back(connection{
-            prototype_port{prototype_name{}, descriptor_id{0}},
-            prototype_port{xargs_process_name, descriptor_id{0}}
+            prototype_endpoint{prototype_name{}, descriptor_id{0}},
+            prototype_endpoint{xargs_process_name, descriptor_id{0}}
         });
         xargs_system.connections.push_back(connection{
-            prototype_port{xargs_process_name, descriptor_id{1}},
-            prototype_port{prototype_name{}, descriptor_id{1}},
+            prototype_endpoint{xargs_process_name, descriptor_id{1}},
+            prototype_endpoint{prototype_name{}, descriptor_id{1}},
         });
         system.prototypes.emplace(xargs_system_name, xargs_system);
     }
 
     const auto system_stdin = connection{
-        prototype_port{prototype_name{}, descriptor_id{0}},
-        prototype_port{cat_system_name, descriptor_id{0}},
+        prototype_endpoint{prototype_name{}, descriptor_id{0}},
+        prototype_endpoint{cat_system_name, descriptor_id{0}},
     };
     const auto catout_to_xargsin = connection{
-        prototype_port{cat_system_name, descriptor_id{1}},
-        prototype_port{xargs_system_name, descriptor_id{0}},
+        prototype_endpoint{cat_system_name, descriptor_id{1}},
+        prototype_endpoint{xargs_system_name, descriptor_id{0}},
     };
     const auto system_stdout = connection{
-        prototype_port{xargs_system_name, descriptor_id{1}},
-        prototype_port{prototype_name{}, descriptor_id{1}},
+        prototype_endpoint{xargs_system_name, descriptor_id{1}},
+        prototype_endpoint{prototype_name{}, descriptor_id{1}},
     };
     system.connections.push_back(system_stdin);
     system.connections.push_back(catout_to_xargsin);

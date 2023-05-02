@@ -2,7 +2,7 @@
 #define port_hpp
 
 #include "flow/file_endpoint.hpp"
-#include "flow/prototype_port.hpp"
+#include "flow/prototype_endpoint.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
@@ -10,7 +10,7 @@ namespace flow {
 /// @brief Port.
 /// @details Ports are connection endpoints to the variety of entities
 /// available that provide endpoints for connections.
-using endpoint = variant<prototype_port, file_endpoint>;
+using endpoint = variant<prototype_endpoint, file_endpoint>;
 
 }
 
