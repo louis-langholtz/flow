@@ -35,7 +35,7 @@ namespace {
 auto find(const system_name& name, instance& object, process_id pid)
     -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
 {
-    if (object.id == pid) {
+    if (object.pid == pid) {
         return std::make_pair(name, std::ref(object));
     }
     for (auto&& entry: object.children) {
@@ -104,7 +104,7 @@ auto handle(const system_name& name, instance& instance,
         case wait_result::info_t::exit: {
             const auto exit_status = std::get<wait_exit_status>(result.info().status);
             if (entry) {
-                entry->second.id = process_id(0);
+                entry->second.pid = process_id(0);
             }
             if ((mode == wait_mode::diagnostic) || (exit_status.value != 0)) {
                 diags << "child=" << (entry? entry->first: unknown_name);
@@ -379,10 +379,11 @@ auto send_signal(signal sig,
     for (auto&& child: instance.children) {
         send_signal(sig, name + child.first, child.second, diags);
     }
-    if ((instance.id != invalid_process_id) && (instance.id != no_process_id)) {
+    if ((instance.pid != invalid_process_id) &&
+        (instance.pid != no_process_id)) {
         diags << "sending " << sig << " to " << name << "\n";
-        if (::kill(int(instance.id), to_posix_signal(sig)) == -1) {
-            diags << "kill(" << instance.id;
+        if (::kill(int(instance.pid), to_posix_signal(sig)) == -1) {
+            diags << "kill(" << instance.pid;
             diags << "," << to_posix_signal(sig);
             diags << ") failed: " << os_error_code(errno);
             diags << "\n";
