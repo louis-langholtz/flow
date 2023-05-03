@@ -304,7 +304,13 @@ auto find_index(const std::span<const connection>& connections,
     const auto first = std::begin(connections);
     const auto last = std::end(connections);
     const auto iter = std::find_if(first, last, [&look_for](const auto& c){
-        return c.ends[0] == look_for || c.ends[1] == look_for;
+        if (const auto p = std::get_if<unidirectional_connection>(&c)) {
+            return (p->src == look_for) || (p->dst == look_for);
+        }
+        if (const auto p = std::get_if<bidirectional_connection>(&c)) {
+            return (p->ends[0] == look_for) || (p->ends[1] == look_for);
+        }
+        return false;
     });
     if (iter != last) {
         return {std::distance(first, iter)};

@@ -2,10 +2,20 @@
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const connection& value)
+auto operator<<(std::ostream& os, const unidirectional_connection& value)
     -> std::ostream&
 {
-    os << "connection{";
+    os << "unidirectional_connection{";
+    os << ".src=" << value.src;
+    os << ",.dst=" << value.dst;
+    os << "}";
+    return os;
+}
+
+auto operator<<(std::ostream& os, const bidirectional_connection& value)
+    -> std::ostream&
+{
+    os << "bidirectional_connection{";
     auto prepend = "";
     for (auto&& end: value.ends) {
         os << prepend << end;
