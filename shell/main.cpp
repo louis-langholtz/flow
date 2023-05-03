@@ -55,6 +55,7 @@ auto do_lsof_system() -> void
         std::copy(std::istreambuf_iterator<char>(diags),
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(std::cerr));
+        pretty_print(std::cerr, object);
 
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto p = find_channel<pipe_channel>(system, object,
@@ -72,6 +73,9 @@ auto do_lsof_system() -> void
                     break;
                 }
             }
+        }
+        else {
+            std::cerr << "no pipe for lsof_stdout??!\n";
         }
         write_diags(system_name{}, object, std::cerr);
     }
