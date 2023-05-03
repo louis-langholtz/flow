@@ -514,6 +514,7 @@ auto instantiate(const system_name& name, const custom_system& system,
     instance result;
     result.id = no_process_id;
     std::vector<channel> channels;
+    channels.reserve(size(system.connections));
     for (auto&& connection: system.connections) {
         channels.push_back(make_channel(name, system, connection,
                                         parent_connections,
