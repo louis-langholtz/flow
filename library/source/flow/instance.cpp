@@ -66,11 +66,86 @@ auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
     return std::array<const T*, 2u>{nullptr, nullptr};
 }
 
+auto find_owner(const instance& root, const instance& key)
+    -> const instance*
+{
+    for (auto&& entry: root.children) {
+        if (&entry.second == &key) {
+            return &root;
+        }
+        if (const auto found = find_owner(entry.second, key)) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+template <class T>
+auto fully_deref(T&& chan_p)
+    -> decltype(std::get_if<reference_channel>(chan_p)->other)
+{
+    using ref_type = decltype(std::get_if<reference_channel>(chan_p));
+    auto ref_p = static_cast<ref_type>(nullptr);
+    while ((ref_p = std::get_if<reference_channel>(chan_p)) != nullptr) {
+        chan_p = ref_p->other;
+    }
+    return chan_p;
+}
+
+auto is_channel_for(const instance& root,
+                    const channel& key,
+                    const instance& for_instance) -> bool
+{
+    if (const auto p = find_owner(root, for_instance)) {
+        for (auto&& channel: p->channels) {
+            if (&channel == &key) {
+                return true;
+            }
+            auto chan_p = &channel;
+            using ref_type = decltype(std::get_if<reference_channel>(chan_p));
+            auto ref_p = static_cast<ref_type>(nullptr);
+            while ((ref_p = std::get_if<reference_channel>(chan_p)) != nullptr) {
+                chan_p = ref_p->other;
+                if (chan_p == &key) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+auto close(pipe_channel& p, pipe_channel::io side,
+           const system_name& name, const connection& c,
+           std::ostream& diags)
+    -> void
+{
+    diags << name << " " << c << " " << p;
+    diags << ", close  " << side << "-side\n";
+    if (!p.close(side, diags)) { // close unused end
+        ::_exit(1);
+    }
+}
+
+auto dup2(pipe_channel& p, pipe_channel::io side, descriptor_id id,
+          const system_name& name, const connection& c,
+          std::ostream& diags)
+    -> void
+{
+    diags << name << " " << c << " " << p;
+    diags << ", dup " << side << "-side to ";
+    diags << id << "\n";
+    if (!p.dup(side, id, diags)) {
+        ::_exit(1);
+    }
+}
+
 auto setup(const system_name& name,
            const connection& c,
            pipe_channel& p,
            std::ostream& diags) -> void
 {
+    using io = pipe_channel::io;
     const auto ends = make_endpoints<system_endpoint>(c);
     if (!ends[0] && !ends[1]) {
         diags << "connection has no system_endpoint: " << c << "\n";
@@ -80,58 +155,20 @@ auto setup(const system_name& name,
         (!ends[1] || (ends[1]->address != name))) {
         diags << name << " (unaffiliation) " << c;
         diags << " " << p << ", close in & out setup\n";
-        const auto closed_in = p.close(pipe_channel::io::read, diags);
-        const auto closed_out = p.close(pipe_channel::io::write, diags);
-        if (!closed_in || !closed_out) {
-            diags << ", for " << name << "\n";
-            ::_exit(1);
-        }
+        close(p, io::read, name, c, diags);
+        close(p, io::write, name, c, diags);
         return;
     }
     if (ends[0]) { // src
         if (ends[0]->address == name) {
-            diags << name << " " << c << " " << p;
-            diags << ", close  read-side\n";
-            if (!p.close(pipe_channel::io::read, diags)) { // close unused end
-                ::_exit(1);
-            }
-            diags << name << " " << c << " " << p;
-            diags << ", dup write-side to " << ends[0]->descriptor << "\n";
-            if (!p.dup(pipe_channel::io::write, ends[0]->descriptor, diags)) {
-                ::_exit(1);
-            }
-        }
-        else {
-            diags << name << " " << c << " " << p;
-            diags << ", close write-side\n";
-#if 0
-            if (!p.close(pipe_channel::io::write, diags)) { // close unused end
-                ::_exit(1);
-            }
-#endif
+            close(p, io::read, name, c, diags);
+            dup2(p, io::write, ends[0]->descriptor, name, c, diags);
         }
     }
     if (ends[1]) { // dst
         if (ends[1]->address == name) {
-            diags << name << " " << c << " " << p;
-            diags << ", close write-side\n";
-            if (!p.close(pipe_channel::io::write, diags)) { // close unused end
-                ::_exit(1);
-            }
-            diags << name << " " << c << " " << p;
-            diags << ", dup  read-side to " << ends[1]->descriptor << "\n";
-            if (!p.dup(pipe_channel::io::read, ends[1]->descriptor, diags)) {
-                ::_exit(1);
-            }
-        }
-        else {
-            diags << name << " " << c << " " << p;
-            diags << ", close  read-side\n";
-#if 0
-            if (!p.close(pipe_channel::io::read, diags)) { // close unused end
-                ::_exit(1);
-            }
-#endif
+            close(p, io::write, name, c, diags);
+            dup2(p, io::read, ends[1]->descriptor, name, c, diags);
         }
     }
 }
@@ -227,63 +264,16 @@ auto setup(const system_name& name,
     }
 }
 
-auto setup(const system_name& name,
-           const connection& c,
-           channel& channel,
-           std::ostream& diags) -> void
-{
-    if (const auto p = std::get_if<pipe_channel>(&channel)) {
-        setup(name, c, *p, diags);
-        return;
-    }
-    if (const auto p = std::get_if<file_channel>(&channel)) {
-        setup(name, c, *p, diags);
-        return;
-    }
-    if (auto p = std::get_if<reference_channel>(&channel)) {
-        diags << "found reference channel, referencing " << p->other << "\n";
-        if (p->other) {
-            setup(name, c, *(p->other), diags);
-        }
-        return;
-    }
-    diags << "found UNKNOWN channel type!!!!\n";
-}
-
 [[noreturn]]
-auto exec_child(const system_name& name,
-                 const executable_system& exe_proto,
-                 char * const argv[],
-                 char * const envp[],
-                 const std::span<const connection>& connections,
-                 const std::span<channel>& channels,
-                 std::ostream& diags) -> void
+auto exec_child(const std::filesystem::path& path,
+                char * const argv[],
+                char * const envp[],
+                std::ostream& diags) -> void
 {
-    // Deal with:
-    // flow::pipe_connection{
-    //   flow::process_port{ls_process_name, flow::descriptor_id{1}},
-    //   flow::process_port{cat_process_name, flow::descriptor_id{0}}}
-    //
-    // Also:
-    // Close file descriptors inherited by child that it's not using.
-    // See: https://stackoverflow.com/a/7976880/7410358
-    for (const auto& connection: connections) {
-        const auto i = static_cast<std::size_t>(&connection - connections.data());
-        setup(name, connection, channels[i], diags);
-    }
-    if (!exe_proto.working_directory.empty()) {
-        auto ec = std::error_code{};
-        std::filesystem::current_path(exe_proto.working_directory, ec);
-        if (ec) {
-            diags << "chdir " << exe_proto.working_directory << " failed: ";
-            write(diags, ec);
-            diags << "\n";
-        }
-    }
     diags.flush();
-    ::execve(exe_proto.executable_file.c_str(), argv, envp);
+    ::execve(path.c_str(), argv, envp);
     const auto ec = os_error_code(errno);
-    diags << "execve of " << exe_proto.executable_file << "failed: " << ec << "\n";
+    diags << "execve of " << path << "failed: " << ec << "\n";
     diags.flush();
     ::_exit(1);
 }
@@ -322,7 +312,7 @@ auto make_child(const system_name& name,
                 std::ostream& diags) -> instance
 {
     if (const auto p = std::get_if<executable_system>(&sys)) {
-        return {no_process_id};
+        return {no_process_id, temporary_fstream()};
     }
     if (const auto p = std::get_if<custom_system>(&sys)) {
         return make_child(name, *p, connections, channels, diags);
@@ -331,18 +321,73 @@ auto make_child(const system_name& name,
     return {};
 }
 
+auto change_directory(const std::filesystem::path& path, std::ostream& diags)
+    -> bool
+{
+    auto ec = std::error_code{};
+    std::filesystem::current_path(path, ec);
+    if (ec) {
+        diags << "chdir " << path << " failed: ";
+        write(diags, ec);
+        diags << "\n";
+        return false;
+    }
+    return true;
+}
+
+auto close_pipes_except(instance& root,
+                        instance& child) -> void
+{
+    for (auto&& channel: root.channels) {
+        if (!is_channel_for(root, channel, child)) {
+            if (const auto p = std::get_if<pipe_channel>(&channel)) {
+                p->close(pipe_channel::io::read, child.diags);
+                p->close(pipe_channel::io::write, child.diags);
+            }
+        }
+    }
+    for (auto&& entry: root.children) {
+        close_pipes_except(entry.second, child);
+    }
+}
+
+auto setup(instance& root,
+           const system_name& name,
+           const std::span<const connection>& connections,
+           const std::span<channel>& channels,
+           instance& child) -> void
+{
+    // close & dup the channels needed for name, and close those that aren't
+    // TODO: close inherited channel descriptors that child's not using.
+    const auto max_index = size(connections);
+    assert(max_index == size(channels));
+    for (auto index = 0u; index < max_index; ++index) {
+        const auto chan_p = fully_deref(&channels[index]);
+        if (const auto pipe_p = std::get_if<pipe_channel>(chan_p)) {
+            setup(name, connections[index], *pipe_p, child.diags);
+            continue;
+        }
+        if (const auto file_p = std::get_if<file_channel>(chan_p)) {
+            setup(name, connections[index], *file_p, child.diags);
+            continue;
+        }
+        child.diags << "found UNKNOWN channel type!!!!\n";
+    }
+    close_pipes_except(root, child);
+}
+
 auto fork_child(const system_name& name,
-                const executable_system& executable,
+                const executable_system& system,
                 instance& child,
                 process_id& pgrp,
                 const std::span<const connection>& connections,
                 const std::span<channel>& channels,
+                instance& root,
                 std::ostream& diags) -> void
 {
-    child.diags = temporary_fstream();
-    auto arg_buffers = make_arg_bufs(executable.arguments,
-                                     executable.executable_file);
-    auto env_buffers = make_arg_bufs(executable.environment);
+    auto arg_buffers = make_arg_bufs(system.arguments,
+                                     system.executable_file);
+    auto env_buffers = make_arg_bufs(system.environment);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
     child.pid = process_id{::fork()};
@@ -363,9 +408,24 @@ auto fork_child(const system_name& name,
             child.diags << "\n";
         }
         make_substitutions(argv);
+        // Deal with:
+        // unidirectional_connection{
+        //   system_endpoint{ls_process_name, flow::descriptor_id{1}},
+        //   system_endpoint{cat_process_name, flow::descriptor_id{0}}
+        // }
+        //
+        // Also:
+        // Close file descriptors inherited by child that it's not using.
+        // See: https://stackoverflow.com/a/7976880/7410358
+        setup(root, name, connections, channels, child);
+        // NOTE: child.diags streams opened close-on-exec, so no need
+        //   to close them.
+        if (!system.working_directory.empty()) {
+            change_directory(system.working_directory, child.diags);
+        }
         // NOTE: the following does not return!
-        exec_child(name, executable, argv.data(), envp.data(),
-                   connections, channels, child.diags);
+        exec_child(system.executable_file, argv.data(), envp.data(),
+                   child.diags);
     }
     default: // case for the spawning/parent process
         diags << "child '" << name << "' started as pid " << child.pid << "\n";
@@ -376,32 +436,30 @@ auto fork_child(const system_name& name,
     }
 }
 
-auto fork_child(const system_name& name,
-                const system& sys,
-                instance& child,
-                process_id& pgrp,
-                const std::span<const connection>& connections,
-                const std::span<channel>& channels,
-                std::ostream& diags) -> void
+auto fork_executables(const custom_system& system,
+                      instance& object,
+                      instance& root,
+                      std::ostream& diags) -> void
 {
-    if (const auto p = std::get_if<executable_system>(&sys)) {
-        fork_child(name, *p, child, pgrp, connections, channels, diags);
-        return;
-    }
-    if (const auto p = std::get_if<custom_system>(&sys)) {
-        for (auto&& entry: p->subsystems) {
-            const auto found = child.children.find(entry.first);
-            if (found == child.children.end()) {
-                diags << "can't find child instance for " << entry.first;
-                diags << "!\n";
-                continue;
-            }
-            fork_child(entry.first, entry.second, found->second, pgrp,
-                       connections, channels, diags);
+    for (auto&& entry: system.subsystems) {
+        const auto& name = entry.first;
+        const auto& subsystem = entry.second;
+        const auto found = object.children.find(name);
+        if (found == object.children.end()) {
+            diags << "can't find child instance for " << name << "!\n";
+            continue;
         }
-        return;
+        if (const auto p = std::get_if<executable_system>(&subsystem)) {
+            fork_child(name, *p, found->second, object.pid, system.connections,
+                       object.channels, root, diags);
+            continue;
+        }
+        if (const auto p = std::get_if<custom_system>(&subsystem)) {
+            fork_executables(*p, found->second, root, diags);
+            continue;
+        }
+        diags << "Detected unknown system type - skipping!\n";
     }
-    diags << "parent: unrecognized system type for " << name << "\n";
 }
 
 }
@@ -486,9 +544,7 @@ auto total_channels(const instance& object) -> std::size_t
 }
 
 auto instantiate(const system_name& name, const custom_system& system,
-                 std::ostream& diags,
-                 const std::span<const connection>& parent_connections,
-                 const std::span<channel>& parent_channels)
+                 std::ostream& diags)
     -> instance
 {
     instance result;
@@ -496,10 +552,9 @@ auto instantiate(const system_name& name, const custom_system& system,
     result.channels.reserve(size(system.connections));
     for (auto&& connection: system.connections) {
         result.channels.push_back(make_channel(name, system, connection,
-                                               parent_connections,
-                                               parent_channels));
+                                               {}, {}));
     }
-    // Have to create all the subsystem instances before forking any!
+    // Create all the subsystem instances before forking any!
     for (auto&& entry: system.subsystems) {
         const auto& sub_name = entry.first;
         const auto& sub_system = entry.second;
@@ -507,16 +562,7 @@ auto instantiate(const system_name& name, const custom_system& system,
                               system.connections, result.channels, diags);
         result.children.emplace(sub_name, std::move(kid));
     }
-    for (auto&& entry: system.subsystems) {
-        const auto found = result.children.find(entry.first);
-        if (found == result.children.end()) {
-            diags << "can't find child instance for " << entry.first;
-            diags << "!\n";
-            continue;
-        }
-        fork_child(entry.first, entry.second, found->second, result.pid,
-                   system.connections, result.channels, diags);
-    }
+    fork_executables(system, result, result, diags);
     // Only now, after making child processes,
     // close parent side of pipe_channels...
     for (auto&& channel: result.channels) {

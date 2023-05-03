@@ -39,10 +39,34 @@ auto validate(const system_endpoint& end,
     }
 }
 
+auto make_not_closed_msg(const system_name& name,
+                         const connection& conn,
+                         const endpoint& look_for,
+                         const std::span<const connection>& connections)
+    -> std::string
+{
+    std::ostringstream os;
+    static const auto not_closed_error = "system must be closed";
+    os << not_closed_error;
+    os << ":\n  for system " << name;
+    os << "\n  for connection " << conn;
+    os << "\n  looking-for " << look_for;
+    if (connections.empty()) {
+        os << "\n  parent-connections empty";
+    }
+    else {
+        os << "\n  parent-connections:";
+        for (auto&& c: connections) {
+            os << "\n    " << c;
+        }
+    }
+    return os.str();
+}
+
 auto make_channel(const system_name& name, const custom_system& system,
                   const unidirectional_connection& conn,
-                  const std::span<const connection>& parent_connections,
-                  const std::span<channel>& parent_channels)
+                  const std::span<const connection>& connections,
+                  const std::span<channel>& channels)
     -> channel
 {
     static constexpr auto unequal_sizes_error =
@@ -55,12 +79,11 @@ auto make_channel(const system_name& name, const custom_system& system,
         "connection must have different endpoints";
     static constexpr auto no_system_end_error =
         "at least one end must be a system";
-    static const auto not_closed_error = "system must be closed";
 
     if (conn.src == conn.dst) {
         throw std::invalid_argument{same_endpoints_error};
     }
-    if (std::size(parent_connections) != std::size(parent_channels)) {
+    if (std::size(connections) != std::size(channels)) {
         throw std::invalid_argument{unequal_sizes_error};
     }
 
@@ -106,28 +129,17 @@ auto make_channel(const system_name& name, const custom_system& system,
     for (auto&& descriptor_id: enclosure_descriptors) {
         if (descriptor_id != invalid_descriptor_id) {
             const auto look_for = system_endpoint{name, descriptor_id};
-            if (const auto found = find_index(parent_connections, look_for)) {
-                return {reference_channel{&parent_channels[*found]}};
+            if (const auto found = find_index(connections, look_for)) {
+                return {reference_channel{&channels[*found]}};
             }
-            std::ostringstream os;
-            os << not_closed_error;
-            os << ":\n  for system " << name;
-            os << "\n  for connection " << conn;
-            os << "\n  looking-for " << look_for;
-            if (parent_connections.empty()) {
-                os << "\n  parent-connections empty";
-            }
-            else {
-                os << "\n  parent-connections:";
-                for (auto&& pc: parent_connections) {
-                    os << "\n    " << pc;
-                }
-            }
-            throw std::invalid_argument{os.str()};
+            throw std::invalid_argument{make_not_closed_msg(name, conn,
+                                                            look_for,
+                                                            connections)};
         }
     }
     return {pipe_channel{}};
 }
+
 }
 
 auto make_channel(const system_name& name, const custom_system& system,

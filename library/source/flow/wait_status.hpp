@@ -11,7 +11,8 @@ namespace flow {
 struct wait_unknown_status {
 };
 
-constexpr std::strong_ordering operator<=>(wait_unknown_status, wait_unknown_status) noexcept
+constexpr auto operator<=>(wait_unknown_status, wait_unknown_status) noexcept
+    -> std::strong_ordering
 {
     return std::strong_ordering::equal;
 }

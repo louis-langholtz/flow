@@ -48,9 +48,7 @@ auto total_channels(const instance& object) -> std::size_t;
 struct custom_system;
 
 auto instantiate(const system_name& name, const custom_system& system,
-                 std::ostream& diags,
-                 const std::span<const connection>& parent_connections,
-                 const std::span<channel>& parent_channels) -> instance;
+                 std::ostream& diags) -> instance;
 
 }
 

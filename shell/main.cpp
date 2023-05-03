@@ -49,7 +49,7 @@ auto do_lsof_system() -> void
     system.connections.push_back(lsof_stderr);
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system_name{}, system, diags, {}, {});
+        auto object = instantiate(system_name{}, system, diags);
         std::cerr << "Diagnostics for parent of lsof...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
@@ -122,7 +122,7 @@ auto do_ls_system() -> void
 
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system_name{}, system, diags, {}, {});
+        auto object = instantiate(system_name{}, system, diags);
         std::cerr << "Diagnostics for root instance...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
@@ -228,10 +228,7 @@ auto do_nested_system() -> void
 
     {
         auto diags = temporary_fstream();
-        auto parent_channels = std::vector<channel>{};
-        auto object = instantiate(system_name{}, system, diags,
-                                  std::vector<connection>{},
-                                  parent_channels);
+        auto object = instantiate(system_name{}, system, diags);
         std::cerr << "Diagnostics for nested instance...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),

@@ -10,7 +10,6 @@
 
 #include "ext/fstream.hpp"
 
-#include "flow/channel.hpp"
 #include "flow/connection.hpp"
 #include "flow/process_id.hpp"
 
