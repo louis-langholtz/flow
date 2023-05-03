@@ -2,113 +2,150 @@
 #include <cstring> // for std::streror
 #include <iostream>
 #include <sstream> // for std::ostringstream
-#include <stdexcept> // for std::runtime_error
-#include <utility> // for std::exchange
-
-#include <unistd.h> // for pipe, close
-
-#include "os_error_code.hpp"
 
 #include "flow/channel.hpp"
+#include "flow/system.hpp"
+#include "flow/utility.hpp"
 
 namespace flow {
 
-pipe_channel::pipe_channel()
+namespace {
+
+auto validate(const system_endpoint& end,
+              const custom_system& system,
+              io_type expected_io) -> void
 {
-    if (::pipe(descriptors.data()) == -1) {
-        throw std::runtime_error{to_string(os_error_code(errno))};
+    if (end.address == system_name{}) {
+        const auto& d_info = system.descriptors.at(end.descriptor);
+        if (d_info.direction != reverse(expected_io)) {
+            throw std::invalid_argument{"bad custom system endpoint io"};
+        }
+        return;
+    }
+    const auto& child = system.subsystems.at(end.address);
+    if (const auto cp = std::get_if<custom_system>(&child)) {
+        const auto& d_info = cp->descriptors.at(end.descriptor);
+        if (d_info.direction != expected_io) {
+            throw std::invalid_argument{"bad custom subsys endpoint io"};
+        }
+        return;
+    }
+    if (const auto cp = std::get_if<executable_system>(&child)) {
+        const auto& d_info = cp->descriptors.at(end.descriptor);
+        if (d_info.direction != expected_io) {
+            throw std::invalid_argument{"bad executable subsys endpoint io"};
+        }
+        return;
     }
 }
 
-pipe_channel::pipe_channel(pipe_channel&& other) noexcept: descriptors{std::exchange(other.descriptors, {-1, -1})}
+auto make_channel(const system_name& name, const custom_system& system,
+                  const unidirectional_connection& conn,
+                  const std::span<const connection>& parent_connections,
+                  const std::span<channel>& parent_channels)
+    -> channel
 {
-    // Intentionally empty.
-}
+    static constexpr auto unequal_sizes_error =
+        "size of parent connections not equal size of parent channels";
+    static constexpr auto no_file_file_error =
+        "can't connect file to file";
+    static constexpr auto no_user_user_error =
+        "can't connect user to user";
+    static constexpr auto same_endpoints_error =
+        "connection must have different endpoints";
+    static constexpr auto no_system_end_error =
+        "at least one end must be a system";
+    static const auto not_closed_error = "system must be closed";
 
-pipe_channel::~pipe_channel() noexcept
-{
-    for (auto&& d: descriptors) {
-        if (d != -1) {
-            ::close(d);
+    if (conn.src == conn.dst) {
+        throw std::invalid_argument{same_endpoints_error};
+    }
+    if (std::size(parent_connections) != std::size(parent_channels)) {
+        throw std::invalid_argument{unequal_sizes_error};
+    }
+
+    auto enclosure_descriptors = std::array<descriptor_id, 2u>{
+        invalid_descriptor_id, invalid_descriptor_id
+    };
+    const auto src_file = std::get_if<file_endpoint>(&conn.src);
+    const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
+    if (src_file && dst_file) {
+        throw std::invalid_argument{no_file_file_error};
+    }
+    const auto src_user = std::get_if<user_endpoint>(&conn.src);
+    const auto dst_user = std::get_if<user_endpoint>(&conn.dst);
+    if (src_user && dst_user) {
+        throw std::invalid_argument{no_user_user_error};
+    }
+    const auto src_system = std::get_if<system_endpoint>(&conn.src);
+    const auto dst_system = std::get_if<system_endpoint>(&conn.dst);
+    if (!src_system && !dst_system) {
+        throw std::invalid_argument{no_system_end_error};
+    }
+    if (src_system) {
+        validate(*src_system, system, io_type::out);
+        if (src_system->address == system_name{}) {
+            enclosure_descriptors[0] = src_system->descriptor;
         }
     }
-}
-
-auto pipe_channel::operator=(pipe_channel&& other) noexcept -> pipe_channel&
-{
-    descriptors = std::exchange(other.descriptors, {-1, -1});
-    return *this;
-}
-
-auto pipe_channel::close(io side, std::ostream& errs) noexcept -> bool
-{
-    auto& d = descriptors[int(side)];
-    if (::close(d) == -1) {
-        errs << "close(" << side << "," << d << ") failed: ";
-        errs << os_error_code(errno) << "\n";
-        return false;
+    if (dst_system) {
+        validate(*dst_system, system, io_type::in);
+        if (dst_system->address == system_name{}) {
+            enclosure_descriptors[1] = dst_system->descriptor;
+        }
     }
-    d = -1;
-    return true;
+    if (src_file) {
+        return {file_channel{io_type::in}};
+    }
+    if (dst_file) {
+        return {file_channel{io_type::out}};
+    }
+    if (src_user || dst_user) {
+        return {pipe_channel{}};
+    }
+    for (auto&& descriptor_id: enclosure_descriptors) {
+        if (descriptor_id != invalid_descriptor_id) {
+            const auto look_for = system_endpoint{name, descriptor_id};
+            if (const auto found = find_index(parent_connections, look_for)) {
+                return {reference_channel{&parent_channels[*found]}};
+            }
+            std::ostringstream os;
+            os << not_closed_error;
+            os << ":\n  for system " << name;
+            os << "\n  for connection " << conn;
+            os << "\n  looking-for " << look_for;
+            if (parent_connections.empty()) {
+                os << "\n  parent-connections empty";
+            }
+            else {
+                os << "\n  parent-connections:";
+                for (auto&& pc: parent_connections) {
+                    os << "\n    " << pc;
+                }
+            }
+            throw std::invalid_argument{os.str()};
+        }
+    }
+    return {pipe_channel{}};
+}
 }
 
-auto pipe_channel::dup(io side, descriptor_id newfd,
-                       std::ostream& errs) noexcept -> bool
+auto make_channel(const system_name& name, const custom_system& system,
+                  const connection& conn,
+                  const std::span<const connection>& parent_connections,
+                  const std::span<channel>& parent_channels)
+    -> channel
 {
-    const auto new_d = int(newfd);
-    auto& d = descriptors[int(side)];
-    if (dup2(d, new_d) == -1) {
-        errs << "dup2(" << side << ":" << d << "," << new_d << ") failed: ";
-        errs << os_error_code(errno) << "\n";
-        return false;
+    if (const auto p = std::get_if<unidirectional_connection>(&conn)) {
+        return make_channel(name, system, *p,
+                            parent_connections, parent_channels);
     }
-    d = new_d;
-    return true;
-}
-
-auto pipe_channel::read(const std::span<char>& buffer,
-                        std::ostream& errs) const -> std::size_t
-{
-    const auto nread = ::read(descriptors[0], buffer.data(), buffer.size());
-    if (nread == -1) {
-        errs << "read() failed: ";
-        errs << os_error_code(errno) << "\n";
-        return static_cast<std::size_t>(-1);
-    }
-    return static_cast<std::size_t>(nread);
-}
-
-auto pipe_channel::write(const std::span<const char>& buffer,
-                         std::ostream& errs) const -> bool
-{
-    if (::write(descriptors[1], buffer.data(), buffer.size()) == -1) {
-        errs << "write(fd=" << descriptors[1] << ",siz=" << buffer.size() << ") failed: ";
-        errs << os_error_code(errno) << "\n";
-        return false;
-    }
-    return true;
+    throw std::invalid_argument{"only unidirectional_connection supported"};
 }
 
 auto operator<<(std::ostream& os, const file_channel&) -> std::ostream&
 {
     os << "file_channel{}";
-    return os;
-}
-
-auto operator<<(std::ostream& os, pipe_channel::io value)
-    -> std::ostream&
-{
-    os << ((value == pipe_channel::io::read) ? "read": "write");
-    return os;
-}
-
-auto operator<<(std::ostream& os, const pipe_channel& value) -> std::ostream&
-{
-    os << "pipe_channel{";
-    os << value.descriptors[0];
-    os << ",";
-    os << value.descriptors[1];
-    os << "}";
     return os;
 }
 

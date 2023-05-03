@@ -350,6 +350,9 @@ auto wait(const system_name& name, instance& instance,
     while (bool(result = wait_for_child())) {
         handle(name, instance, result, diags, mode);
     }
+    if (mode == wait_mode::diagnostic) {
+        diags << "wait finished.\n";
+    }
 }
 
 auto operator<<(std::ostream& os, signal s) -> std::ostream&
