@@ -39,19 +39,17 @@ auto do_lsof_system() -> void
     system.subsystems.emplace(lsof_process_name, lsof_executable);
     const auto lsof_stdout = unidirectional_connection{
         system_endpoint{lsof_process_name, descriptor_id{1}},
-        system_endpoint{system_name{}, descriptor_id{1}},
+        user_endpoint{},
     };
     const auto lsof_stderr = unidirectional_connection{
         system_endpoint{lsof_process_name, descriptor_id{2}},
-        system_endpoint{system_name{}, descriptor_id{2}},
+        file_endpoint{"/dev/null"},
     };
     system.connections.push_back(lsof_stdout);
     system.connections.push_back(lsof_stderr);
     {
         auto diags = temporary_fstream();
-        auto parent_channels = std::vector<channel>{};
-        auto object = instantiate(system_name{}, system, diags,
-                                  std::vector<connection>{}, parent_channels);
+        auto object = instantiate(system_name{}, system, diags, {}, {});
         std::cerr << "Diagnostics for parent of lsof...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
@@ -59,10 +57,11 @@ auto do_lsof_system() -> void
                   std::ostream_iterator<char>(std::cerr));
 
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
-        if (const auto pipe = find_channel<pipe_channel>(system, object, lsof_stdout)) {
+        if (const auto p = find_channel<pipe_channel>(system, object,
+                                                      lsof_stdout)) {
             for (;;) {
                 std::array<char, 4096> buffer{};
-                const auto nread = pipe->read(buffer, std::cerr);
+                const auto nread = p->read(buffer, std::cerr);
                 if (nread == static_cast<std::size_t>(-1)) {
                     std::cerr << "lsof can't read stdout\n";
                 }
@@ -103,55 +102,46 @@ auto do_ls_system() -> void
     system.subsystems.emplace(xargs_process_name, xargs_executable);
 
     const auto cat_stdin = unidirectional_connection{
-        system_endpoint{system_name{}, descriptor_id{0}},
+        user_endpoint{},
         system_endpoint{cat_process_name, descriptor_id{0}}
+    };
+    const auto xargs_stdout = unidirectional_connection{
+        system_endpoint{xargs_process_name, descriptor_id{1}},
+        user_endpoint{},
     };
     system.connections.push_back(cat_stdin);
     system.connections.push_back(unidirectional_connection{
         system_endpoint{cat_process_name, descriptor_id{1}},
         system_endpoint{xargs_process_name, descriptor_id{0}},
     });
-    const auto xargs_stdout = unidirectional_connection{
-        system_endpoint{xargs_process_name, descriptor_id{1}},
-        system_endpoint{system_name{}, descriptor_id{1}},
-    };
     system.connections.push_back(xargs_stdout);
-    const auto xargs_stderr = unidirectional_connection{
-        system_endpoint{xargs_process_name, descriptor_id{2}},
-        system_endpoint{system_name{}, descriptor_id{2}},
-    };
-    system.connections.push_back(xargs_stderr);
 
     {
         auto diags = temporary_fstream();
-        auto parent_channels = std::vector<channel>{};
-        auto object = instantiate(system_name{}, system, diags,
-                                  std::vector<connection>{},
-                                  parent_channels);
+        auto object = instantiate(system_name{}, system, diags, {}, {});
         std::cerr << "Diagnostics for root instance...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(std::cerr));
-        if (const auto pipe = find_channel<pipe_channel>(system, object, cat_stdin)) {
+        if (const auto pipe = find_channel<pipe_channel>(system, object,
+                                                         cat_stdin)) {
             pipe->write("/bin\n/sbin", std::cerr);
             pipe->close(pipe_channel::io::write, std::cerr);
         }
-        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
-        if (const auto pipe = find_channel<pipe_channel>(system, object, xargs_stderr)) {
-            std::array<char, 1024> buffer{};
-            const auto nread = pipe->read(buffer, std::cerr);
-            if (nread == static_cast<std::size_t>(-1)) {
-                std::cerr << "xargs can't read stderr\n";
-            }
-            else if (nread != 0u) {
-                std::cerr << "xargs stderr: " << buffer.data() << "\n";
-            }
+        else {
+            std::cerr << "no pipe for cat_stdin??!\n";
         }
-        if (const auto pipe = find_channel<pipe_channel>(system, object, xargs_stdout)) {
+        const auto outpipe = find_channel<pipe_channel>(system, object,
+                                                        xargs_stdout);
+        if (!outpipe) {
+            std::cerr << "no pipe for xargs_stdout??!\n";
+        }
+        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
+        if (outpipe) {
             for (;;) {
                 std::array<char, 4096> buffer{};
-                const auto nread = pipe->read(buffer, std::cerr);
+                const auto nread = outpipe->read(buffer, std::cerr);
                 if (nread == static_cast<std::size_t>(-1)) {
                     std::cerr << "xargs can't read stdout\n";
                 }
@@ -216,7 +206,7 @@ auto do_nested_system() -> void
     }
 
     const auto system_stdin = unidirectional_connection{
-        system_endpoint{system_name{}, descriptor_id{0}},
+        user_endpoint{},
         system_endpoint{cat_system_name, descriptor_id{0}},
     };
     const auto catout_to_xargsin = unidirectional_connection{
@@ -225,8 +215,9 @@ auto do_nested_system() -> void
     };
     const auto system_stdout = unidirectional_connection{
         system_endpoint{xargs_system_name, descriptor_id{1}},
-        system_endpoint{system_name{}, descriptor_id{1}},
+        user_endpoint{},
     };
+
     system.connections.push_back(system_stdin);
     system.connections.push_back(catout_to_xargsin);
     system.connections.push_back(system_stdout);
