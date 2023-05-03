@@ -38,12 +38,32 @@ auto make_substitutions(std::vector<char*>& argv)
 }
 
 template <class T>
-auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
+auto make_endpoints(const unidirectional_connection& c)
+    -> std::array<const T*, 2u>
+{
+    return {std::get_if<T>(&c.src), std::get_if<T>(&c.dst)};
+}
+
+template <class T>
+auto make_endpoints(const bidirectional_connection& c)
+    -> std::array<const T*, 2u>
 {
     return {
         std::get_if<T>(&c.ends[0]), // NOLINT(readability-container-data-pointer)
         std::get_if<T>(&c.ends[1])
     };
+}
+
+template <class T>
+auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
+{
+    if (const auto p = std::get_if<unidirectional_connection>(&c)) {
+        return make_endpoints<T>(*p);
+    }
+    if (const auto p = std::get_if<bidirectional_connection>(&c)) {
+        return make_endpoints<T>(*p);
+    }
+    return std::array<const T*, 2u>{nullptr, nullptr};
 }
 
 auto setup(const system_name& name,
@@ -103,7 +123,7 @@ auto to_open_flags(io_type direction) noexcept -> int
 }
 
 auto setup(const system_name& name,
-           const connection& c,
+           const bidirectional_connection& c,
            file_channel& p,
            std::ostream& diags) -> void
 {
@@ -128,6 +148,48 @@ auto setup(const system_name& name,
             diags << os_error_code(errno) << "\n";
             ::_exit(1);
         }
+    }
+}
+
+auto setup(const system_name& name,
+           const unidirectional_connection& c,
+           file_channel& p,
+           std::ostream& diags) -> void
+{
+    diags << name << " " << c << ", open & dup2\n";
+    const auto file_ends = make_endpoints<file_endpoint>(c);
+    const auto& file_end = file_ends[0]? file_ends[0]: file_ends[1];
+    const auto& other_end = file_ends[0]? c.dst: c.src;
+    if (const auto op = std::get_if<system_endpoint>(&other_end)) {
+        const auto flags = to_open_flags(p.io);
+        const auto mode = 0600;
+        const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
+                               file_end->path.c_str(), flags, mode);
+        if (fd == -1) {
+            static constexpr auto mode_width = 5;
+            diags << "open file " << file_end->path << " with mode ";
+            diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
+            diags << " failed: " << os_error_code(errno) << "\n";
+            ::_exit(1);
+        }
+        if (::dup2(fd, int(op->descriptor)) == -1) {
+            diags << "dup2(" << fd << "," << op->descriptor << ") failed: ";
+            diags << os_error_code(errno) << "\n";
+            ::_exit(1);
+        }
+    }
+}
+
+auto setup(const system_name& name,
+           const connection& conn,
+           file_channel& fchan,
+           std::ostream& diags) -> void
+{
+    if (const auto p = std::get_if<unidirectional_connection>(&conn)) {
+        return setup(name, *p, fchan, diags);
+    }
+    if (const auto p = std::get_if<bidirectional_connection>(&conn)) {
+        return setup(name, *p, fchan, diags);
     }
 }
 
@@ -233,87 +295,111 @@ auto instantiate(const system_name& name,
     return instance{pid, std::move(child_diags)};
 }
 
-using connection_io_types = std::array<io_type, 2u>;
-using connection_result = std::pair<connection_io_types, channel>;
+auto validate(const system_endpoint& end,
+              const custom_system& system,
+              io_type expected_io) -> void
+{
+    if (end.address == system_name{}) {
+        const auto& d_info = system.descriptors.at(end.descriptor);
+        if (d_info.direction != reverse(expected_io)) {
+            throw std::invalid_argument{"bad custom system endpoint io"};
+        }
+        return;
+    }
+    const auto& child = system.subsystems.at(end.address);
+    if (const auto cp = std::get_if<custom_system>(&child)) {
+        const auto& d_info = cp->descriptors.at(end.descriptor);
+        if (d_info.direction != expected_io) {
+            throw std::invalid_argument{"bad custom subsys endpoint io"};
+        }
+        return;
+    }
+    if (const auto cp = std::get_if<executable_system>(&child)) {
+        const auto& d_info = cp->descriptors.at(end.descriptor);
+        if (d_info.direction != expected_io) {
+            throw std::invalid_argument{"bad executable subsys endpoint io"};
+        }
+        return;
+    }
+}
 
 auto make_channel(const system_name& name, const custom_system& system,
-                  const connection& conn,
+                  const unidirectional_connection& conn,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
-    -> connection_result
+    -> channel
 {
-    static const auto unequal_sizes_error =
+    static constexpr auto unequal_sizes_error =
         "size of parent connections not equal size of parent channels";
-    static const auto no_file_file_error =
+    static constexpr auto no_file_file_error =
         "cant't connect file to file";
-    static const auto same_iotypes_error =
-        "bad connection: same io unsupported";
-    static const auto same_endpoints_error =
+    static constexpr auto same_endpoints_error =
         "connection must have different endpoints";
+    static constexpr auto no_system_end_error =
+        "at least one end must be a system";
     // static const auto not_closed_error = "system must be closed";
 
-    if (conn.ends[0] == conn.ends[1]) {
+    if (conn.src == conn.dst) {
         throw std::invalid_argument{same_endpoints_error};
     }
     if (std::size(parent_connections) != std::size(parent_channels)) {
         throw std::invalid_argument{unequal_sizes_error};
     }
 
-    auto ends_io = connection_io_types{};
-    auto have_file_endpoint = false;
     auto enclosure_descriptors = std::array<descriptor_id, 2u>{
         invalid_descriptor_id, invalid_descriptor_id
     };
-    for (auto&& end: conn.ends) {
-        const auto i = &end - conn.ends.data();
-        if (const auto p = std::get_if<system_endpoint>(&end)) {
-            if (p->address == system_name{}) {
-                const auto& d_info = system.descriptors.at(p->descriptor);
-                enclosure_descriptors[i] = p->descriptor;
-                ends_io[i] = reverse(d_info.direction);
-                continue;
-            }
-            const auto& child = system.subsystems.at(p->address);
-            if (const auto cp = std::get_if<custom_system>(&child)) {
-                const auto& d_info = cp->descriptors.at(p->descriptor);
-                ends_io[i] = d_info.direction;
-                continue;
-            }
-            if (const auto cp = std::get_if<executable_system>(&child)) {
-                const auto& d_info = cp->descriptors.at(p->descriptor);
-                ends_io[i] = d_info.direction;
-                continue;
-            }
-            throw std::logic_error{"unknown proto type"};
-        }
-        if (const auto p = std::get_if<file_endpoint>(&end)) {
-            if (have_file_endpoint) {
-                throw std::invalid_argument{no_file_file_error};
-            }
-            have_file_endpoint = true;
-            ends_io[i] = io_type::bidir;
-            continue;
-        }
-        throw std::logic_error{"unknown endpoint type"};
+    const auto src_file = std::get_if<file_endpoint>(&conn.src);
+    const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
+    if (src_file && dst_file) {
+        throw std::invalid_argument{no_file_file_error};
     }
-    if (ends_io[0] == ends_io[1]) {
-        throw std::invalid_argument{same_iotypes_error};
+    const auto src_system = std::get_if<system_endpoint>(&conn.src);
+    const auto dst_system = std::get_if<system_endpoint>(&conn.dst);
+    if (!src_system && !dst_system) {
+        throw std::invalid_argument{no_system_end_error};
     }
-    if (have_file_endpoint) {
-        const auto io = (ends_io[0] != io_type::bidir)
-            ? ends_io[0]: ends_io[1];
-        return {ends_io, file_channel{io}};
+    if (src_system) {
+        validate(*src_system, system, io_type::out);
+        if (src_system->address == system_name{}) {
+            enclosure_descriptors[0] = src_system->descriptor;
+        }
+    }
+    if (dst_system) {
+        validate(*dst_system, system, io_type::in);
+        if (dst_system->address == system_name{}) {
+            enclosure_descriptors[1] = dst_system->descriptor;
+        }
+    }
+    if (src_file) {
+        return {file_channel{io_type::in}};
+    }
+    if (dst_file) {
+        return {file_channel{io_type::out}};
     }
     for (auto&& descriptor_id: enclosure_descriptors) {
         if (descriptor_id != invalid_descriptor_id) {
             const auto look_for = system_endpoint{name, descriptor_id};
             if (const auto found = find_index(parent_connections, look_for)) {
-                return {ends_io, reference_channel{&parent_channels[*found]}};
+                return {reference_channel{&parent_channels[*found]}};
             }
             // throw std::invalid_argument{not_closed_error};
         }
     }
-    return {ends_io, pipe_channel{}};
+    return {pipe_channel{}};
+}
+
+auto make_channel(const system_name& name, const custom_system& system,
+                  const connection& conn,
+                  const std::span<const connection>& parent_connections,
+                  const std::span<channel>& parent_channels)
+    -> channel
+{
+    if (const auto p = std::get_if<unidirectional_connection>(&conn)) {
+        return make_channel(name, system, *p,
+                            parent_connections, parent_channels);
+    }
+    throw std::invalid_argument{"only unidirectional_connection supported"};
 }
 
 auto make_child(const system_name& name,
@@ -428,13 +514,10 @@ auto instantiate(const system_name& name, const custom_system& system,
     instance result;
     result.id = no_process_id;
     std::vector<channel> channels;
-    std::vector<connection_io_types> io_types;
     for (auto&& connection: system.connections) {
-        auto connection_result = make_channel(name, system, connection,
-                                              parent_connections,
-                                              parent_channels);
-        io_types.push_back(connection_result.first);
-        channels.push_back(std::move(connection_result.second));
+        channels.push_back(make_channel(name, system, connection,
+                                        parent_connections,
+                                        parent_channels));
     }
     for (auto&& mapentry: system.subsystems) {
         const auto& child = mapentry.first;
@@ -447,20 +530,17 @@ auto instantiate(const system_name& name, const custom_system& system,
     // close parent side of pipe_channels...
     for (auto&& channel: channels) {
         const auto i = &channel - channels.data();
-        const auto& io_pair = io_types[i];
         const auto& connection = system.connections[i];
         if (const auto p = std::get_if<pipe_channel>(&channel)) {
             const auto ends = make_endpoints<system_endpoint>(connection);
-            const auto a_to_b = (io_pair[0] == io_type::out)
-                             || (io_pair[1] == io_type::in);
             if (ends[0]->address != system_name{}) {
-                const auto pio = a_to_b? pipe_channel::io::write: pipe_channel::io::read;
+                const auto pio = pipe_channel::io::write;
                 diags << "parent '" << name << "': closing " << pio << " side of ";
                 diags << connection << " " << *p << "\n";
                 p->close(pio, diags);
             }
             if (ends[1]->address != system_name{}) {
-                const auto pio = a_to_b? pipe_channel::io::read: pipe_channel::io::write;
+                const auto pio = pipe_channel::io::read;
                 diags << "parent '" << name << "': closing " << pio << " side of ";
                 diags << connection << " " << *p << "\n";
                 p->close(pio, diags);

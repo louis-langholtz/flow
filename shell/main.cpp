@@ -37,11 +37,11 @@ auto do_lsof_system() -> void
     lsof_executable.working_directory = "/usr/local";
     lsof_executable.arguments = {"lsof", "-p", "$$"};
     system.subsystems.emplace(lsof_process_name, lsof_executable);
-    const auto lsof_stdout = connection{
+    const auto lsof_stdout = unidirectional_connection{
         system_endpoint{lsof_process_name, descriptor_id{1}},
         system_endpoint{system_name{}, descriptor_id{1}},
     };
-    const auto lsof_stderr = connection{
+    const auto lsof_stderr = unidirectional_connection{
         system_endpoint{lsof_process_name, descriptor_id{2}},
         system_endpoint{system_name{}, descriptor_id{2}},
     };
@@ -102,21 +102,21 @@ auto do_ls_system() -> void
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
     system.subsystems.emplace(xargs_process_name, xargs_executable);
 
-    const auto cat_stdin = connection{
+    const auto cat_stdin = unidirectional_connection{
         system_endpoint{system_name{}, descriptor_id{0}},
         system_endpoint{cat_process_name, descriptor_id{0}}
     };
     system.connections.push_back(cat_stdin);
-    system.connections.push_back(connection{
+    system.connections.push_back(unidirectional_connection{
         system_endpoint{cat_process_name, descriptor_id{1}},
         system_endpoint{xargs_process_name, descriptor_id{0}},
     });
-    const auto xargs_stdout = connection{
+    const auto xargs_stdout = unidirectional_connection{
         system_endpoint{xargs_process_name, descriptor_id{1}},
         system_endpoint{system_name{}, descriptor_id{1}},
     };
     system.connections.push_back(xargs_stdout);
-    const auto xargs_stderr = connection{
+    const auto xargs_stderr = unidirectional_connection{
         system_endpoint{xargs_process_name, descriptor_id{2}},
         system_endpoint{system_name{}, descriptor_id{2}},
     };
@@ -187,11 +187,11 @@ auto do_nested_system() -> void
         executable_system cat_executable;
         cat_executable.executable_file = "/bin/cat";
         cat_system.subsystems.emplace(cat_process_name, cat_executable);
-        cat_system.connections.push_back(connection{
+        cat_system.connections.push_back(unidirectional_connection{
             system_endpoint{system_name{}, descriptor_id{0}},
             system_endpoint{cat_process_name, descriptor_id{0}}
         });
-        cat_system.connections.push_back(connection{
+        cat_system.connections.push_back(unidirectional_connection{
             system_endpoint{cat_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
@@ -204,26 +204,26 @@ auto do_nested_system() -> void
         xargs_executable.executable_file = "/usr/bin/xargs";
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
         xargs_system.subsystems.emplace(xargs_process_name, xargs_executable);
-        xargs_system.connections.push_back(connection{
+        xargs_system.connections.push_back(unidirectional_connection{
             system_endpoint{system_name{}, descriptor_id{0}},
             system_endpoint{xargs_process_name, descriptor_id{0}}
         });
-        xargs_system.connections.push_back(connection{
+        xargs_system.connections.push_back(unidirectional_connection{
             system_endpoint{xargs_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
         system.subsystems.emplace(xargs_system_name, xargs_system);
     }
 
-    const auto system_stdin = connection{
+    const auto system_stdin = unidirectional_connection{
         system_endpoint{system_name{}, descriptor_id{0}},
         system_endpoint{cat_system_name, descriptor_id{0}},
     };
-    const auto catout_to_xargsin = connection{
+    const auto catout_to_xargsin = unidirectional_connection{
         system_endpoint{cat_system_name, descriptor_id{1}},
         system_endpoint{xargs_system_name, descriptor_id{0}},
     };
-    const auto system_stdout = connection{
+    const auto system_stdout = unidirectional_connection{
         system_endpoint{xargs_system_name, descriptor_id{1}},
         system_endpoint{system_name{}, descriptor_id{1}},
     };
