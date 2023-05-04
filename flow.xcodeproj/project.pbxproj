@@ -21,6 +21,8 @@
 		9943E8942A021A46002F4C26 /* pipe_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8922A021A46002F4C26 /* pipe_channel.hpp */; };
 		9943E8972A021E98002F4C26 /* user_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E8952A021E98002F4C26 /* user_endpoint.cpp */; };
 		9943E8982A021E98002F4C26 /* user_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8962A021E98002F4C26 /* user_endpoint.hpp */; };
+		9943E89A2A044697002F4C26 /* environment_container.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8992A044697002F4C26 /* environment_container.hpp */; };
+		9943E89C2A0453F3002F4C26 /* environment_container.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E89B2A0453F3002F4C26 /* environment_container.cpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
@@ -100,6 +102,8 @@
 		9943E8922A021A46002F4C26 /* pipe_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = pipe_channel.hpp; sourceTree = "<group>"; };
 		9943E8952A021E98002F4C26 /* user_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = user_endpoint.cpp; sourceTree = "<group>"; };
 		9943E8962A021E98002F4C26 /* user_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = user_endpoint.hpp; sourceTree = "<group>"; };
+		9943E8992A044697002F4C26 /* environment_container.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = environment_container.hpp; sourceTree = "<group>"; };
+		9943E89B2A0453F3002F4C26 /* environment_container.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = environment_container.cpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -227,6 +231,7 @@
 				99940BF629F1DAE800A77461 /* descriptor_id.hpp */,
 				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
 				9943E88B2A005069002F4C26 /* endpoint.hpp */,
+				9943E8992A044697002F4C26 /* environment_container.hpp */,
 				99C1938229F506C200C3F53F /* file_endpoint.hpp */,
 				99C1939A29F5774600C3F53F /* instance.hpp */,
 				99940BED29F1C9A500A77461 /* io_type.hpp */,
@@ -249,6 +254,7 @@
 				99C1939129F511B700C3F53F /* connection.cpp */,
 				99940BF529F1DAE800A77461 /* descriptor_id.cpp */,
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
+				9943E89B2A0453F3002F4C26 /* environment_container.cpp */,
 				99C1938129F506C200C3F53F /* file_endpoint.cpp */,
 				9943E88D2A0068C6002F4C26 /* indenting_ostreambuf.cpp */,
 				9943E88E2A0068C6002F4C26 /* indenting_ostreambuf.hpp */,
@@ -280,6 +286,7 @@
 			files = (
 				9943E8982A021E98002F4C26 /* user_endpoint.hpp in Headers */,
 				99940BEF29F1C9A500A77461 /* io_type.hpp in Headers */,
+				9943E89A2A044697002F4C26 /* environment_container.hpp in Headers */,
 				99C1939C29F5774600C3F53F /* instance.hpp in Headers */,
 				9943E8942A021A46002F4C26 /* pipe_channel.hpp in Headers */,
 				99940BF829F1DAE800A77461 /* descriptor_id.hpp in Headers */,
@@ -407,6 +414,7 @@
 				99C1939B29F5774600C3F53F /* instance.cpp in Sources */,
 				99C1939F29F5819A00C3F53F /* utility.cpp in Sources */,
 				99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */,
+				9943E89C2A0453F3002F4C26 /* environment_container.cpp in Sources */,
 				99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */,
 				99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */,
 			);

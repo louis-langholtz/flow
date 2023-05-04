@@ -278,44 +278,52 @@ auto exec_child(const std::filesystem::path& path,
     ::_exit(1);
 }
 
-auto make_child(const system_name& name,
+auto make_child(instance& parent,
+                const system_name& name,
                 const system& sys,
                 const std::span<const connection>& connections,
-                const std::span<channel>& channels,
                 std::ostream& diags) -> instance;
 
-auto make_child(const system_name& name,
+auto make_child(instance& parent,
+                const system_name& name,
                 const custom_system& system,
                 const std::span<const connection>& connections,
-                const std::span<channel>& channels,
                 std::ostream& diags) -> instance
 {
     instance result;
-    result.pid = no_process_id;
-    for (auto&& entry: system.subsystems) {
-        auto kid = make_child(entry.first, entry.second,
-                              connections, channels, diags);
-        result.children.emplace(entry.first, std::move(kid));
+    result.environment = parent.environment;
+    for (auto&& entry: system.environment) {
+        result.environment[entry.first] = entry.second;
     }
+    result.pid = no_process_id;
     for (auto&& connection: system.connections) {
         result.channels.push_back(make_channel(name, system, connection,
                                                connections,
-                                               channels));
+                                               parent.channels));
+    }
+    for (auto&& entry: system.subsystems) {
+        auto kid = make_child(result, entry.first, entry.second,
+                              connections, diags);
+        result.children.emplace(entry.first, std::move(kid));
     }
     return result;
 }
 
-auto make_child(const system_name& name,
+auto make_child(instance& parent,
+                const system_name& name,
                 const system& sys,
                 const std::span<const connection>& connections,
-                const std::span<channel>& channels,
                 std::ostream& diags) -> instance
 {
     if (const auto p = std::get_if<executable_system>(&sys)) {
-        return {no_process_id, temporary_fstream()};
+        auto env = parent.environment;
+        for (auto&& entry: p->environment) {
+            env[entry.first] = entry.second;
+        }
+        return {env, no_process_id, temporary_fstream()};
     }
     if (const auto p = std::get_if<custom_system>(&sys)) {
-        return make_child(name, *p, connections, channels, diags);
+        return make_child(parent, name, *p, connections, diags);
     }
     diags << "parent: unrecognized system type for " << name << "\n";
     return {};
@@ -387,7 +395,7 @@ auto fork_child(const system_name& name,
 {
     auto arg_buffers = make_arg_bufs(system.arguments,
                                      system.executable_file);
-    auto env_buffers = make_arg_bufs(system.environment);
+    auto env_buffers = make_arg_bufs(child.environment);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
     child.pid = process_id{::fork()};
@@ -544,10 +552,14 @@ auto total_channels(const instance& object) -> std::size_t
 }
 
 auto instantiate(const system_name& name, const custom_system& system,
-                 std::ostream& diags)
+                 std::ostream& diags, environment_container env)
     -> instance
 {
     instance result;
+    for (auto&& entry: system.environment) {
+        env[entry.first] = entry.second;
+    }
+    result.environment = std::move(env);
     result.pid = no_process_id;
     result.channels.reserve(size(system.connections));
     for (auto&& connection: system.connections) {
@@ -558,8 +570,8 @@ auto instantiate(const system_name& name, const custom_system& system,
     for (auto&& entry: system.subsystems) {
         const auto& sub_name = entry.first;
         const auto& sub_system = entry.second;
-        auto kid = make_child(sub_name, sub_system,
-                              system.connections, result.channels, diags);
+        auto kid = make_child(result, sub_name, sub_system,
+                              system.connections, diags);
         result.children.emplace(sub_name, std::move(kid));
     }
     fork_executables(system, result, result, diags);

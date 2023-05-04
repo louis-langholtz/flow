@@ -269,6 +269,26 @@ auto do_nested_system() -> void
     }
 }
 
+auto do_env_system() -> void
+{
+    std::cerr << "Doing env instance...\n";
+    custom_system system;
+
+    system.environment["base"] = "base value";
+
+    executable_system exesys;
+    exesys.executable_file = "/usr/bin/env";
+    exesys.environment["foo"] = "too";
+    exesys.environment["base"] = "derived value";
+
+    system.subsystems.emplace(system_name{"sub-system"}, exesys);
+
+    {
+        auto diags = temporary_fstream();
+        auto object = instantiate(system_name{}, system, diags, get_environ());
+    }
+}
+
 }
 
 auto main(int argc, const char * argv[]) -> int
@@ -279,5 +299,6 @@ auto main(int argc, const char * argv[]) -> int
     do_lsof_system();
     do_ls_system();
     do_nested_system();
+    do_env_system();
     return 0;
 }

@@ -6,8 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "flow/descriptor_id.hpp"
 #include "flow/connection.hpp"
+#include "flow/descriptor_id.hpp"
+#include "flow/environment_container.hpp"
 #include "flow/io_type.hpp"
 #include "flow/system_name.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
@@ -36,18 +37,18 @@ using system = variant<
 >;
 
 using argument_container = std::vector<std::string>;
-using environment_container = std::map<std::string, std::string>;
 
 struct executable_system {
     descriptor_container descriptors{standard_descriptors};
+    environment_container environment;
     std::filesystem::path executable_file;
     argument_container arguments;
     std::filesystem::path working_directory;
-    environment_container environment;
 };
 
 struct custom_system {
     descriptor_container descriptors{standard_descriptors};
+    environment_container environment;
     std::map<system_name, system> subsystems;
     std::vector<connection> connections;
 };

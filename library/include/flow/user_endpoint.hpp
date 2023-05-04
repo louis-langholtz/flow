@@ -6,13 +6,8 @@
 namespace flow {
 
 struct user_endpoint {
+    auto operator<=>(const user_endpoint&) const = default;
 };
-
-constexpr auto operator==(const user_endpoint& /*lhs*/,
-                          const user_endpoint& /*rhs*/) -> bool
-{
-    return true;
-}
 
 auto operator<<(std::ostream& os, const user_endpoint& value)
     -> std::ostream&;
