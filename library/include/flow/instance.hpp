@@ -9,15 +9,17 @@
 
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
+#include "flow/environment_container.hpp"
 #include "flow/process_id.hpp"
 #include "flow/system_name.hpp"
-#include "flow/utility.hpp"
 
 namespace flow {
 
 /// @brief Instance of a <code>system</code>.
 struct instance
 {
+    environment_container environment;
+
     /// @brief Process ID.
     /// @note This shall be <code>invalid_process_id</code> for default or
     /// failed instances, <code>no_process_id</code> for system instances,
@@ -48,7 +50,8 @@ auto total_channels(const instance& object) -> std::size_t;
 struct custom_system;
 
 auto instantiate(const system_name& name, const custom_system& system,
-                 std::ostream& diags) -> instance;
+                 std::ostream& diags, environment_container env = {})
+    -> instance;
 
 }
 

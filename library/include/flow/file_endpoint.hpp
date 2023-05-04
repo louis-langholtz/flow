@@ -8,12 +8,8 @@ namespace flow {
 
 struct file_endpoint {
     std::filesystem::path path;
+    auto operator==(const file_endpoint&) const -> bool = default;
 };
-
-inline auto operator==(const file_endpoint& lhs, const file_endpoint& rhs) -> bool
-{
-    return lhs.path == rhs.path;
-}
 
 std::ostream& operator<<(std::ostream& os, const file_endpoint& value);
 

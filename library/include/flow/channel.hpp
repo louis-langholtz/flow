@@ -21,6 +21,7 @@ struct custom_system;
 /// @see file_endpoint.
 struct file_channel {
     io_type io{};
+    auto operator<=>(const file_channel&) const = default;
 };
 
 auto operator<<(std::ostream& os, const file_channel& value) -> std::ostream&;
@@ -32,6 +33,7 @@ using channel = variant<file_channel, pipe_channel, reference_channel>;
 struct reference_channel {
     /// @brief Non-owning pointer to referenced channel.
     channel *other{};
+    auto operator<=>(const reference_channel&) const = default;
 };
 
 auto make_channel(const system_name& name, const custom_system& system,
