@@ -11,7 +11,6 @@
 #include "ext/fstream.hpp"
 
 #include "flow/connection.hpp"
-#include "flow/process_id.hpp"
 
 namespace flow {
 
