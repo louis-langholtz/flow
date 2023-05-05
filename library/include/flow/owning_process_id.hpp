@@ -13,7 +13,7 @@ struct owning_process_id
 
     static owning_process_id fork();
 
-    owning_process_id() = default;
+    owning_process_id() noexcept = default;
     owning_process_id(const owning_process_id& other) = delete;
     owning_process_id(owning_process_id&& other) noexcept;
     ~owning_process_id();
