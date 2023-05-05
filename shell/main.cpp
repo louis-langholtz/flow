@@ -1,5 +1,6 @@
 #include <array>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <type_traits>
 
@@ -75,7 +76,7 @@ auto do_lsof_system() -> void
             }
         }
         else {
-            std::cerr << "no pipe for lsof_stdout??!\n";
+            std::cerr << "no pipe for lsof_stdout?!\n";
         }
         write_diags(system_name{}, object, std::cerr);
     }
@@ -134,12 +135,12 @@ auto do_ls_system() -> void
             pipe->close(pipe_channel::io::write, std::cerr);
         }
         else {
-            std::cerr << "no pipe for cat_stdin??!\n";
+            std::cerr << "no pipe for cat_stdin?!\n";
         }
         const auto outpipe = find_channel<pipe_channel>(system, object,
                                                         xargs_stdout);
         if (!outpipe) {
-            std::cerr << "no pipe for xargs_stdout??!\n";
+            std::cerr << "no pipe for xargs_stdout?!\n";
         }
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (outpipe) {
