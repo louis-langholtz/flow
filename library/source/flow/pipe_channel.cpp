@@ -1,9 +1,11 @@
+#include <cassert> // for assert
 #include <stdexcept> // for std::runtime_error
 #include <utility> // for std::exchange
 
 #include <unistd.h> // for pipe, close
 
 #include "os_error_code.hpp"
+#include "pipe_registry.hpp"
 
 #include "flow/pipe_channel.hpp"
 
@@ -11,6 +13,8 @@ namespace flow {
 
 pipe_channel::pipe_channel()
 {
+    [[maybe_unused]] const auto ret = the_pipe_registry().pipes.insert(this);
+    assert(ret.second);
     if (::pipe(descriptors.data()) == -1) {
         throw std::runtime_error{to_string(os_error_code(errno))};
     }
@@ -18,7 +22,8 @@ pipe_channel::pipe_channel()
 
 pipe_channel::pipe_channel(pipe_channel&& other) noexcept: descriptors{std::exchange(other.descriptors, {-1, -1})}
 {
-    // Intentionally empty.
+    [[maybe_unused]] const auto ret = the_pipe_registry().pipes.insert(this);
+    assert(ret.second);
 }
 
 pipe_channel::~pipe_channel() noexcept
@@ -28,6 +33,11 @@ pipe_channel::~pipe_channel() noexcept
             ::close(d);
         }
     }
+    // XXX Does LLVM's clang have a bug destroying variant values?
+    //  The following sometimes returns 0 as though this dtor called more
+    //  than once for this instance!
+    [[maybe_unused]] const auto ret = the_pipe_registry().pipes.erase(this);
+    assert(ret == 1u);
 }
 
 auto pipe_channel::operator=(pipe_channel&& other) noexcept -> pipe_channel&
@@ -39,7 +49,7 @@ auto pipe_channel::operator=(pipe_channel&& other) noexcept -> pipe_channel&
 auto pipe_channel::close(io side, std::ostream& diags) noexcept -> bool
 {
     auto& d = descriptors[int(side)];
-    if (::close(d) == -1) {
+    if ((d != -1) && (::close(d) == -1)) {
         diags << "close(" << side << "," << d << ") failed: ";
         diags << os_error_code(errno) << "\n";
         return false;

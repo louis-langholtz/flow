@@ -54,6 +54,8 @@ private:
     std::array<int, 2u> descriptors{-1, -1};
 };
 
+static_assert(!std::is_copy_constructible_v<pipe_channel>);
+static_assert(!std::is_copy_assignable_v<pipe_channel>);
 static_assert(std::is_nothrow_move_constructible_v<pipe_channel>);
 static_assert(std::is_nothrow_move_assignable_v<pipe_channel>);
 

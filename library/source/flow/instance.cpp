@@ -5,6 +5,7 @@
 
 #include "indenting_ostreambuf.hpp"
 #include "os_error_code.hpp"
+#include "pipe_registry.hpp"
 
 #include "flow/instance.hpp"
 #include "flow/system.hpp"
@@ -92,6 +93,7 @@ auto fully_deref(T&& chan_p)
     return chan_p;
 }
 
+#if 0
 auto is_channel_for(const instance& root,
                     const channel& key,
                     const instance& for_instance) -> bool
@@ -107,6 +109,35 @@ auto is_channel_for(const instance& root,
             while ((ref_p = std::get_if<reference_channel>(chan_p)) != nullptr) {
                 chan_p = ref_p->other;
                 if (chan_p == &key) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+#endif
+
+template <class T>
+auto is_channel_for(const instance& root,
+                    const T *key,
+                    const instance& for_instance) -> bool
+{
+    if (const auto parent = find_owner(root, for_instance)) {
+        for (auto&& channel: parent->channels) {
+            auto chan_p = &channel;
+            using ref_type = decltype(std::get_if<reference_channel>(chan_p));
+            auto ref_p = static_cast<ref_type>(nullptr);
+            while ((ref_p = std::get_if<reference_channel>(chan_p)) != nullptr) {
+                if constexpr (std::is_same_v<T, reference_channel>) {
+                    if (ref_p == key) {
+                        return true;
+                    }
+                }
+                chan_p = ref_p->other;
+            }
+            if (const auto q = std::get_if<T>(chan_p)) {
+                if (q == key) {
                     return true;
                 }
             }
@@ -346,16 +377,11 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
 auto close_pipes_except(instance& root,
                         instance& child) -> void
 {
-    for (auto&& channel: root.channels) {
-        if (!is_channel_for(root, channel, child)) {
-            if (const auto p = std::get_if<pipe_channel>(&channel)) {
-                p->close(pipe_channel::io::read, child.diags);
-                p->close(pipe_channel::io::write, child.diags);
-            }
+    for (auto&& pipe: the_pipe_registry().pipes) {
+        if (!is_channel_for(root, pipe, child)) {
+            pipe->close(pipe_channel::io::read, child.diags);
+            pipe->close(pipe_channel::io::write, child.diags);
         }
-    }
-    for (auto&& entry: root.children) {
-        close_pipes_except(entry.second, child);
     }
 }
 
