@@ -5,7 +5,7 @@
 #include <span>
 
 #include "flow/connection.hpp"
-#include "flow/io_type.hpp"
+#include "flow/file_channel.hpp"
 #include "flow/pipe_channel.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
@@ -13,18 +13,6 @@ namespace flow {
 
 struct system_name;
 struct custom_system;
-
-/// @brief File channel.
-/// @note This is intended to be a strong place-holder/tag type.
-/// @note Instances of this type are made for connections with
-///   <code>file_endpoint</code> ends.
-/// @see file_endpoint.
-struct file_channel {
-    io_type io{};
-    auto operator<=>(const file_channel&) const = default;
-};
-
-auto operator<<(std::ostream& os, const file_channel& value) -> std::ostream&;
 
 struct reference_channel;
 
