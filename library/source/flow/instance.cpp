@@ -93,31 +93,6 @@ auto fully_deref(T&& chan_p)
     return chan_p;
 }
 
-#if 0
-auto is_channel_for(const instance& root,
-                    const channel& key,
-                    const instance& for_instance) -> bool
-{
-    if (const auto p = find_owner(root, for_instance)) {
-        for (auto&& channel: p->channels) {
-            if (&channel == &key) {
-                return true;
-            }
-            auto chan_p = &channel;
-            using ref_type = decltype(std::get_if<reference_channel>(chan_p));
-            auto ref_p = static_cast<ref_type>(nullptr);
-            while ((ref_p = std::get_if<reference_channel>(chan_p)) != nullptr) {
-                chan_p = ref_p->other;
-                if (chan_p == &key) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-#endif
-
 template <class T>
 auto is_channel_for(const instance& root,
                     const T *key,
