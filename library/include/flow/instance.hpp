@@ -24,8 +24,8 @@ struct instance
     /// @note This shall be <code>invalid_process_id</code> for default or
     /// failed instances, <code>no_process_id</code> for system instances,
     /// less-than <code>no_process_id</code> for the process group of the
-    /// children, or hold the POSIX process ID of the child process running
-    /// for the instance.
+    /// children, or hold the greater-than <code>no_process_id</code> POSIX
+    /// process ID of the child process running for the instance.
     process_id pid{invalid_process_id};
 
     /// @brief Diagnostics stream.

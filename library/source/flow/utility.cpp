@@ -32,7 +32,8 @@ namespace flow {
 
 namespace {
 
-auto find(const system_name& name, instance& object, process_id pid)
+auto find(const system_name& name, instance& object,
+          const reference_process_id& pid)
     -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
 {
     if (object.pid == pid) {
@@ -66,22 +67,22 @@ auto wait_for_child() -> wait_result
         return wait_result::error_t(errno);
     }
     if (WIFEXITED(status)) {
-        return wait_result::info_t{process_id{pid},
+        return wait_result::info_t{reference_process_id{pid},
             wait_exit_status{WEXITSTATUS(status)}};
     }
     if (WIFSIGNALED(status)) {
-        return wait_result::info_t{process_id{pid},
+        return wait_result::info_t{reference_process_id{pid},
             wait_signaled_status{WTERMSIG(status), WCOREDUMP(status) != 0}};
     }
     if (WIFSTOPPED(status)) {
-        return wait_result::info_t{process_id{pid},
+        return wait_result::info_t{reference_process_id{pid},
             wait_stopped_status{WSTOPSIG(status)}};
     }
     if (WIFCONTINUED(status)) {
-        return wait_result::info_t{process_id{pid},
+        return wait_result::info_t{reference_process_id{pid},
             wait_continued_status{}};
     }
-    return wait_result::info_t{process_id{pid}};
+    return wait_result::info_t{reference_process_id{pid}};
 }
 
 auto handle(const system_name& name, instance& instance,
@@ -104,7 +105,7 @@ auto handle(const system_name& name, instance& instance,
         case wait_result::info_t::exit: {
             const auto exit_status = std::get<wait_exit_status>(result.info().status);
             if (entry) {
-                entry->second.pid = process_id(0);
+                entry->second.pid = no_process_id;
             }
             if ((mode == wait_mode::diagnostic) || (exit_status.value != 0)) {
                 diags << "child=" << (entry? entry->first: unknown_name);
@@ -192,6 +193,18 @@ auto sigaction_cb(int sig, siginfo_t *info, void * /*ucontext*/) -> void
 {
     const auto sender_pid = info? info->si_pid: -1;
     std::cerr << "caught " << sig << ", from " << sender_pid << "\n";
+}
+
+auto kill(const process_id& pid, signal sig) -> int
+{
+    auto id = pid_t{-1};
+    if (const auto p = std::get_if<owning_process_id>(&pid)) {
+        id = pid_t(*p);
+    }
+    else if (const auto p = std::get_if<reference_process_id>(&pid)) {
+        id = pid_t(*p);
+    }
+    return ::kill(id, to_posix_signal(sig));
 }
 
 }
@@ -382,7 +395,7 @@ auto send_signal(signal sig,
     if ((instance.pid != invalid_process_id) &&
         (instance.pid != no_process_id)) {
         diags << "sending " << sig << " to " << name << "\n";
-        if (::kill(int(instance.pid), to_posix_signal(sig)) == -1) {
+        if (kill(instance.pid, sig) == -1) {
             diags << "kill(" << instance.pid;
             diags << "," << to_posix_signal(sig);
             diags << ") failed: " << os_error_code(errno);
