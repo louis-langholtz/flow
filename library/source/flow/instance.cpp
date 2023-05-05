@@ -1,3 +1,4 @@
+#include <cstdlib> // for std::exit, EXIT_FAILURE
 #include <cstring> // for std::strcmp
 
 #include <unistd.h> // for getpid, setpgid
@@ -14,6 +15,17 @@
 namespace flow {
 
 namespace {
+
+constexpr auto exit_failure_code = EXIT_FAILURE;
+
+/// @brief Exit the running process.
+/// @note This exists to abstractly wrap the actual exit function used.
+/// @note This also helps isolate clang-tidy issues to this sole function.
+[[noreturn]]
+auto exit(int exit_code) -> void
+{
+    std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
+}
 
 constexpr auto pid_buffer_size = 32u;
 using pid_buffer = std::array<char, pid_buffer_size>;
@@ -129,7 +141,7 @@ auto close(pipe_channel& p, pipe_channel::io side,
     diags << name << " " << c << " " << p;
     diags << ", close  " << side << "-side\n";
     if (!p.close(side, diags)) { // close unused end
-        ::_exit(1);
+        exit(exit_failure_code);
     }
 }
 
@@ -142,7 +154,7 @@ auto dup2(pipe_channel& p, pipe_channel::io side, descriptor_id id,
     diags << ", dup " << side << "-side to ";
     diags << id << "\n";
     if (!p.dup(side, id, diags)) {
-        ::_exit(1);
+        exit(exit_failure_code);
     }
 }
 
@@ -212,13 +224,13 @@ auto setup(const system_name& name,
             diags << ", open file " << file_end->path << " with mode ";
             diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
             diags << " failed: " << os_error_code(errno) << "\n";
-            ::_exit(1);
+            exit(exit_failure_code);
         }
         if (::dup2(fd, int(op->descriptor)) == -1) {
             diags << name << " " << c;
             diags << ", dup2(" << fd << "," << op->descriptor << ") failed: ";
             diags << os_error_code(errno) << "\n";
-            ::_exit(1);
+            exit(exit_failure_code);
         }
     }
 }
@@ -246,13 +258,13 @@ auto setup(const system_name& name,
             diags << ", open file " << file_end->path << " with mode ";
             diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
             diags << " failed: " << os_error_code(errno) << "\n";
-            ::_exit(1);
+            exit(exit_failure_code);
         }
         if (::dup2(fd, int(op->descriptor)) == -1) {
             diags << name << " " << c;
             diags << ", dup2(" << fd << "," << op->descriptor << ") failed: ";
             diags << os_error_code(errno) << "\n";
-            ::_exit(1);
+            exit(exit_failure_code);
         }
     }
 }
@@ -281,7 +293,7 @@ auto exec_child(const std::filesystem::path& path,
     const auto ec = os_error_code(errno);
     diags << "execve of " << path << "failed: " << ec << "\n";
     diags.flush();
-    ::_exit(1);
+    exit(exit_failure_code);
 }
 
 auto make_child(instance& parent,
@@ -344,7 +356,7 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
         diags << "chdir " << path << " failed: ";
         write(diags, ec);
         diags << "\n";
-        return false;
+        exit(exit_failure_code);
     }
     return true;
 }
