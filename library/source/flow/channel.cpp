@@ -155,12 +155,6 @@ auto make_channel(const system_name& name, const custom_system& system,
     throw std::invalid_argument{"only unidirectional_connection supported"};
 }
 
-auto operator<<(std::ostream& os, const file_channel&) -> std::ostream&
-{
-    os << "file_channel{}";
-    return os;
-}
-
 auto operator<<(std::ostream& os, const reference_channel& value)
     -> std::ostream&
 {
