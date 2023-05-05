@@ -67,18 +67,22 @@ auto wait_for_child() -> wait_result
         return wait_result::error_t(errno);
     }
     if (WIFEXITED(status)) {
+        // process terminated normally
         return wait_result::info_t{reference_process_id{pid},
             wait_exit_status{WEXITSTATUS(status)}};
     }
     if (WIFSIGNALED(status)) {
+        // process terminated due to signal
         return wait_result::info_t{reference_process_id{pid},
             wait_signaled_status{WTERMSIG(status), WCOREDUMP(status) != 0}};
     }
     if (WIFSTOPPED(status)) {
+        // process not terminated, but stopped and can be restarted
         return wait_result::info_t{reference_process_id{pid},
             wait_stopped_status{WSTOPSIG(status)}};
     }
     if (WIFCONTINUED(status)) {
+        // process was resumed
         return wait_result::info_t{reference_process_id{pid},
             wait_continued_status{}};
     }
