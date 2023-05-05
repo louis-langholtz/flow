@@ -286,6 +286,7 @@ auto do_env_system() -> void
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system_name{}, system, diags, get_environ());
+        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
     }
 }
 

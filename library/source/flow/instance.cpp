@@ -398,20 +398,21 @@ auto fork_child(const system_name& name,
     auto env_buffers = make_arg_bufs(child.environment);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
-    child.pid = process_id{::fork()};
-    switch (child.pid) {
+    child.pid = owning_process_id::fork();
+    switch (to_reference_process_id(child.pid)) {
     case invalid_process_id:
         diags << "fork failed: " << os_error_code(errno) << "\n";
         return;
-    case process_id{0}: { // child process
+    case no_process_id: { // child process
         // Have to be especially careful here!
         // From https://man7.org/linux/man-pages/man2/fork.2.html:
         // "child can safely call only async-signal-safe functions
         //  (see signal-safety(7)) until such time as it calls execve(2)."
         // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
         // for "functions required to be async-signal-safe by POSIX.1".
-        if (::setpgid(0, -int(pgrp)) == -1) {
-            child.diags << "setpgid failed(0, " << -int(pgrp) << "): ";
+        if (::setpgid(0, -int(to_reference_process_id(pgrp))) == -1) {
+            child.diags << "setpgid failed(0, ";
+            child.diags << -int(to_reference_process_id(pgrp)) << "): ";
             child.diags << os_error_code(errno);
             child.diags << "\n";
         }
@@ -438,7 +439,7 @@ auto fork_child(const system_name& name,
     default: // case for the spawning/parent process
         diags << "child '" << name << "' started as pid " << child.pid << "\n";
         if (pgrp == no_process_id) {
-            pgrp = process_id(-int(child.pid));
+            pgrp = reference_process_id(-int(to_reference_process_id(child.pid)));
         }
         break;
     }
