@@ -12,7 +12,7 @@ namespace flow {
 namespace {
 
 auto validate(const system_endpoint& end,
-              const custom_system& system,
+              const system& system,
               io_type expected_io) -> void
 {
     if (end.address == system_name{}) {
@@ -22,21 +22,15 @@ auto validate(const system_endpoint& end,
         }
         return;
     }
-    const auto& child = system.subsystems.at(end.address);
-    if (const auto cp = std::get_if<custom_system>(&child)) {
-        const auto& d_info = cp->descriptors.at(end.descriptor);
+    if (const auto p = std::get_if<system::custom>(&(system.info))) {
+        const auto& subsys = p->subsystems.at(end.address);
+        const auto& d_info = subsys.descriptors.at(end.descriptor);
         if (d_info.direction != expected_io) {
-            throw std::invalid_argument{"bad custom subsys endpoint io"};
+            throw std::invalid_argument{"bad subsys endpoint io"};
         }
         return;
     }
-    if (const auto cp = std::get_if<executable_system>(&child)) {
-        const auto& d_info = cp->descriptors.at(end.descriptor);
-        if (d_info.direction != expected_io) {
-            throw std::invalid_argument{"bad executable subsys endpoint io"};
-        }
-        return;
-    }
+
 }
 
 auto make_not_closed_msg(const system_name& name,
@@ -63,7 +57,8 @@ auto make_not_closed_msg(const system_name& name,
     return os.str();
 }
 
-auto make_channel(const system_name& name, const custom_system& system,
+auto make_channel(const system_name& name,
+                  const system& system,
                   const unidirectional_connection& conn,
                   const std::span<const connection>& connections,
                   const std::span<channel>& channels)
@@ -142,7 +137,8 @@ auto make_channel(const system_name& name, const custom_system& system,
 
 }
 
-auto make_channel(const system_name& name, const custom_system& system,
+auto make_channel(const system_name& name,
+                  const system& system,
                   const connection& conn,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)

@@ -22,42 +22,41 @@ struct descriptor_info {
 
 using descriptor_container = std::map<descriptor_id, descriptor_info>;
 
-inline const auto standard_descriptors = descriptor_container{
+auto operator<<(std::ostream& os,
+                const descriptor_container& value)
+    -> std::ostream&;
+
+const auto standard_descriptors = descriptor_container{
     {descriptor_id{0}, {"stdin", io_type::in}},
     {descriptor_id{1}, {"stdout", io_type::out}},
     {descriptor_id{2}, {"stderr", io_type::out}},
 };
 
-struct custom_system;
-struct executable_system;
+struct system
+{
+    struct custom
+    {
+        std::map<system_name, system> subsystems;
+        std::vector<connection> connections;
+    };
 
-using system = variant<
-    custom_system,
-    executable_system
->;
+    struct executable
+    {
+        std::filesystem::path executable_file;
+        std::vector<std::string> arguments;
+        std::filesystem::path working_directory;
+    };
 
-using argument_container = std::vector<std::string>;
+    system() = default;
+    system(custom type_info): info{std::move(type_info)} {}
+    system(executable type_info): info{std::move(type_info)} {}
 
-struct executable_system {
     descriptor_container descriptors{standard_descriptors};
     environment_container environment;
-    std::filesystem::path executable_file;
-    argument_container arguments;
-    std::filesystem::path working_directory;
+    variant<custom, executable> info;
 };
 
-struct custom_system {
-    descriptor_container descriptors{standard_descriptors};
-    environment_container environment;
-    std::map<system_name, system> subsystems;
-    std::vector<connection> connections;
-};
-
-auto operator<<(std::ostream& os, const descriptor_container& value)
-    -> std::ostream&;
-auto operator<<(std::ostream& os, const executable_system& value)
-    -> std::ostream&;
-auto operator<<(std::ostream& os, const custom_system& value)
+auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&;
 
 }
