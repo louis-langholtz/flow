@@ -260,16 +260,6 @@ auto make_arg_bufs(const std::vector<std::string>& strings,
     return result;
 }
 
-auto make_arg_bufs(const std::map<std::string, std::string>& envars)
-    -> std::vector<std::string>
-{
-    auto result = std::vector<std::string>{};
-    for (const auto& envar: envars) {
-        result.push_back(envar.first + "=" + envar.second);
-    }
-    return result;
-}
-
 auto make_argv(const std::span<std::string>& args)
     -> std::vector<char*>
 {

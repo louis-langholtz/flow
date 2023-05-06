@@ -11,6 +11,7 @@
 #include "ext/fstream.hpp"
 
 #include "flow/connection.hpp"
+#include "flow/environment_container.hpp"
 
 namespace flow {
 
@@ -28,12 +29,6 @@ auto nulldev_fstream() -> ext::fstream;
 /// @see https://man7.org/linux/man-pages/man7/signal-safety.7.html
 auto make_arg_bufs(const std::vector<std::string>& strings,
                    const std::string& fallback = {})
-    -> std::vector<std::string>;
-
-/// @note This is NOT an "async-signal-safe" function. So, it's not suitable
-/// for forked child to call.
-/// @see https://man7.org/linux/man-pages/man7/signal-safety.7.html
-auto make_arg_bufs(const std::map<std::string, std::string>& envars)
     -> std::vector<std::string>;
 
 /// @brief Makes a vector that's compatible for use with <code>execve</code>'s
