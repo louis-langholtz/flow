@@ -31,6 +31,8 @@
 		9943E8A82A055E11002F4C26 /* pipe_registry.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8A62A055E11002F4C26 /* pipe_registry.hpp */; };
 		9943E8AB2A059A28002F4C26 /* file_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E8A92A059A28002F4C26 /* file_channel.cpp */; };
 		9943E8AC2A059A28002F4C26 /* file_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8AA2A059A28002F4C26 /* file_channel.hpp */; };
+		9943E8AF2A06F10F002F4C26 /* env_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E8AD2A06F10F002F4C26 /* env_name.cpp */; };
+		9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8AE2A06F10F002F4C26 /* env_name.hpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
@@ -120,6 +122,8 @@
 		9943E8A62A055E11002F4C26 /* pipe_registry.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = pipe_registry.hpp; sourceTree = "<group>"; };
 		9943E8A92A059A28002F4C26 /* file_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_channel.cpp; sourceTree = "<group>"; };
 		9943E8AA2A059A28002F4C26 /* file_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = file_channel.hpp; sourceTree = "<group>"; };
+		9943E8AD2A06F10F002F4C26 /* env_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = env_name.cpp; sourceTree = "<group>"; };
+		9943E8AE2A06F10F002F4C26 /* env_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = env_name.hpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -247,6 +251,7 @@
 				99940BF629F1DAE800A77461 /* descriptor_id.hpp */,
 				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
 				9943E88B2A005069002F4C26 /* endpoint.hpp */,
+				9943E8AE2A06F10F002F4C26 /* env_name.hpp */,
 				9943E8992A044697002F4C26 /* environment_container.hpp */,
 				9943E8AA2A059A28002F4C26 /* file_channel.hpp */,
 				99C1938229F506C200C3F53F /* file_endpoint.hpp */,
@@ -273,6 +278,7 @@
 				99C1939129F511B700C3F53F /* connection.cpp */,
 				99940BF529F1DAE800A77461 /* descriptor_id.cpp */,
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
+				9943E8AD2A06F10F002F4C26 /* env_name.cpp */,
 				9943E89B2A0453F3002F4C26 /* environment_container.cpp */,
 				9943E8A92A059A28002F4C26 /* file_channel.cpp */,
 				99C1938129F506C200C3F53F /* file_endpoint.cpp */,
@@ -319,6 +325,7 @@
 				99C1939829F5136100C3F53F /* system.hpp in Headers */,
 				99C193A229F6EB4B00C3F53F /* expected.hpp in Headers */,
 				9943E8902A0068C6002F4C26 /* indenting_ostreambuf.hpp in Headers */,
+				9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */,
 				99940C0029F1F73900A77461 /* system_name.hpp in Headers */,
 				99C193A029F5819A00C3F53F /* utility.hpp in Headers */,
 				99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */,
@@ -432,6 +439,7 @@
 				9943E89F2A04A63F002F4C26 /* owning_process_id.cpp in Sources */,
 				9943E87A29FBF418002F4C26 /* wait_status.cpp in Sources */,
 				9943E87629FB444F002F4C26 /* os_error_code.cpp in Sources */,
+				9943E8AF2A06F10F002F4C26 /* env_name.cpp in Sources */,
 				9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */,
 				99C1939329F511B700C3F53F /* connection.cpp in Sources */,
 				99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */,
