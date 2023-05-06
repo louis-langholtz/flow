@@ -298,13 +298,7 @@ auto exec_child(const std::filesystem::path& path,
 
 auto make_child(instance& parent,
                 const system_name& name,
-                const system& sys,
-                const std::span<const connection>& connections,
-                std::ostream& diags) -> instance;
-
-auto make_child(instance& parent,
-                const system_name& name,
-                const custom_system& system,
+                const system& system,
                 const std::span<const connection>& connections,
                 std::ostream& diags) -> instance
 {
@@ -314,37 +308,25 @@ auto make_child(instance& parent,
         result.environment[entry.first] = entry.second;
     }
     result.pid = no_process_id;
-    for (auto&& connection: system.connections) {
-        result.channels.push_back(make_channel(name, system, connection,
-                                               connections,
-                                               parent.channels));
+    if (const auto p = std::get_if<system::executable>(&system.info)) {
+        result.diags = temporary_fstream();
     }
-    for (auto&& entry: system.subsystems) {
-        auto kid = make_child(result, entry.first, entry.second,
-                              connections, diags);
-        result.children.emplace(entry.first, std::move(kid));
+    else if (const auto p = std::get_if<system::custom>(&system.info)) {
+        for (auto&& connection: p->connections) {
+            result.channels.push_back(make_channel(name, system, connection,
+                                                   connections,
+                                                   parent.channels));
+        }
+        for (auto&& entry: p->subsystems) {
+            auto kid = make_child(result, entry.first, entry.second,
+                                  connections, diags);
+            result.children.emplace(entry.first, std::move(kid));
+        }
+    }
+    else {
+        diags << "parent: unrecognized system type for " << name << "\n";
     }
     return result;
-}
-
-auto make_child(instance& parent,
-                const system_name& name,
-                const system& sys,
-                const std::span<const connection>& connections,
-                std::ostream& diags) -> instance
-{
-    if (const auto p = std::get_if<executable_system>(&sys)) {
-        auto env = parent.environment;
-        for (auto&& entry: p->environment) {
-            env[entry.first] = entry.second;
-        }
-        return {env, no_process_id, temporary_fstream()};
-    }
-    if (const auto p = std::get_if<custom_system>(&sys)) {
-        return make_child(parent, name, *p, connections, diags);
-    }
-    diags << "parent: unrecognized system type for " << name << "\n";
-    return {};
 }
 
 auto change_directory(const std::filesystem::path& path, std::ostream& diags)
@@ -398,7 +380,7 @@ auto setup(instance& root,
 }
 
 auto fork_child(const system_name& name,
-                const executable_system& system,
+                const system::executable& system,
                 instance& child,
                 process_id& pgrp,
                 const std::span<const connection>& connections,
@@ -458,7 +440,7 @@ auto fork_child(const system_name& name,
     }
 }
 
-auto fork_executables(const custom_system& system,
+auto fork_executables(const system::custom& system,
                       instance& object,
                       instance& root,
                       std::ostream& diags) -> void
@@ -471,16 +453,39 @@ auto fork_executables(const custom_system& system,
             diags << "can't find child instance for " << name << "!\n";
             continue;
         }
-        if (const auto p = std::get_if<executable_system>(&subsystem)) {
+        if (const auto p = std::get_if<system::executable>(&subsystem.info)) {
             fork_child(name, *p, found->second, object.pid, system.connections,
                        object.channels, root, diags);
             continue;
         }
-        if (const auto p = std::get_if<custom_system>(&subsystem)) {
+        if (const auto p = std::get_if<system::custom>(&subsystem.info)) {
             fork_executables(*p, found->second, root, diags);
             continue;
         }
         diags << "Detected unknown system type - skipping!\n";
+    }
+}
+
+auto close_internal_ends(const system_name& name,
+                         const connection& connection,
+                         pipe_channel& channel,
+                         std::ostream& diags) -> void
+{
+    static constexpr auto iowidth = 5;
+    const auto ends = make_endpoints<system_endpoint>(connection);
+    if (ends[0] && (ends[0]->address != system_name{})) {
+        const auto pio = pipe_channel::io::write;
+        diags << "parent '" << name << "': closing ";
+        diags << std::setw(iowidth) << pio << " side of ";
+        diags << connection << " " << channel << "\n";
+        channel.close(pio, diags);
+    }
+    if (ends[1] && (ends[1]->address != system_name{})) {
+        const auto pio = pipe_channel::io::read;
+        diags << "parent '" << name << "': closing ";
+        diags << std::setw(iowidth) << pio << " side of ";
+        diags << connection << " " << channel << "\n";
+        channel.close(pio, diags);
     }
 }
 
@@ -565,8 +570,10 @@ auto total_channels(const instance& object) -> std::size_t
     return result;
 }
 
-auto instantiate(const system_name& name, const custom_system& system,
-                 std::ostream& diags, environment_container env)
+auto instantiate(const system_name& name,
+                 const system& system,
+                 std::ostream& diags,
+                 environment_container env)
     -> instance
 {
     instance result;
@@ -575,50 +582,34 @@ auto instantiate(const system_name& name, const custom_system& system,
     }
     result.environment = std::move(env);
     result.pid = no_process_id;
-    result.channels.reserve(size(system.connections));
-    for (auto&& connection: system.connections) {
-        result.channels.push_back(make_channel(name, system, connection,
-                                               {}, {}));
+    if (const auto p = std::get_if<system::executable>(&system.info)) {
+        fork_child(name, *p, result, result.pid, {}, {}, result, diags);
     }
-    // Create all the subsystem instances before forking any!
-    for (auto&& entry: system.subsystems) {
-        const auto& sub_name = entry.first;
-        const auto& sub_system = entry.second;
-        auto kid = make_child(result, sub_name, sub_system,
-                              system.connections, diags);
-        result.children.emplace(sub_name, std::move(kid));
-    }
-    fork_executables(system, result, result, diags);
-    // Only now, after making child processes,
-    // close parent side of pipe_channels...
-    for (auto&& channel: result.channels) {
-        const auto i = &channel - result.channels.data();
-        const auto& connection = system.connections[i];
-        if (const auto p = std::get_if<pipe_channel>(&channel)) {
-            static constexpr auto iowidth = 5;
-            const auto ends = make_endpoints<system_endpoint>(connection);
-            if (ends[0] && (ends[0]->address != system_name{})) {
-                const auto pio = pipe_channel::io::write;
-                diags << "parent '" << name << "': closing ";
-                diags << std::setw(iowidth) << pio << " side of ";
-                diags << connection << " " << *p << "\n";
-                p->close(pio, diags);
-            }
-            if (ends[1] && (ends[1]->address != system_name{})) {
-                const auto pio = pipe_channel::io::read;
-                diags << "parent '" << name << "': closing ";
-                diags << std::setw(iowidth) << pio << " side of ";
-                diags << connection << " " << *p << "\n";
-                p->close(pio, diags);
-            }
-            continue;
+    else if (const auto p = std::get_if<system::custom>(&system.info)) {
+        result.channels.reserve(size(p->connections));
+        for (auto&& connection: p->connections) {
+            result.channels.push_back(make_channel(name, system, connection,
+                                                   {}, {}));
         }
-        if (const auto p = std::get_if<reference_channel>(&channel)) {
-            diags << "parent '" << name << "': channel[" << i << "] is reference";
-            if (p->other) {
-                diags << " to " << *(p->other);
+        // Create all the subsystem instances before forking any!
+        for (auto&& entry: p->subsystems) {
+            const auto& sub_name = entry.first;
+            const auto& sub_system = entry.second;
+            auto kid = make_child(result, sub_name, sub_system,
+                                  p->connections, diags);
+            result.children.emplace(sub_name, std::move(kid));
+        }
+        fork_executables(*p, result, result, diags);
+        // Only now, after making child processes,
+        // close parent side of pipe_channels...
+        const auto max_i = size(result.channels);
+        for (auto i = 0u; i < max_i; ++i) {
+            auto& channel = result.channels[i];
+            const auto& connection = p->connections[i];
+            if (const auto q = std::get_if<pipe_channel>(&channel)) {
+                close_internal_ends(name, connection, *q, diags);
+                continue;
             }
-            diags << ".\n";
         }
     }
     return result;

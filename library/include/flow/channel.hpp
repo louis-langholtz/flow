@@ -12,7 +12,7 @@
 namespace flow {
 
 struct system_name;
-struct custom_system;
+struct system;
 
 struct reference_channel;
 
@@ -24,7 +24,8 @@ struct reference_channel {
     auto operator<=>(const reference_channel&) const = default;
 };
 
-auto make_channel(const system_name& name, const custom_system& system,
+auto make_channel(const system_name& name,
+                  const system& system,
                   const connection& conn,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)

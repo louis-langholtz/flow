@@ -20,10 +20,10 @@ using namespace flow;
 /// @brief Finds the channel requested.
 /// @return Pointer to channel of the type requested or <code>nullptr</code>.
 template <class T>
-auto find_channel(const custom_system& system, instance& instance,
+auto find_channel(const flow::system& system, instance& instance,
                   const connection& look_for) -> T*
 {
-    const auto found = find_index(system.connections, look_for);
+    const auto found = find_index(std::get<system::custom>(system.info).connections, look_for);
     return found? std::get_if<T>(&(instance.channels[*found])): nullptr;
 }
 
@@ -32,12 +32,12 @@ auto do_lsof_system() -> void
     std::cerr << "Doing lsof instance...\n";
 
     const auto lsof_process_name = system_name{"lsof"};
-    custom_system system;
-    executable_system lsof_executable;
+    flow::system::custom custom;
+    flow::system::executable lsof_executable;
     lsof_executable.executable_file = "/usr/sbin/lsof";
     lsof_executable.working_directory = "/usr/local";
     lsof_executable.arguments = {"lsof", "-p", "$$"};
-    system.subsystems.emplace(lsof_process_name, lsof_executable);
+    custom.subsystems.emplace(lsof_process_name, lsof_executable);
     const auto lsof_stdout = unidirectional_connection{
         system_endpoint{lsof_process_name, descriptor_id{1}},
         user_endpoint{},
@@ -46,11 +46,11 @@ auto do_lsof_system() -> void
         system_endpoint{lsof_process_name, descriptor_id{2}},
         file_endpoint{"/dev/null"},
     };
-    system.connections.push_back(lsof_stdout);
-    system.connections.push_back(lsof_stderr);
+    custom.connections.push_back(lsof_stdout);
+    custom.connections.push_back(lsof_stderr);
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system_name{}, system, diags);
+        auto object = instantiate(system_name{}, custom, diags);
         std::cerr << "Diagnostics for parent of lsof...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
@@ -59,7 +59,7 @@ auto do_lsof_system() -> void
         pretty_print(std::cerr, object);
 
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
-        if (const auto p = find_channel<pipe_channel>(system, object,
+        if (const auto p = find_channel<pipe_channel>(custom, object,
                                                       lsof_stdout)) {
             for (;;) {
                 std::array<char, 4096> buffer{};
@@ -92,15 +92,15 @@ auto do_ls_system() -> void
     touch(output_file_endpoint);
     std::cerr << "running in " << std::filesystem::current_path() << '\n';
 
-    custom_system system;
+    system::custom system;
 
     const auto cat_process_name = system_name{"cat"};
-    executable_system cat_executable;
+    system::executable cat_executable;
     cat_executable.executable_file = "/bin/cat";
     system.subsystems.emplace(cat_process_name, cat_executable);
 
     const auto xargs_process_name = system_name{"xargs"};
-    executable_system xargs_executable;
+    system::executable xargs_executable;
     xargs_executable.executable_file = "/usr/bin/xargs";
     xargs_executable.working_directory = "/fee/fii/foo/fum";
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
@@ -175,11 +175,11 @@ auto do_nested_system() -> void
     const auto xargs_system_name = system_name{"xargs-system"};
     const auto xargs_process_name = system_name{"xargs-process"};
 
-    custom_system system;
+    system::custom system;
 
     {
-        custom_system cat_system;
-        executable_system cat_executable;
+        system::custom cat_system;
+        system::executable cat_executable;
         cat_executable.executable_file = "/bin/cat";
         cat_system.subsystems.emplace(cat_process_name, cat_executable);
         cat_system.connections.push_back(unidirectional_connection{
@@ -194,8 +194,8 @@ auto do_nested_system() -> void
     }
 
     {
-        custom_system xargs_system;
-        executable_system xargs_executable;
+        system::custom xargs_system;
+        system::executable xargs_executable;
         xargs_executable.executable_file = "/usr/bin/xargs";
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
         xargs_system.subsystems.emplace(xargs_process_name, xargs_executable);
@@ -273,20 +273,23 @@ auto do_nested_system() -> void
 auto do_env_system() -> void
 {
     std::cerr << "Doing env instance...\n";
-    custom_system system;
 
-    system.environment["base"] = "base value";
-
-    executable_system exesys;
-    exesys.executable_file = "/usr/bin/env";
+    flow::system exesys;
     exesys.environment["foo"] = "too";
     exesys.environment["base"] = "derived value";
+    system::executable exe;
+    exe.executable_file = "/usr/bin/env";
+    exesys.info = exe;
 
-    system.subsystems.emplace(system_name{"sub-system"}, exesys);
+    flow::system base;
+    base.environment["base"] = "base value";
+    system::custom custom;
+    custom.subsystems.emplace(system_name{"sub-system"}, exesys);
+    base.info = custom;
 
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system_name{}, system, diags, get_environ());
+        auto object = instantiate(system_name{}, base, diags, get_environ());
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
     }
 }

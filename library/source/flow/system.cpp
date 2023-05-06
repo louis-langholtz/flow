@@ -18,23 +18,27 @@ auto operator<<(std::ostream& os, const descriptor_container& value)
     return os;
 }
 
-auto operator<<(std::ostream& os, const executable_system& value)
+auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&
 {
-    os << "executable_system{";
-    os << ".descriptors=" << value.descriptors;
-    os << ".path=" << value.executable_file;
-    os << ",.working_directory=" << value.working_directory;
-    // TODO: other members
-    os << "}";
-    return os;
-}
-
-auto operator<<(std::ostream& os, const custom_system& value)
-    -> std::ostream&
-{
-    os << "custom_system{";
-    os << ".descriptors=" << value.descriptors;
+    os << "system{";
+    os << ".descriptors=" << value.descriptors << ",";
+    os << ".environment=" << value.environment << ",";
+    os << ".info=";
+    if (const auto p = std::get_if<system::executable>(&(value.info))) {
+        os << "executable_info{";
+        os << ".path=" << p->executable_file;
+        os << ",.working_directory=" << p->working_directory;
+        os << "}";
+    }
+    else if (const auto p = std::get_if<system::custom>(&(value.info))) {
+        os << "custom_info{";
+        os << ".subsystems={";
+        os << "},";
+        os << ".connections={";
+        os << "}";
+        os << "}";
+    }
     os << "}";
     return os;
 }
