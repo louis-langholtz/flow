@@ -34,7 +34,7 @@ struct env_name
         // Intentionally empty.
     }
 
-    constexpr const std::string& value() const noexcept
+    constexpr explicit operator std::string() const
     {
         return data;
     }
@@ -46,13 +46,13 @@ private:
 constexpr auto operator==(const env_name& lhs, const env_name& rhs)
     -> bool
 {
-    return lhs.value() == rhs.value();
+    return std::string(lhs) == std::string(rhs);
 }
 
 constexpr auto operator<(const env_name& lhs, const env_name& rhs)
     -> bool
 {
-    return lhs.value() < rhs.value();
+    return std::string(lhs) < std::string(rhs);
 }
 
 auto operator<<(std::ostream& os, const env_name& name)

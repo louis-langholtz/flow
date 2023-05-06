@@ -39,7 +39,7 @@ std::string env_name::validate(std::string v)
 auto operator<<(std::ostream& os, const env_name& name)
     -> std::ostream&
 {
-    os << name.value();
+    os << std::string(name);
     return os;
 }
 
@@ -73,7 +73,7 @@ auto make_arg_bufs(const std::map<env_name, std::string>& envars)
 {
     auto result = std::vector<std::string>{};
     for (const auto& entry: envars) {
-        auto string = entry.first.value();
+        auto string = std::string(entry.first);
         string += env_separator;
         string += entry.second;
         result.push_back(std::move(string));
