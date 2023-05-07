@@ -1,19 +1,18 @@
 #include <sstream> // for std::ostringstream
-#include <stdexcept> // for std::invalid_argument
 
-#include "flow/env_name.hpp"
+#include "flow/env_value.hpp"
 
 namespace flow {
 
 namespace {
 
 constexpr auto nul_character = '\0';
-constexpr auto env_separator = '=';
-const std::string reserved_set{{nul_character, env_separator}};
+
+const std::string reserved_set{std::initializer_list<char>{nul_character}};
 
 }
 
-auto env_name_checker::operator()(std::string v) const -> std::string
+auto env_value_checker::operator()(std::string v) const -> std::string
 {
     if (const auto found = v.find_first_of(reserved_set);
         found != std::string::npos) {

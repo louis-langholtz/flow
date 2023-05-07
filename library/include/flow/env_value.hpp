@@ -1,5 +1,5 @@
-#ifndef env_name_hpp
-#define env_name_hpp
+#ifndef env_value_hpp
+#define env_value_hpp
 
 #include <ostream>
 #include <string>
@@ -8,7 +8,7 @@
 
 namespace flow {
 
-struct env_name_checker
+struct env_value_checker
 {
     constexpr auto operator()() const -> std::string
     {
@@ -29,8 +29,14 @@ struct env_name_checker
     }
 };
 
-using env_name = detail::checked_value<std::string, env_name_checker>;
+using env_value = detail::checked_value<std::string, env_value_checker>;
+
+static_assert(std::is_default_constructible_v<env_value>);
+static_assert(std::is_copy_constructible_v<env_value>);
+static_assert(std::is_move_constructible_v<env_value>);
+static_assert(std::is_copy_assignable_v<env_value>);
+static_assert(std::is_move_assignable_v<env_value>);
 
 }
 
-#endif /* env_name_hpp */
+#endif /* env_value_hpp */
