@@ -20,13 +20,13 @@ struct descriptor_info {
     io_type direction;
 };
 
-using descriptor_container = std::map<descriptor_id, descriptor_info>;
+using descriptor_map = std::map<descriptor_id, descriptor_info>;
 
 auto operator<<(std::ostream& os,
-                const descriptor_container& value)
+                const descriptor_map& value)
     -> std::ostream&;
 
-const auto standard_descriptors = descriptor_container{
+const auto standard_descriptors = descriptor_map{
     {descriptor_id{0}, {"stdin", io_type::in}},
     {descriptor_id{1}, {"stdout", io_type::out}},
     {descriptor_id{2}, {"stderr", io_type::out}},
@@ -51,7 +51,7 @@ struct system
     system(custom type_info): info{std::move(type_info)} {}
     system(executable type_info): info{std::move(type_info)} {}
 
-    descriptor_container descriptors{standard_descriptors};
+    descriptor_map descriptors{standard_descriptors};
     environment_map environment;
     variant<custom, executable> info;
 };

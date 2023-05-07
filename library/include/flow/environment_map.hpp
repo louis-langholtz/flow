@@ -1,5 +1,5 @@
-#ifndef environment_container_hpp
-#define environment_container_hpp
+#ifndef environment_map_hpp
+#define environment_map_hpp
 
 #include <map>
 #include <ostream>
@@ -27,4 +27,4 @@ auto make_arg_bufs(const environment_map& envars)
 
 }
 
-#endif /* environment_container_hpp */
+#endif /* environment_map_hpp */

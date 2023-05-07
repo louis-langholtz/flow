@@ -2,7 +2,7 @@
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const descriptor_container& value)
+auto operator<<(std::ostream& os, const descriptor_map& value)
     -> std::ostream&
 {
     os << "{";
