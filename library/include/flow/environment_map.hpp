@@ -12,12 +12,12 @@
 
 namespace flow {
 
-using environment_container = std::map<env_name, env_value>;
+using environment_map = std::map<env_name, env_value>;
 
-auto operator<<(std::ostream& os, const environment_container& value)
+auto operator<<(std::ostream& os, const environment_map& value)
     -> std::ostream&;
 
-auto get_environ() -> environment_container;
+auto get_environ() -> environment_map;
 
 /// @note This is NOT an "async-signal-safe" function. So, it's not suitable
 /// for forked child to call.

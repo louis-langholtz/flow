@@ -11,7 +11,7 @@
 #include "ext/fstream.hpp"
 
 #include "flow/connection.hpp"
-#include "flow/environment_container.hpp"
+#include "flow/environment_map.hpp"
 
 namespace flow {
 

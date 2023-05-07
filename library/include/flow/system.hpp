@@ -8,7 +8,7 @@
 
 #include "flow/connection.hpp"
 #include "flow/descriptor_id.hpp"
-#include "flow/environment_container.hpp"
+#include "flow/environment_map.hpp"
 #include "flow/io_type.hpp"
 #include "flow/system_name.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
@@ -52,7 +52,7 @@ struct system
     system(executable type_info): info{std::move(type_info)} {}
 
     descriptor_container descriptors{standard_descriptors};
-    environment_container environment;
+    environment_map environment;
     variant<custom, executable> info;
 };
 
