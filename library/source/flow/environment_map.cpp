@@ -1,7 +1,7 @@
 #include <cctype> // for std::isprint
 #include <cstring> // for std::strchr
 
-#include "flow/environment_container.hpp"
+#include "flow/environment_map.hpp"
 
 extern char **environ; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
@@ -13,7 +13,7 @@ constexpr auto env_separator = '=';
 
 }
 
-auto operator<<(std::ostream& os, const environment_container& value)
+auto operator<<(std::ostream& os, const environment_map& value)
     -> std::ostream&
 {
     os << "environment={\n";
@@ -24,9 +24,9 @@ auto operator<<(std::ostream& os, const environment_container& value)
     return os;
 }
 
-auto get_environ() -> environment_container
+auto get_environ() -> environment_map
 {
-    environment_container result;
+    environment_map result;
     for (auto env = ::environ; env && *env; ++env) {
         if (const auto found = std::strchr(*env, '=')) {
             result[{*env, found}] = std::string(found + 1);

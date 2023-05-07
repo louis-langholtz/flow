@@ -573,7 +573,7 @@ auto total_channels(const instance& object) -> std::size_t
 auto instantiate(const system_name& name,
                  const system& system,
                  std::ostream& diags,
-                 environment_container env)
+                 environment_map env)
     -> instance
 {
     instance result;
