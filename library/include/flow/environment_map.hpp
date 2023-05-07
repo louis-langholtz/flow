@@ -22,7 +22,7 @@ auto get_environ() -> environment_map;
 /// @note This is NOT an "async-signal-safe" function. So, it's not suitable
 /// for forked child to call.
 /// @see https://man7.org/linux/man-pages/man7/signal-safety.7.html
-auto make_arg_bufs(const std::map<env_name, env_value>& envars)
+auto make_arg_bufs(const environment_map& envars)
     -> std::vector<std::string>;
 
 }
