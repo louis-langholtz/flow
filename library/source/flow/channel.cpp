@@ -16,17 +16,21 @@ auto validate(const system_endpoint& end,
               io_type expected_io) -> void
 {
     if (end.address == system_name{}) {
-        const auto& d_info = system.descriptors.at(end.descriptor);
-        if (d_info.direction != reverse(expected_io)) {
-            throw std::invalid_argument{"bad custom system endpoint io"};
+        for (auto&& descriptor: end.descriptors) {
+            const auto& d_info = system.descriptors.at(descriptor);
+            if (d_info.direction != reverse(expected_io)) {
+                throw std::invalid_argument{"bad custom system endpoint io"};
+            }
         }
         return;
     }
     if (const auto p = std::get_if<system::custom>(&(system.info))) {
         const auto& subsys = p->subsystems.at(end.address);
-        const auto& d_info = subsys.descriptors.at(end.descriptor);
-        if (d_info.direction != expected_io) {
-            throw std::invalid_argument{"bad subsys endpoint io"};
+        for (auto&& descriptor: end.descriptors) {
+            const auto& d_info = subsys.descriptors.at(descriptor);
+            if (d_info.direction != expected_io) {
+                throw std::invalid_argument{"bad subsys endpoint io"};
+            }
         }
         return;
     }
@@ -82,9 +86,7 @@ auto make_channel(const system_name& name,
         throw std::invalid_argument{unequal_sizes_error};
     }
 
-    auto enclosure_descriptors = std::array<descriptor_id, 2u>{
-        invalid_descriptor_id, invalid_descriptor_id
-    };
+    auto enclosure_descriptors = std::array<std::set<descriptor_id>, 2u>{};
     const auto src_file = std::get_if<file_endpoint>(&conn.src);
     const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
     if (src_file && dst_file) {
@@ -103,13 +105,13 @@ auto make_channel(const system_name& name,
     if (src_system) {
         validate(*src_system, system, io_type::out);
         if (src_system->address == system_name{}) {
-            enclosure_descriptors[0] = src_system->descriptor;
+            enclosure_descriptors[0] = src_system->descriptors;
         }
     }
     if (dst_system) {
         validate(*dst_system, system, io_type::in);
         if (dst_system->address == system_name{}) {
-            enclosure_descriptors[1] = dst_system->descriptor;
+            enclosure_descriptors[1] = dst_system->descriptors;
         }
     }
     if (src_file) {
@@ -121,9 +123,9 @@ auto make_channel(const system_name& name,
     if (src_user || dst_user) {
         return {pipe_channel{}};
     }
-    for (auto&& descriptor_id: enclosure_descriptors) {
-        if (descriptor_id != invalid_descriptor_id) {
-            const auto look_for = system_endpoint{name, descriptor_id};
+    for (auto&& descriptor_set: enclosure_descriptors) {
+        if (!empty(descriptor_set)) {
+            const auto look_for = system_endpoint{name, descriptor_set};
             if (const auto found = find_index(connections, look_for)) {
                 return {reference_channel{&channels[*found]}};
             }
