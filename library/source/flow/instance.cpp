@@ -361,7 +361,6 @@ auto setup(instance& root,
            instance& child) -> void
 {
     // close & dup the channels needed for name, and close those that aren't
-    // TODO: close inherited channel descriptors that child's not using.
     const auto max_index = size(connections);
     assert(max_index == size(channels));
     for (auto index = 0u; index < max_index; ++index) {
