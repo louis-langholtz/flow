@@ -190,7 +190,8 @@ auto do_nested_system() -> void
             system_endpoint{cat_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
-        system.subsystems.emplace(cat_system_name, cat_system);
+        system.subsystems.emplace(cat_system_name,
+                                  flow::system{cat_system, std_descriptors});
     }
 
     {
@@ -207,7 +208,8 @@ auto do_nested_system() -> void
             system_endpoint{xargs_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
-        system.subsystems.emplace(xargs_system_name, xargs_system);
+        system.subsystems.emplace(xargs_system_name,
+                                  flow::system{xargs_system, std_descriptors});
     }
 
     const auto system_stdin = unidirectional_connection{

@@ -15,9 +15,30 @@ auto validate(const system_endpoint& end,
               const system& system,
               io_type expected_io) -> void
 {
+    const auto at = [](const descriptor_map& descriptors,
+                       const descriptor_id& key,
+                       const system_name& name) -> const descriptor_info&
+    {
+        try {
+            return descriptors.at(key);
+        }
+        catch (const std::out_of_range& ex) {
+            std::ostringstream os;
+            os << "can't find " << key << " in ";
+            if (name == system_name{}) {
+                os << "system's";
+            }
+            else {
+                os << "'" << name << "' subsystem's";
+            }
+            os << " descriptor mapping: ";
+            os << ex.what();
+            throw std::invalid_argument{os.str()};
+        }
+    };
     if (end.address == system_name{}) {
-        for (auto&& descriptor: end.descriptors) {
-            const auto& d_info = system.descriptors.at(descriptor);
+        for (auto&& d: end.descriptors) {
+            const auto& d_info = at(system.descriptors, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
                 throw std::invalid_argument{"bad custom system endpoint io"};
             }
@@ -26,8 +47,8 @@ auto validate(const system_endpoint& end,
     }
     if (const auto p = std::get_if<system::custom>(&(system.info))) {
         const auto& subsys = p->subsystems.at(end.address);
-        for (auto&& descriptor: end.descriptors) {
-            const auto& d_info = subsys.descriptors.at(descriptor);
+        for (auto&& d: end.descriptors) {
+            const auto& d_info = at(subsys.descriptors, d, end.address);
             if (d_info.direction != expected_io) {
                 throw std::invalid_argument{"bad subsys endpoint io"};
             }

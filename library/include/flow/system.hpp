@@ -26,7 +26,7 @@ auto operator<<(std::ostream& os,
                 const descriptor_map& value)
     -> std::ostream&;
 
-const auto standard_descriptors = descriptor_map{
+const auto std_descriptors = descriptor_map{
     {descriptor_id{0}, {"stdin", io_type::in}},
     {descriptor_id{1}, {"stdout", io_type::out}},
     {descriptor_id{2}, {"stderr", io_type::out}},
@@ -48,10 +48,22 @@ struct system
     };
 
     system() = default;
-    system(custom type_info): info{std::move(type_info)} {}
-    system(executable type_info): info{std::move(type_info)} {}
 
-    descriptor_map descriptors{standard_descriptors};
+    system(custom type_info, descriptor_map map = {})
+        : descriptors{std::move(map)},
+          info{std::move(type_info)}
+    {
+        // Intentionally empty.
+    }
+
+    system(executable type_info, descriptor_map map = std_descriptors):
+        descriptors{std::move(map)},
+        info{std::move(type_info)}
+    {
+        // Intentionally empty.
+    }
+
+    descriptor_map descriptors;
     environment_map environment;
     variant<custom, executable> info;
 };
