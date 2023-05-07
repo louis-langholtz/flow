@@ -38,7 +38,7 @@ auto get_environ() -> environment_map
     return result;
 }
 
-auto make_arg_bufs(const std::map<env_name, env_value>& envars)
+auto make_arg_bufs(const environment_map& envars)
     -> std::vector<std::string>
 {
     auto result = std::vector<std::string>{};
