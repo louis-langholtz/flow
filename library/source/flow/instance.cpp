@@ -180,13 +180,17 @@ auto setup(const system_name& name,
     if (ends[0]) { // src
         if (ends[0]->address == name) {
             close(p, io::read, name, c, diags);
-            dup2(p, io::write, ends[0]->descriptor, name, c, diags);
+            for (auto&& descriptor: ends[0]->descriptors) {
+                dup2(p, io::write, descriptor, name, c, diags);
+            }
         }
     }
     if (ends[1]) { // dst
         if (ends[1]->address == name) {
             close(p, io::write, name, c, diags);
-            dup2(p, io::read, ends[1]->descriptor, name, c, diags);
+            for (auto&& descriptor: ends[1]->descriptors) {
+                dup2(p, io::read, descriptor, name, c, diags);
+            }
         }
     }
 }
@@ -226,11 +230,13 @@ auto setup(const system_name& name,
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
-        if (::dup2(fd, int(op->descriptor)) == -1) {
-            diags << name << " " << c;
-            diags << ", dup2(" << fd << "," << op->descriptor << ") failed: ";
-            diags << os_error_code(errno) << "\n";
-            exit(exit_failure_code);
+        for (auto&& descriptor: op->descriptors) {
+            if (::dup2(fd, int(descriptor)) == -1) {
+                diags << name << " " << c;
+                diags << ", dup2(" << fd << "," << descriptor << ") failed: ";
+                diags << os_error_code(errno) << "\n";
+                exit(exit_failure_code);
+            }
         }
     }
 }
@@ -260,11 +266,13 @@ auto setup(const system_name& name,
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
-        if (::dup2(fd, int(op->descriptor)) == -1) {
-            diags << name << " " << c;
-            diags << ", dup2(" << fd << "," << op->descriptor << ") failed: ";
-            diags << os_error_code(errno) << "\n";
-            exit(exit_failure_code);
+        for (auto&& descriptor: op->descriptors) {
+            if (::dup2(fd, int(descriptor)) == -1) {
+                diags << name << " " << c;
+                diags << ", dup2(" << fd << "," << descriptor << ") failed: ";
+                diags << os_error_code(errno) << "\n";
+                exit(exit_failure_code);
+            }
         }
     }
 }
