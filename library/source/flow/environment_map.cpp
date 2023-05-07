@@ -28,12 +28,10 @@ auto get_environ() -> environment_map
 {
     environment_map result;
     for (auto env = ::environ; env && *env; ++env) {
-        if (const auto found = std::strchr(*env, '=')) {
-            result[{*env, found}] = std::string(found + 1);
-        }
-        else {
-            result[*env] = std::string();
-        }
+        const auto found = std::strchr(*env, '=');
+        const auto name = found? env_name{*env, found}: env_name{*env};
+        const auto value = found? env_value{found + 1}: env_value{};
+        result[name] = value;
     }
     return result;
 }
