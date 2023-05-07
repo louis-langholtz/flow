@@ -38,14 +38,14 @@ auto get_environ() -> environment_container
     return result;
 }
 
-auto make_arg_bufs(const std::map<env_name, std::string>& envars)
+auto make_arg_bufs(const std::map<env_name, env_value>& envars)
     -> std::vector<std::string>
 {
     auto result = std::vector<std::string>{};
     for (const auto& entry: envars) {
         auto string = std::string(entry.first);
         string += env_separator;
-        string += entry.second;
+        string += std::string(entry.second);
         result.push_back(std::move(string));
     }
     return result;
