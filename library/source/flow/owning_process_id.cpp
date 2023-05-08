@@ -1,15 +1,15 @@
 #include <unistd.h> // for pid_t
-#include <signal.h>
 #include <sys/wait.h>
 
 #include <cerrno> // for errno
+#include <csignal>
 #include <utility> // for std::exchange
 
 #include "flow/owning_process_id.hpp"
 
 namespace flow {
 
-owning_process_id owning_process_id::fork()
+auto owning_process_id::fork() -> owning_process_id
 {
     return owning_process_id{reference_process_id(::fork())};
 }

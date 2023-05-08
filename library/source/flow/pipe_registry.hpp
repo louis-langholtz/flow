@@ -12,7 +12,7 @@ struct pipe_registry
     std::set<pipe_channel*> pipes;
 };
 
-pipe_registry& the_pipe_registry() noexcept;
+auto the_pipe_registry() noexcept -> pipe_registry&;
 
 }
 

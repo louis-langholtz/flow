@@ -270,8 +270,8 @@ auto setup(const system_name& name,
 
 [[noreturn]]
 auto exec_child(const std::filesystem::path& path,
-                char * const argv[],
-                char * const envp[],
+                char * const *argv,
+                char * const *envp,
                 std::ostream& diags) -> void
 {
     diags.flush();
@@ -309,7 +309,7 @@ auto make_child(instance& parent,
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
         result.info = instance::custom{};
         auto& parent_info = std::get<instance::custom>(parent.info);
-        instance::custom& info = std::get<instance::custom>(result.info);
+        auto& info = std::get<instance::custom>(result.info);
         for (auto&& connection: p->connections) {
             info.channels.push_back(make_channel(name, system, connection,
                                                  connections,

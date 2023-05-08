@@ -1,6 +1,7 @@
 #ifndef fstream_hpp
 #define fstream_hpp
 
+#include <array>
 #include <algorithm> // for std::copy_n
 #include <cassert>
 #include <cstdint> // for std::uint32_t
@@ -72,7 +73,7 @@ struct fstream: public std::iostream {
         auto operator=(const filebuf& other) -> filebuf& = delete;
         auto operator=(filebuf&& other) noexcept -> filebuf&;
         auto swap(filebuf& rhs) -> void;
-        auto is_open() const noexcept -> bool;
+        [[nodiscard]] auto is_open() const noexcept -> bool;
         auto open(const char* path, openmode mode) -> filebuf*;
         auto open(const std::filesystem::path& path, openmode mode) -> filebuf*;
         auto open(const std::string& path, openmode mode) -> filebuf*;
@@ -126,7 +127,7 @@ struct fstream: public std::iostream {
         char* extbuf_{};
         const char* extbufnext_{};
         const char* extbufend_{};
-        char extbuf_min_[extbuf_min_size]{};
+        std::array<char, extbuf_min_size> extbuf_min_{};
         size_t ebs_{};
         char_type* intbuf_{};
         size_t ibs_{};
@@ -323,7 +324,7 @@ inline auto fstream::filebuf::swap(filebuf& rhs) -> void
         else
         {
             // Both *this and rhs use the small buffer.
-            char tmp[sizeof(extbuf_min_)];
+            std::array<char, extbuf_min_size> tmp{};
             std::memmove(std::data(tmp), std::data(extbuf_min_), sizeof(extbuf_min_));
             std::memmove(std::data(extbuf_min_), std::data(rhs.extbuf_min_), sizeof(extbuf_min_));
             std::memmove(std::data(rhs.extbuf_min_), std::data(tmp), sizeof(extbuf_min_));
@@ -343,37 +344,37 @@ inline auto fstream::filebuf::swap(filebuf& rhs) -> void
     std::swap(iomode, rhs.iomode);
     std::swap(owns_eb_, rhs.owns_eb_);
     std::swap(owns_ib_, rhs.owns_ib_);
-    if (this->eback() == (char_type*)rhs.extbuf_min_)
+    if (this->eback() == data(rhs.extbuf_min_))
     {
         const auto n = this->gptr() - this->eback();
         const auto e = this->egptr() - this->eback();
-        this->setg((char_type*)extbuf_min_,
-                   (char_type*)extbuf_min_ + n,
-                   (char_type*)extbuf_min_ + e);
+        this->setg(data(extbuf_min_),
+                   data(extbuf_min_) + n,
+                   data(extbuf_min_) + e);
     }
-    else if (this->pbase() == (char_type*)rhs.extbuf_min_)
+    else if (this->pbase() == data(rhs.extbuf_min_))
     {
         const auto n = this->pptr() - this->pbase();
         const auto e = this->epptr() - this->pbase();
-        this->setp((char_type*)extbuf_min_,
-                   (char_type*)extbuf_min_ + e);
+        this->setp(data(extbuf_min_),
+                   data(extbuf_min_) + e);
         assert(n < static_cast<std::ptrdiff_t>(std::numeric_limits<int>::max()));
         this->pbump(static_cast<int>(n));
     }
-    if (rhs.eback() == (char_type*)extbuf_min_)
+    if (rhs.eback() == data(extbuf_min_))
     {
         const auto n = rhs.gptr() - rhs.eback();
         const auto e = rhs.egptr() - rhs.eback();
-        rhs.setg((char_type*)rhs.extbuf_min_,
-                   (char_type*)rhs.extbuf_min_ + n,
-                   (char_type*)rhs.extbuf_min_ + e);
+        rhs.setg(data(rhs.extbuf_min_),
+                 data(rhs.extbuf_min_) + n,
+                 data(rhs.extbuf_min_) + e);
     }
-    else if (rhs.pbase() == (char_type*)extbuf_min_)
+    else if (rhs.pbase() == data(extbuf_min_))
     {
         const auto n = rhs.pptr() - rhs.pbase();
         const auto e = rhs.epptr() - rhs.pbase();
-        rhs.setp((char_type*)rhs.extbuf_min_,
-                   (char_type*)rhs.extbuf_min_ + e);
+        rhs.setp(data(rhs.extbuf_min_),
+                 data(rhs.extbuf_min_) + e);
         assert(n < static_cast<std::ptrdiff_t>(std::numeric_limits<int>::max()));
         rhs.pbump(static_cast<int>(n));
     }
@@ -409,8 +410,8 @@ inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
                                path, oflags, 0666);
 #else
         static constexpr auto buffer_size = std::size_t{1024u};
-        static constexpr char six_x[] = "XXXXXX";
-        char buffer[buffer_size];
+        static constexpr char six_x[] = "XXXXXX"; // NOLINT(modernize-avoid-c-arrays)
+        std::array<char, buffer_size> buffer{};
         const auto len = std::strlen(path);
         const auto last_char = (len > 0u)? path[len - 1u]: '\0';
         const auto separator = (last_char != '/')? "/": "";
@@ -501,7 +502,7 @@ inline auto fstream::filebuf::underflow() -> int_type
     if (this->gptr() == this->egptr())
     {
         std::memmove(this->eback(), this->egptr() - unget_sz, unget_sz * sizeof(char_type));
-        size_t nmemb = static_cast<size_t>(this->egptr() - this->eback() - unget_sz);
+        auto nmemb = static_cast<size_t>(this->egptr() - this->eback() - unget_sz);
         nmemb = ::fread(this->eback() + unget_sz, 1, nmemb, fp.get());
         if (nmemb != 0)
         {

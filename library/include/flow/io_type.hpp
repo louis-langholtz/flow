@@ -28,7 +28,7 @@ constexpr auto to_cstring(io_type io) -> const char*
     return "unknown";
 }
 
-std::ostream& operator<<(std::ostream& os, io_type value);
+auto operator<<(std::ostream& os, io_type value) -> std::ostream&;
 
 }
 

@@ -26,7 +26,7 @@ struct instance
     {
         /// @brief Default constructor.
         /// @note This ensures C++ sees this class as default constructable.
-        custom() noexcept {};
+        custom() noexcept {}; // NOLINT(modernize-use-equals-default)
 
         /// @brief Sub-instances - or children - of this instance.
         std::map<system_name, instance> children;

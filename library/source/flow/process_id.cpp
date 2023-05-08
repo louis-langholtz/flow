@@ -1,5 +1,4 @@
 
-#include <signal.h>
 #include <sys/wait.h>
 
 #include "flow/process_id.hpp"

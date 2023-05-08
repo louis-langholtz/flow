@@ -2,7 +2,7 @@
 
 namespace flow {
 
-pipe_registry& the_pipe_registry() noexcept
+auto the_pipe_registry() noexcept -> pipe_registry&
 {
     static auto registry = pipe_registry{};
     return registry;
