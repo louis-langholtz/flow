@@ -13,7 +13,7 @@ struct file_endpoint {
     auto operator==(const file_endpoint&) const -> bool = default;
 };
 
-std::ostream& operator<<(std::ostream& os, const file_endpoint& value);
+auto operator<<(std::ostream& os, const file_endpoint& value) -> std::ostream&;
 
 }
 

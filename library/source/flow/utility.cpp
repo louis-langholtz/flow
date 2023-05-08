@@ -1,6 +1,8 @@
 #include <algorithm> // for std::find
+#include <csignal> // for kill
 #include <cstddef> // for std::ptrdiff_t
 #include <cstdio> // for ::tmpfile, std::fclose
+#include <cstdlib> // for ::mkstemp, ::fork
 #include <functional> // for std::ref
 #include <ios> // for std::boolalpha
 #include <iterator> // for std::distance
@@ -10,8 +12,6 @@
 #include <system_error> // for std::error_code
 
 #include <fcntl.h> // for ::open
-#include <signal.h> // for kill
-#include <stdlib.h> // for ::mkstemp, ::fork
 #include <sys/wait.h>
 #include <sys/time.h> // for setitimer
 #include <sys/types.h> // for mkfifo
@@ -218,16 +218,9 @@ auto sigaction_cb(int sig, siginfo_t *info, void * /*ucontext*/) -> void
     std::cerr << "caught " << sig << ", from " << sender_pid << "\n";
 }
 
-auto kill(const process_id& pid, signal sig) -> int
+auto kill(const reference_process_id& pid, signal sig) -> int
 {
-    auto id = pid_t{-1};
-    if (const auto p = std::get_if<owning_process_id>(&pid)) {
-        id = pid_t(*p);
-    }
-    else if (const auto p = std::get_if<reference_process_id>(&pid)) {
-        id = pid_t(*p);
-    }
-    return ::kill(id, to_posix_signal(sig));
+    return ::kill(int(pid), to_posix_signal(sig));
 }
 
 }

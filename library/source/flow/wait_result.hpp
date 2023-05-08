@@ -3,7 +3,7 @@
 
 #include "os_error_code.hpp"
 
-#include "flow/process_id.hpp"
+#include "flow/reference_process_id.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
 #include "flow/wait_status.hpp"
 
@@ -31,7 +31,7 @@ struct wait_result {
 
     wait_result(info_t info): value{info} {}
 
-    constexpr auto type() const noexcept -> type_enum
+    [[nodiscard]] constexpr auto type() const noexcept -> type_enum
     {
         return static_cast<type_enum>(value.index());
     }
@@ -41,12 +41,12 @@ struct wait_result {
         return type() != no_children;
     }
 
-    auto error() const& -> const error_t&
+    [[nodiscard]] auto error() const& -> const error_t&
     {
         return std::get<error_t>(value);
     }
 
-    auto info() const& -> const info_t&
+    [[nodiscard]] auto info() const& -> const info_t&
     {
         return std::get<info_t>(value);
     }

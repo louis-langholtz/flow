@@ -11,7 +11,7 @@ struct owning_process_id
 {
     static constexpr auto default_process_id = invalid_process_id;
 
-    static owning_process_id fork();
+    static auto fork() -> owning_process_id;
 
     owning_process_id() noexcept = default;
     owning_process_id(const owning_process_id& other) = delete;
