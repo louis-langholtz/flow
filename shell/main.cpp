@@ -20,10 +20,11 @@ using namespace flow;
 /// @brief Finds the channel requested.
 /// @return Pointer to channel of the type requested or <code>nullptr</code>.
 template <class T>
-auto find_channel(const flow::system& system, instance& instance,
+auto find_channel(const flow::system::custom& custom,
+                  instance& instance,
                   const connection& look_for) -> T*
 {
-    const auto found = find_index(std::get<system::custom>(system.info).connections, look_for);
+    const auto found = find_index(custom.connections, look_for);
     return found? std::get_if<T>(&(instance.channels[*found])): nullptr;
 }
 
@@ -42,12 +43,15 @@ auto do_lsof_system() -> void
         system_endpoint{lsof_process_name, descriptor_id{1}},
         user_endpoint{},
     };
-    const auto lsof_stderr = unidirectional_connection{
-        system_endpoint{lsof_process_name, descriptor_id{2}},
-        file_endpoint{"/dev/null"},
-    };
+    custom.connections.push_back(unidirectional_connection{
+        file_endpoint::dev_null,
+        system_endpoint{lsof_process_name, descriptor_id{0}},
+    });
     custom.connections.push_back(lsof_stdout);
-    custom.connections.push_back(lsof_stderr);
+    custom.connections.push_back(unidirectional_connection{
+        system_endpoint{lsof_process_name, descriptor_id{2}},
+        file_endpoint::dev_null,
+    });
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system_name{}, custom, diags);
@@ -119,7 +123,15 @@ auto do_ls_system() -> void
         system_endpoint{cat_process_name, descriptor_id{1}},
         system_endpoint{xargs_process_name, descriptor_id{0}},
     });
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{cat_process_name, descriptor_id{2}},
+        file_endpoint::dev_null,
+    });
     system.connections.push_back(xargs_stdout);
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{xargs_process_name, descriptor_id{2}},
+        file_endpoint::dev_null,
+    });
 
     {
         auto diags = temporary_fstream();
@@ -190,6 +202,10 @@ auto do_nested_system() -> void
             system_endpoint{cat_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
+        cat_system.connections.push_back(unidirectional_connection{
+            system_endpoint{cat_process_name, descriptor_id{2}},
+            system_endpoint{system_name{}, descriptor_id{2}},
+        });
         system.subsystems.emplace(cat_system_name,
                                   flow::system{cat_system, std_descriptors});
     }
@@ -208,6 +224,10 @@ auto do_nested_system() -> void
             system_endpoint{xargs_process_name, descriptor_id{1}},
             system_endpoint{system_name{}, descriptor_id{1}},
         });
+        xargs_system.connections.push_back(unidirectional_connection{
+            system_endpoint{xargs_process_name, descriptor_id{2}},
+            system_endpoint{system_name{}, descriptor_id{2}},
+        });
         system.subsystems.emplace(xargs_system_name,
                                   flow::system{xargs_system, std_descriptors});
     }
@@ -216,17 +236,24 @@ auto do_nested_system() -> void
         user_endpoint{},
         system_endpoint{cat_system_name, descriptor_id{0}},
     };
-    const auto catout_to_xargsin = unidirectional_connection{
-        system_endpoint{cat_system_name, descriptor_id{1}},
-        system_endpoint{xargs_system_name, descriptor_id{0}},
-    };
     const auto system_stdout = unidirectional_connection{
         system_endpoint{xargs_system_name, descriptor_id{1}},
         user_endpoint{},
     };
 
     system.connections.push_back(system_stdin);
-    system.connections.push_back(catout_to_xargsin);
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{cat_system_name, descriptor_id{1}},
+        system_endpoint{xargs_system_name, descriptor_id{0}},
+    });
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{cat_system_name, descriptor_id{2}},
+        file_endpoint::dev_null,
+    });
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{xargs_system_name, descriptor_id{2}},
+        file_endpoint::dev_null,
+    });
     system.connections.push_back(system_stdout);
 
     {

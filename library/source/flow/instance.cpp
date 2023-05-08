@@ -1,5 +1,6 @@
 #include <cstdlib> // for std::exit, EXIT_FAILURE
 #include <cstring> // for std::strcmp
+#include <sstream> // for std::ostringstream
 
 #include <unistd.h> // for getpid, setpgid
 #include <fcntl.h> // for ::open
@@ -79,14 +80,14 @@ auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
     return std::array<const T*, 2u>{nullptr, nullptr};
 }
 
-auto find_owner(const instance& root, const instance& key)
+auto find_parent(const instance& root, const instance& child)
     -> const instance*
 {
     for (auto&& entry: root.children) {
-        if (&entry.second == &key) {
+        if (&entry.second == &child) {
             return &root;
         }
-        if (const auto found = find_owner(entry.second, key)) {
+        if (const auto found = find_parent(entry.second, child)) {
             return found;
         }
     }
@@ -106,23 +107,22 @@ auto fully_deref(T&& chan_p)
 }
 
 template <class T>
-auto is_channel_for(const instance& root,
-                    const T *key,
-                    const instance& for_instance) -> bool
+auto is_channel_for(const std::span<const channel>& channels,
+                    const T *key) -> bool
 {
-    if (const auto parent = find_owner(root, for_instance)) {
-        for (auto&& channel: parent->channels) {
-            auto chan_p = &channel;
-            using ref_type = decltype(std::get_if<reference_channel>(chan_p));
-            auto ref_p = static_cast<ref_type>(nullptr);
-            while ((ref_p = std::get_if<reference_channel>(chan_p)) != nullptr) {
-                if constexpr (std::is_same_v<T, reference_channel>) {
-                    if (ref_p == key) {
-                        return true;
-                    }
+    for (auto&& channel: channels) {
+        auto chan_p = &channel;
+        using ref_type = decltype(std::get_if<reference_channel>(chan_p));
+        auto ref_p = static_cast<ref_type>(nullptr);
+        while ((ref_p = std::get_if<reference_channel>(chan_p)) != nullptr) {
+            if constexpr (std::is_same_v<T, reference_channel>) {
+                if (ref_p == key) {
+                    return true;
                 }
-                chan_p = ref_p->other;
             }
+            chan_p = ref_p->other;
+        }
+        if constexpr (!std::is_same_v<T, reference_channel>) {
             if (const auto q = std::get_if<T>(chan_p)) {
                 if (q == key) {
                     return true;
@@ -159,37 +159,37 @@ auto dup2(pipe_channel& p, pipe_channel::io side, descriptor_id id,
 }
 
 auto setup(const system_name& name,
-           const connection& c,
+           const connection& conn,
            pipe_channel& p,
            std::ostream& diags) -> void
 {
     using io = pipe_channel::io;
-    const auto ends = make_endpoints<system_endpoint>(c);
+    const auto ends = make_endpoints<system_endpoint>(conn);
     if (!ends[0] && !ends[1]) {
-        diags << "connection has no system_endpoint: " << c << "\n";
+        diags << "connection has no system_endpoint: " << conn << "\n";
         return;
     }
     if ((!ends[0] || (ends[0]->address != name)) &&
         (!ends[1] || (ends[1]->address != name))) {
-        diags << name << " (unaffiliation) " << c;
+        diags << name << " (unaffiliation) " << conn;
         diags << " " << p << ", close in & out setup\n";
-        close(p, io::read, name, c, diags);
-        close(p, io::write, name, c, diags);
+        close(p, io::read, name, conn, diags);
+        close(p, io::write, name, conn, diags);
         return;
     }
     if (ends[0]) { // src
         if (ends[0]->address == name) {
-            close(p, io::read, name, c, diags);
+            close(p, io::read, name, conn, diags);
             for (auto&& descriptor: ends[0]->descriptors) {
-                dup2(p, io::write, descriptor, name, c, diags);
+                dup2(p, io::write, descriptor, name, conn, diags);
             }
         }
     }
     if (ends[1]) { // dst
         if (ends[1]->address == name) {
-            close(p, io::write, name, c, diags);
+            close(p, io::write, name, conn, diags);
             for (auto&& descriptor: ends[1]->descriptors) {
-                dup2(p, io::read, descriptor, name, c, diags);
+                dup2(p, io::read, descriptor, name, conn, diags);
             }
         }
     }
@@ -211,6 +211,7 @@ auto setup(const system_name& name,
            std::ostream& diags) -> void
 {
     const auto file_ends = make_endpoints<file_endpoint>(c);
+    assert(file_ends[0] || file_ends[1]);
     const auto& file_end = file_ends[0]? file_ends[0]: file_ends[1];
     const auto& other_end = file_ends[0]? c.ends[1]: c.ends[0];
     if (const auto op = std::get_if<system_endpoint>(&other_end)) {
@@ -242,33 +243,37 @@ auto setup(const system_name& name,
 }
 
 auto setup(const system_name& name,
-           const unidirectional_connection& c,
-           file_channel& p,
+           const unidirectional_connection& conn,
+           file_channel& chan,
            std::ostream& diags) -> void
 {
-    const auto file_ends = make_endpoints<file_endpoint>(c);
-    const auto& file_end = file_ends[0]? file_ends[0]: file_ends[1];
-    const auto& other_end = file_ends[0]? c.dst: c.src;
-    if (const auto op = std::get_if<system_endpoint>(&other_end)) {
-        if (op->address != name) {
-            diags << name << " skipping " << c << "\n";
-            return;
+    const auto sys_ends = make_endpoints<system_endpoint>(conn);
+    assert(sys_ends[0] || sys_ends[1]);
+    const auto op = [&sys_ends,&name](){
+        for (auto&& sys_end: sys_ends) {
+            if (sys_end && sys_end->address == name) {
+                return sys_end;
+            }
         }
-        const auto flags = to_open_flags(p.io);
+        return static_cast<const system_endpoint*>(nullptr);
+    }();
+    if (op) {
+        const auto flags = to_open_flags(chan.io);
         const auto mode = 0600;
         const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                               file_end->path.c_str(), flags, mode);
+                               chan.path.c_str(), flags, mode);
         if (fd == -1) {
             static constexpr auto mode_width = 5;
-            diags << name << " " << c;
-            diags << ", open file " << file_end->path << " with mode ";
-            diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
+            diags << name << " " << conn;
+            diags << ", open file " << chan.path << " with mode ";
+            diags << std::oct << std::setfill('0') << std::setw(mode_width);
+            diags << flags;
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
         for (auto&& descriptor: op->descriptors) {
             if (::dup2(fd, int(descriptor)) == -1) {
-                diags << name << " " << c;
+                diags << name << " " << conn;
                 diags << ", dup2(" << fd << "," << descriptor << ") failed: ";
                 diags << os_error_code(errno) << "\n";
                 exit(exit_failure_code);
@@ -311,6 +316,14 @@ auto make_child(instance& parent,
                 std::ostream& diags) -> instance
 {
     instance result;
+    for (auto&& entry: system.descriptors) {
+        const auto look_for = system_endpoint{name, entry.first};
+        if (!find_index(connections, look_for)) {
+            std::ostringstream os;
+            os << "missing connection for " << look_for;
+            throw std::invalid_argument{os.str()};
+        }
+    }
     result.environment = parent.environment;
     for (auto&& entry: system.environment) {
         result.environment[entry.first] = entry.second;
@@ -327,7 +340,7 @@ auto make_child(instance& parent,
         }
         for (auto&& entry: p->subsystems) {
             auto kid = make_child(result, entry.first, entry.second,
-                                  connections, diags);
+                                  p->connections, diags);
             result.children.emplace(entry.first, std::move(kid));
         }
     }
@@ -354,8 +367,10 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
 auto close_pipes_except(instance& root,
                         instance& child) -> void
 {
+    const auto parent = find_parent(root, child);
+    assert(parent != nullptr);
     for (auto&& pipe: the_pipe_registry().pipes) {
-        if (!is_channel_for(root, pipe, child)) {
+        if (!is_channel_for(parent->channels, pipe)) {
             pipe->close(pipe_channel::io::read, child.diags);
             pipe->close(pipe_channel::io::write, child.diags);
         }
@@ -373,6 +388,7 @@ auto setup(instance& root,
     assert(max_index == size(channels));
     for (auto index = 0u; index < max_index; ++index) {
         const auto chan_p = fully_deref(&channels[index]);
+        assert(chan_p != nullptr);
         if (const auto pipe_p = std::get_if<pipe_channel>(chan_p)) {
             setup(name, connections[index], *pipe_p, child.diags);
             continue;
@@ -593,6 +609,12 @@ auto instantiate(const system_name& name,
         fork_child(name, *p, result, result.pid, {}, {}, result, diags);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
+        for (auto&& entry: system.descriptors) {
+            const auto look_for = system_endpoint{{}, entry.first};
+            if (!find_index(p->connections, look_for)) {
+                throw std::invalid_argument{"enclosing endpoint not connected"};
+            }
+        }
         result.channels.reserve(size(p->connections));
         for (auto&& connection: p->connections) {
             result.channels.push_back(make_channel(name, system, connection,
