@@ -33,6 +33,8 @@ struct pipe_channel {
     pipe_channel(const pipe_channel& other) = delete;
     auto operator=(const pipe_channel& other) -> pipe_channel& = delete;
 
+    auto close() noexcept -> bool;
+
     /// @note This function is NOT thread safe in error cases.
     auto close(io side, std::ostream& diags) noexcept -> bool;
 

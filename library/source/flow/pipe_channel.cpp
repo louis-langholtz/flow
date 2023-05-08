@@ -28,22 +28,34 @@ pipe_channel::pipe_channel(pipe_channel&& other) noexcept: descriptors{std::exch
 
 pipe_channel::~pipe_channel() noexcept
 {
-    for (auto&& d: descriptors) {
-        if (d != -1) {
-            ::close(d);
-        }
-    }
-    // XXX Does LLVM's clang have a bug destroying variant values?
-    //  The following sometimes returns 0 as though this dtor called more
-    //  than once for this instance!
+    close();
     [[maybe_unused]] const auto ret = the_pipe_registry().pipes.erase(this);
     assert(ret == 1u);
 }
 
 auto pipe_channel::operator=(pipe_channel&& other) noexcept -> pipe_channel&
 {
-    descriptors = std::exchange(other.descriptors, {-1, -1});
+    if (this != &other) {
+        close();
+        descriptors = std::exchange(other.descriptors, {-1, -1});
+    }
     return *this;
+}
+
+auto pipe_channel::close() noexcept -> bool
+{
+    auto all_closed = true;
+    for (auto&& d: descriptors) {
+        if (d != -1) {
+            if (::close(d) != -1) {
+                d = -1;
+            }
+        }
+        if (d != -1) {
+            all_closed = false;
+        }
+    }
+    return all_closed;
 }
 
 auto pipe_channel::close(io side, std::ostream& diags) noexcept -> bool

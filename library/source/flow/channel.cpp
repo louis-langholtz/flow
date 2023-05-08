@@ -136,10 +136,10 @@ auto make_channel(const system_name& name,
         }
     }
     if (src_file) {
-        return {file_channel{io_type::in}};
+        return {file_channel{src_file->path, io_type::in}};
     }
     if (dst_file) {
-        return {file_channel{io_type::out}};
+        return {file_channel{dst_file->path, io_type::out}};
     }
     if (src_user || dst_user) {
         return {pipe_channel{}};
