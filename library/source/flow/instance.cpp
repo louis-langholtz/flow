@@ -51,35 +51,6 @@ auto make_substitutions(std::vector<char*>& argv)
     }
 }
 
-template <class T>
-auto make_endpoints(const unidirectional_connection& c)
-    -> std::array<const T*, 2u>
-{
-    return {std::get_if<T>(&c.src), std::get_if<T>(&c.dst)};
-}
-
-template <class T>
-auto make_endpoints(const bidirectional_connection& c)
-    -> std::array<const T*, 2u>
-{
-    return {
-        std::get_if<T>(&c.ends[0]), // NOLINT(readability-container-data-pointer)
-        std::get_if<T>(&c.ends[1])
-    };
-}
-
-template <class T>
-auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
-{
-    if (const auto p = std::get_if<unidirectional_connection>(&c)) {
-        return make_endpoints<T>(*p);
-    }
-    if (const auto p = std::get_if<bidirectional_connection>(&c)) {
-        return make_endpoints<T>(*p);
-    }
-    return std::array<const T*, 2u>{nullptr, nullptr};
-}
-
 auto find_parent(const instance& root, const instance& child)
     -> const instance*
 {

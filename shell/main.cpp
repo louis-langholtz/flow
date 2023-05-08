@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <string_view>
 #include <type_traits>
 
 #include "flow/channel.hpp"
@@ -16,6 +17,8 @@
 namespace {
 
 using namespace flow;
+
+constexpr auto no_such_path = "/fee/fii/foo/fum";
 
 /// @brief Finds the channel requested.
 /// @return Pointer to channel of the type requested or <code>nullptr</code>.
@@ -106,7 +109,7 @@ auto do_ls_system() -> void
     const auto xargs_process_name = system_name{"xargs"};
     system::executable xargs_executable;
     xargs_executable.executable_file = "/usr/bin/xargs";
-    xargs_executable.working_directory = "/fee/fii/foo/fum";
+    xargs_executable.working_directory = no_such_path;
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
     system.subsystems.emplace(xargs_process_name, xargs_executable);
 
@@ -323,6 +326,62 @@ auto do_env_system() -> void
     }
 }
 
+auto do_ls_outerr_system() -> void
+{
+    std::cerr << "Doing ls_outerr instance...\n";
+
+    const auto ls_exe_name = system_name{"ls-exe"};
+    system::custom custom;
+
+    system::executable ls_executable;
+    ls_executable.executable_file = "/bin/ls";
+    ls_executable.arguments = {"ls", no_such_path, "/"};
+    custom.subsystems.emplace(ls_exe_name, ls_executable);
+
+    custom.connections.push_back(unidirectional_connection{
+        file_endpoint::dev_null,
+        system_endpoint{ls_exe_name, descriptor_id{0}},
+    });
+    const auto ls_outerr = unidirectional_connection{
+        system_endpoint{ls_exe_name, descriptor_id{1}, descriptor_id{2}},
+        user_endpoint{},
+    };
+    custom.connections.push_back(ls_outerr);
+
+    {
+        auto diags = temporary_fstream();
+        auto object = instantiate(system_name{}, custom, diags, get_environ());
+        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
+        if (const auto pipe = find_channel<pipe_channel>(custom, object,
+                                                         ls_outerr)) {
+            for (;;) {
+                std::array<char, 4096> buffer{};
+                const auto nread = pipe->read(buffer, std::cerr);
+                if (nread == static_cast<std::size_t>(-1)) {
+                    std::cerr << "ls can't read stdout\n";
+                }
+                else if (nread != 0u) {
+                    if (std::string_view{data(buffer)}.find(no_such_path) ==
+                        std::string_view::npos) {
+                        std::cerr << "Error about '" << no_such_path;
+                        std::cerr << "' not found in outerr!\n";
+                    }
+                    else {
+                        std::cerr << "Error about '" << no_such_path;
+                        std::cerr << "' was found in outerr. Hooray!\n";
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+        }
+        else {
+            std::cerr << "can't find " << ls_outerr << "\n";
+        }
+    }
+}
+
 }
 
 auto main(int argc, const char * argv[]) -> int
@@ -334,5 +393,6 @@ auto main(int argc, const char * argv[]) -> int
     do_ls_system();
     do_nested_system();
     do_env_system();
+    do_ls_outerr_system();
     return 0;
 }
