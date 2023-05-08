@@ -1,4 +1,3 @@
-#include <array>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -72,19 +71,7 @@ auto do_lsof_system() -> void
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto p = find_channel<pipe_channel>(custom, object,
                                                       lsof_stdout)) {
-            for (;;) {
-                std::array<char, 4096> buffer{};
-                const auto nread = p->read(buffer, std::cerr);
-                if (nread == static_cast<std::size_t>(-1)) {
-                    std::cerr << "lsof can't read stdout\n";
-                }
-                else if (nread != 0u) {
-                    std::cout << buffer.data();
-                }
-                else {
-                    break;
-                }
-            }
+            read(*p, std::ostream_iterator<char>(std::cerr));
         }
         else {
             std::cerr << "no pipe for lsof_stdout?!\n";
@@ -150,8 +137,7 @@ auto do_ls_system() -> void
                   std::ostream_iterator<char>(std::cerr));
         if (const auto pipe = find_channel<pipe_channel>(system, object,
                                                          cat_stdin)) {
-            pipe->write("/bin\n/sbin", std::cerr);
-            pipe->close(pipe_channel::io::write, std::cerr);
+            write(*pipe, "/bin\n/sbin");
         }
         else {
             std::cerr << "no pipe for cat_stdin?!\n";
@@ -163,19 +149,7 @@ auto do_ls_system() -> void
         }
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (outpipe) {
-            for (;;) {
-                std::array<char, 4096> buffer{};
-                const auto nread = outpipe->read(buffer, std::cerr);
-                if (nread == static_cast<std::size_t>(-1)) {
-                    std::cerr << "xargs can't read stdout\n";
-                }
-                else if (nread != 0u) {
-                    std::cout << buffer.data();
-                }
-                else {
-                    break;
-                }
-            }
+            read(*outpipe, std::ostream_iterator<char>(std::cerr));
         }
 
         write_diags(system_name{}, object, std::cerr);
@@ -276,27 +250,14 @@ auto do_nested_system() -> void
         pretty_print(std::cerr, object);
         if (const auto pipe = find_channel<pipe_channel>(system, object,
                                                          system_stdin)) {
-            pipe->write("/bin\n/sbin", std::cerr);
-            pipe->close(pipe_channel::io::write, std::cerr);
+            write(*pipe, "/bin\n/sbin");
         }
         else {
             std::cerr << "can't find " << system_stdin << "\n";
         }
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto pipe = find_channel<pipe_channel>(system, object, system_stdout)) {
-            for (;;) {
-                std::array<char, 4096> buffer{};
-                const auto nread = pipe->read(buffer, std::cerr);
-                if (nread == static_cast<std::size_t>(-1)) {
-                    std::cerr << "ls can't read stdout\n";
-                }
-                else if (nread != 0u) {
-                    std::cout << buffer.data();
-                }
-                else {
-                    break;
-                }
-            }
+            read(*pipe, std::ostream_iterator<char>(std::cerr));
         }
         else {
             std::cerr << "can't find " << system_stdout << "\n";
@@ -362,26 +323,16 @@ auto do_ls_outerr_system() -> void
         wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
         if (const auto pipe = find_channel<pipe_channel>(custom, object,
                                                          ls_outerr)) {
-            for (;;) {
-                std::array<char, 4096> buffer{};
-                const auto nread = pipe->read(buffer, std::cerr);
-                if (nread == static_cast<std::size_t>(-1)) {
-                    std::cerr << "ls can't read stdout\n";
-                }
-                else if (nread != 0u) {
-                    if (std::string_view{data(buffer)}.find(no_such_path) ==
-                        std::string_view::npos) {
-                        std::cerr << "Error about '" << no_such_path;
-                        std::cerr << "' not found in outerr!\n";
-                    }
-                    else {
-                        std::cerr << "Error about '" << no_such_path;
-                        std::cerr << "' was found in outerr. Hooray!\n";
-                    }
-                }
-                else {
-                    break;
-                }
+            std::ostringstream os;
+            read(*pipe, std::ostream_iterator<char>(os));
+            if (std::string_view{os.str()}.find(no_such_path) ==
+                std::string_view::npos) {
+                std::cerr << "Error about '" << no_such_path;
+                std::cerr << "' not found in outerr!\n";
+            }
+            else {
+                std::cerr << "Error about '" << no_such_path;
+                std::cerr << "' was found in outerr. Hooray!\n";
             }
         }
         else {

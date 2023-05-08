@@ -125,4 +125,15 @@ auto operator<<(std::ostream& os, const pipe_channel& value) -> std::ostream&
     return os;
 }
 
+auto write(pipe_channel& pipe, const std::span<const char>& data) -> void
+{
+    std::ostringstream os;
+    auto success = true;
+    success &= pipe.write(data, os);
+    success &= pipe.close(pipe_channel::io::write, os);
+    if (!success) {
+        throw std::runtime_error{os.str()};
+    }
+}
+
 }
