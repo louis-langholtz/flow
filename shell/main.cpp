@@ -27,8 +27,12 @@ auto find_channel(const flow::system::custom& custom,
                   instance& instance,
                   const connection& look_for) -> T*
 {
-    const auto found = find_index(custom.connections, look_for);
-    return found? std::get_if<T>(&(instance.channels[*found])): nullptr;
+    if (const auto found = find_index(custom.connections, look_for)) {
+        if (const auto p = std::get_if<instance::custom>(&instance.info)) {
+            return std::get_if<T>(&(p->channels[*found]));
+        }
+    }
+    return nullptr;
 }
 
 auto do_lsof_system() -> void
@@ -176,7 +180,9 @@ auto do_ls_system() -> void
 
         write_diags(system_name{}, object, std::cerr);
         std::cerr << "system ran: ";
-        std::cerr << ", children[" << std::size(object.children) << "]";
+        std::cerr << ", children[";
+        std::cerr << size(std::get<instance::custom>(object.info).children);
+        std::cerr << "]";
         std::cerr << "\n";
     }
 }
@@ -297,7 +303,9 @@ auto do_nested_system() -> void
         }
         write_diags(system_name{}, object, std::cerr);
         std::cerr << "system ran: ";
-        std::cerr << ", children[" << std::size(object.children) << "]";
+        std::cerr << ", children[";
+        std::cerr << size(std::get<instance::custom>(object.info).children);
+        std::cerr << "]";
         std::cerr << "\n";
     }
 }

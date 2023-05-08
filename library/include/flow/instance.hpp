@@ -3,6 +3,7 @@
 
 #include <map>
 #include <ostream>
+#include <type_traits> // for std::is_default_constructible_v
 #include <vector>
 
 #include "ext/fstream.hpp"
@@ -10,35 +11,49 @@
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
 #include "flow/environment_map.hpp"
-#include "flow/process_id.hpp"
+#include "flow/owning_process_id.hpp"
+#include "flow/reference_process_id.hpp"
 #include "flow/system_name.hpp"
+#include "flow/variant.hpp"
+#include "flow/wait_status.hpp"
 
 namespace flow {
 
 /// @brief Instance of a <code>system</code>.
 struct instance
 {
+    struct custom
+    {
+        /// @brief Default constructor.
+        /// @note This ensures C++ sees this class as default constructable.
+        custom() noexcept {};
+
+        /// @brief Sub-instances - or children - of this instance.
+        std::map<system_name, instance> children;
+
+        /// @brief Channels made for this instance.
+        std::vector<channel> channels;
+
+        reference_process_id pgrp{no_process_id};
+    };
+
+    struct forked
+    {
+        /// @brief Diagnostics stream.
+        /// @note Make this unique to this instance's process ID to avoid racy
+        ///   or disordered output.
+        ext::fstream diags;
+
+        variant<owning_process_id, wait_status> state;
+    };
+
     environment_map environment;
-
-    /// @brief Process ID.
-    /// @note This shall be <code>invalid_process_id</code> for default or
-    /// failed instances, <code>no_process_id</code> for system instances,
-    /// less-than <code>no_process_id</code> for the process group of the
-    /// children, or hold the greater-than <code>no_process_id</code> POSIX
-    /// process ID of the child process running for the instance.
-    process_id pid{invalid_process_id};
-
-    /// @brief Diagnostics stream.
-    /// @note Make this unique to this instance's process ID to avoid racy
-    ///   or disordered output.
-    ext::fstream diags{};
-
-    /// @brief Sub-instances - or children - of this instance.
-    std::map<system_name, instance> children{};
-
-    /// @brief Channels made for this instance.
-    std::vector<channel> channels{};
+    variant<custom, forked> info;
 };
+
+static_assert(std::is_default_constructible_v<instance::custom>);
+static_assert(std::is_default_constructible_v<instance::forked>);
+static_assert(std::is_default_constructible_v<instance>);
 
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
 

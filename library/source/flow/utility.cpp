@@ -20,7 +20,6 @@
 
 #include "os_error_code.hpp"
 #include "wait_result.hpp"
-#include "wait_status.hpp"
 
 #include "flow/connection.hpp"
 #include "flow/descriptor_id.hpp"
@@ -28,6 +27,7 @@
 #include "flow/system.hpp"
 #include "flow/utility.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, ostream support
+#include "flow/wait_status.hpp"
 
 namespace flow {
 
@@ -37,12 +37,19 @@ auto find(const system_name& name, instance& object,
           const reference_process_id& pid)
     -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
 {
-    if (object.pid == pid) {
-        return std::make_pair(name, std::ref(object));
+    if (const auto p = std::get_if<instance::forked>(&object.info)) {
+        if (const auto q = std::get_if<owning_process_id>(&p->state)) {
+            if (reference_process_id(*q) == pid) {
+                return std::make_pair(name, std::ref(object));
+            }
+        }
+        return {};
     }
-    for (auto&& entry: object.children) {
-        if (auto found = find(name + entry.first, entry.second, pid)) {
-            return found;
+    if (const auto p = std::get_if<instance::custom>(&object.info)) {
+        for (auto&& entry: p->children) {
+            if (auto found = find(name + entry.first, entry.second, pid)) {
+                return found;
+            }
         }
     }
     return {};
@@ -91,6 +98,61 @@ auto wait_for_child() -> wait_result
 }
 
 auto handle(const system_name& name, instance& instance,
+            const wait_result::info_t& info, wait_mode mode,
+            std::ostream& diags) -> void
+{
+    static const auto unknown_name = system_name{"unknown"};
+    const auto entry = find(name, instance, info.id);
+    using status_enum = wait_result::info_t::status_enum;
+    switch (status_enum(info.status.index())) {
+    case wait_result::info_t::unknown:
+        break;
+    case wait_result::info_t::exit: {
+        const auto status = std::get<wait_exit_status>(info.status);
+        if (entry) {
+            (std::get<instance::forked>(entry->second.info)).state =
+                wait_status(status);
+        }
+        if ((mode == wait_mode::diagnostic) || (status.value != 0)) {
+            diags << "child=" << (entry? entry->first: unknown_name);
+            diags << ", pid=" << info.id;
+            diags << ", " << status;
+            diags << "\n";
+        }
+        break;
+    }
+    case wait_result::info_t::signaled: {
+        const auto status = std::get<wait_signaled_status>(info.status);
+        if (entry) {
+            (std::get<instance::forked>(entry->second.info)).state =
+                wait_status(status);
+        }
+        diags << "child=" << (entry? entry->first: unknown_name);
+        diags << ", pid=" << info.id;
+        diags << ", " << status;
+        diags << "\n";
+        break;
+    }
+    case wait_result::info_t::stopped: {
+        const auto stopped_status = std::get<wait_stopped_status>(info.status);
+        diags << "child=" << (entry? entry->first: unknown_name);
+        diags << ", pid=" << info.id;
+        diags << ", " << stopped_status;
+        diags << "\n";
+        break;
+    }
+    case wait_result::info_t::continued: {
+        const auto continued_status = std::get<wait_continued_status>(info.status);
+        diags << "child=" << (entry? entry->first: unknown_name);
+        diags << ", pid=" << info.id;
+        diags << ", " << continued_status;
+        diags << "\n";
+        break;
+    }
+    }
+}
+
+auto handle(const system_name& name, instance& instance,
             const wait_result& result, std::ostream& diags,
             wait_mode mode) -> void
 {
@@ -100,53 +162,9 @@ auto handle(const system_name& name, instance& instance,
     case wait_result::has_error:
         diags << "wait failed: " << result.error() << "\n";
         break;
-    case wait_result::has_info: {
-        static const auto unknown_name = system_name{"unknown"};
-        const auto entry = find(name, instance, result.info().id);
-        using status_enum = wait_result::info_t::status_enum;
-        switch (status_enum(result.info().status.index())) {
-        case wait_result::info_t::unknown:
-            break;
-        case wait_result::info_t::exit: {
-            const auto exit_status = std::get<wait_exit_status>(result.info().status);
-            if (entry) {
-                entry->second.pid = no_process_id;
-            }
-            if ((mode == wait_mode::diagnostic) || (exit_status.value != 0)) {
-                diags << "child=" << (entry? entry->first: unknown_name);
-                diags << ", pid=" << result.info().id;
-                diags << ", " << exit_status;
-                diags << "\n";
-            }
-            break;
-        }
-        case wait_result::info_t::signaled: {
-            const auto signaled_status = std::get<wait_signaled_status>(result.info().status);
-            diags << "child=" << (entry? entry->first: unknown_name);
-            diags << ", pid=" << result.info().id;
-            diags << ", " << signaled_status;
-            diags << "\n";
-            break;
-        }
-        case wait_result::info_t::stopped: {
-            const auto stopped_status = std::get<wait_stopped_status>(result.info().status);
-            diags << "child=" << (entry? entry->first: unknown_name);
-            diags << ", pid=" << result.info().id;
-            diags << ", " << stopped_status;
-            diags << "\n";
-            break;
-        }
-        case wait_result::info_t::continued: {
-            const auto continued_status = std::get<wait_continued_status>(result.info().status);
-            diags << "child=" << (entry? entry->first: unknown_name);
-            diags << ", pid=" << result.info().id;
-            diags << ", " << continued_status;
-            diags << "\n";
-            break;
-        }
-        }
+    case wait_result::has_info:
+        handle(name, instance, result.info(), mode, diags);
         break;
-    }
     }
 }
 
@@ -282,15 +300,19 @@ auto write(std::ostream& os, const std::error_code& ec)
 auto write_diags(const system_name& name, instance& object,
                 std::ostream& os) -> void
 {
-    if (!object.diags.is_open()) {
-        os << "Diags are closed for '" << name << "'\n";
+    if (const auto p = std::get_if<instance::forked>(&object.info)) {
+        if (!p->diags.is_open()) {
+            os << "Diags are closed for '" << name << "'\n";
+        }
+        else {
+            show_diags(os, name, p->diags);
+        }
     }
-    else {
-        show_diags(os, name, object.diags);
-    }
-    for (auto&& map_entry: object.children) {
-        const auto full_name = name + map_entry.first;
-        write_diags(system_name{full_name}, map_entry.second, os);
+    else if (const auto p = std::get_if<instance::custom>(&object.info)) {
+        for (auto&& map_entry: p->children) {
+            const auto full_name = name + map_entry.first;
+            write_diags(system_name{full_name}, map_entry.second, os);
+        }
     }
 }
 
@@ -408,19 +430,24 @@ auto send_signal(signal sig,
                  const instance& instance,
                  std::ostream& diags) -> void
 {
-    for (auto&& child: instance.children) {
-        send_signal(sig, name + child.first, child.second, diags);
-    }
-    if ((instance.pid != invalid_process_id) &&
-        (instance.pid != no_process_id)) {
-        diags << "sending " << sig << " to " << name << "\n";
-        if (kill(instance.pid, sig) == -1) {
-            diags << "kill(" << instance.pid;
-            diags << "," << to_posix_signal(sig);
-            diags << ") failed: " << os_error_code(errno);
-            diags << "\n";
+    if (const auto p = std::get_if<instance::custom>(&instance.info)) {
+        for (auto&& child: p->children) {
+            send_signal(sig, name + child.first, child.second, diags);
         }
-        return;
+    }
+    else if (const auto p = std::get_if<instance::forked>(&instance.info)) {
+        if (const auto q = std::get_if<owning_process_id>(&(p->state))) {
+            if ((reference_process_id(*q) != invalid_process_id) &&
+                (reference_process_id(*q) != no_process_id)) {
+                diags << "sending " << sig << " to " << name << "\n";
+                if (kill(reference_process_id(*q), sig) == -1) {
+                    diags << "kill(" << *q;
+                    diags << "," << to_posix_signal(sig);
+                    diags << ") failed: " << os_error_code(errno);
+                    diags << "\n";
+                }
+            }
+        }
     }
 }
 
