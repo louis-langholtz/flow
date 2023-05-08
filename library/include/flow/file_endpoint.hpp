@@ -7,6 +7,8 @@
 namespace flow {
 
 struct file_endpoint {
+    static const file_endpoint dev_null;
+
     std::filesystem::path path;
     auto operator==(const file_endpoint&) const -> bool = default;
 };
