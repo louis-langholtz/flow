@@ -54,12 +54,14 @@ auto make_substitutions(std::vector<char*>& argv)
 auto find_parent(const instance& root, const instance& child)
     -> const instance*
 {
-    for (auto&& entry: root.children) {
-        if (&entry.second == &child) {
-            return &root;
-        }
-        if (const auto found = find_parent(entry.second, child)) {
-            return found;
+    if (const auto p = std::get_if<instance::custom>(&root.info)) {
+        for (auto&& entry: p->children) {
+            if (&entry.second == &child) {
+                return &root;
+            }
+            if (const auto found = find_parent(entry.second, child)) {
+                return found;
+            }
         }
     }
     return nullptr;
@@ -299,20 +301,24 @@ auto make_child(instance& parent,
     for (auto&& entry: system.environment) {
         result.environment[entry.first] = entry.second;
     }
-    result.pid = no_process_id;
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        result.diags = temporary_fstream();
+        instance::forked info;
+        info.diags = temporary_fstream();
+        result.info = std::move(info);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
+        result.info = instance::custom{};
+        auto& parent_info = std::get<instance::custom>(parent.info);
+        instance::custom& info = std::get<instance::custom>(result.info);
         for (auto&& connection: p->connections) {
-            result.channels.push_back(make_channel(name, system, connection,
-                                                   connections,
-                                                   parent.channels));
+            info.channels.push_back(make_channel(name, system, connection,
+                                                 connections,
+                                                 parent_info.channels));
         }
         for (auto&& entry: p->subsystems) {
             auto kid = make_child(result, entry.first, entry.second,
                                   p->connections, diags);
-            result.children.emplace(entry.first, std::move(kid));
+            info.children.emplace(entry.first, std::move(kid));
         }
     }
     else {
@@ -340,10 +346,12 @@ auto close_pipes_except(instance& root,
 {
     const auto parent = find_parent(root, child);
     assert(parent != nullptr);
+    auto& parent_info = std::get<instance::custom>(parent->info);
+    auto& child_info = std::get<instance::forked>(child.info);
     for (auto&& pipe: the_pipe_registry().pipes) {
-        if (!is_channel_for(parent->channels, pipe)) {
-            pipe->close(pipe_channel::io::read, child.diags);
-            pipe->close(pipe_channel::io::write, child.diags);
+        if (!is_channel_for(parent_info.channels, pipe)) {
+            pipe->close(pipe_channel::io::read, child_info.diags);
+            pipe->close(pipe_channel::io::write, child_info.diags);
         }
     }
 }
@@ -355,20 +363,21 @@ auto setup(instance& root,
            instance& child) -> void
 {
     // close & dup the channels needed for name, and close those that aren't
+    auto& child_info = std::get<instance::forked>(child.info);
     const auto max_index = size(connections);
     assert(max_index == size(channels));
     for (auto index = 0u; index < max_index; ++index) {
         const auto chan_p = fully_deref(&channels[index]);
         assert(chan_p != nullptr);
         if (const auto pipe_p = std::get_if<pipe_channel>(chan_p)) {
-            setup(name, connections[index], *pipe_p, child.diags);
+            setup(name, connections[index], *pipe_p, child_info.diags);
             continue;
         }
         if (const auto file_p = std::get_if<file_channel>(chan_p)) {
-            setup(name, connections[index], *file_p, child.diags);
+            setup(name, connections[index], *file_p, child_info.diags);
             continue;
         }
-        child.diags << "found UNKNOWN channel type!!!!\n";
+        child_info.diags << "found UNKNOWN channel type!!!!\n";
     }
     close_pipes_except(root, child);
 }
@@ -376,19 +385,22 @@ auto setup(instance& root,
 auto fork_child(const system_name& name,
                 const system::executable& system,
                 instance& child,
-                process_id& pgrp,
+                reference_process_id& pgrp,
                 const std::span<const connection>& connections,
                 const std::span<channel>& channels,
                 instance& root,
                 std::ostream& diags) -> void
 {
+    auto& child_info = std::get<instance::forked>(child.info);
     auto arg_buffers = make_arg_bufs(system.arguments,
                                      system.executable_file);
     auto env_buffers = make_arg_bufs(child.environment);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
-    child.pid = owning_process_id::fork();
-    switch (to_reference_process_id(child.pid)) {
+    auto owning_pid = owning_process_id::fork();
+    const auto pid = reference_process_id(owning_pid);
+    child_info.state = std::move(owning_pid);
+    switch (pid) {
     case invalid_process_id:
         diags << "fork failed: " << os_error_code(errno) << "\n";
         return;
@@ -399,11 +411,12 @@ auto fork_child(const system_name& name,
         //  (see signal-safety(7)) until such time as it calls execve(2)."
         // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
         // for "functions required to be async-signal-safe by POSIX.1".
-        if (::setpgid(0, -int(to_reference_process_id(pgrp))) == -1) {
-            child.diags << "setpgid failed(0, ";
-            child.diags << -int(to_reference_process_id(pgrp)) << "): ";
-            child.diags << os_error_code(errno);
-            child.diags << "\n";
+        if (::setpgid(0, int(pgrp)) == -1) {
+            child_info.diags << "setpgid failed(0, ";
+            child_info.diags << pgrp;
+            child_info.diags << "): ";
+            child_info.diags << os_error_code(errno);
+            child_info.diags << "\n";
         }
         make_substitutions(argv);
         // Deal with:
@@ -419,16 +432,16 @@ auto fork_child(const system_name& name,
         // NOTE: child.diags streams opened close-on-exec, so no need
         //   to close them.
         if (!system.working_directory.empty()) {
-            change_directory(system.working_directory, child.diags);
+            change_directory(system.working_directory, child_info.diags);
         }
         // NOTE: the following does not return!
         exec_child(system.executable_file, argv.data(), envp.data(),
-                   child.diags);
+                   child_info.diags);
     }
     default: // case for the spawning/parent process
-        diags << "child '" << name << "' started as pid " << child.pid << "\n";
+        diags << "child '" << name << "' started as pid " << pid << "\n";
         if (pgrp == no_process_id) {
-            pgrp = reference_process_id(-int(to_reference_process_id(child.pid)));
+            pgrp = reference_process_id(-int(pid));
         }
         break;
     }
@@ -439,17 +452,18 @@ auto fork_executables(const system::custom& system,
                       instance& root,
                       std::ostream& diags) -> void
 {
+    auto& info = std::get<instance::custom>(object.info);
     for (auto&& entry: system.subsystems) {
         const auto& name = entry.first;
         const auto& subsystem = entry.second;
-        const auto found = object.children.find(name);
-        if (found == object.children.end()) {
+        const auto found = info.children.find(name);
+        if (found == info.children.end()) {
             diags << "can't find child instance for " << name << "!\n";
             continue;
         }
         if (const auto p = std::get_if<system::executable>(&subsystem.info)) {
-            fork_child(name, *p, found->second, object.pid, system.connections,
-                       object.channels, root, diags);
+            fork_child(name, *p, found->second, info.pgrp, system.connections,
+                       info.channels, root, diags);
             continue;
         }
         if (const auto p = std::get_if<system::custom>(&subsystem.info)) {
@@ -488,26 +502,32 @@ auto close_internal_ends(const system_name& name,
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 {
     os << "instance{";
-    os << ".pid=" << value.pid;
-    os << ",.children={";
-    for (auto&& entry: value.children) {
-        if (&entry != &(*value.children.begin())) {
-            os << ",";
+    os << ".environment=" << value.environment;
+    if (const auto p = std::get_if<instance::custom>(&value.info)) {
+        os << ".pgrp=" << p->pgrp;
+        os << ",.children={";
+        for (auto&& entry: p->children) {
+            if (&entry != &(*p->children.begin())) {
+                os << ",";
+            }
+            os << "{";
+            os << ".first=" << entry.first;
+            os << ",.second=" << entry.second;
+            os << "}";
         }
-        os << "{";
-        os << ".first=" << entry.first;
-        os << ",.second=" << entry.second;
+        os << "}";
+        os << ",.channels={";
+        for (auto&& elem: p->channels) {
+            if (&elem != &(*p->channels.begin())) {
+                os << ",";
+            }
+            os << elem;
+        }
         os << "}";
     }
-    os << "}";
-    os << ",.channels={";
-    for (auto&& elem: value.channels) {
-        if (&elem != &(*value.channels.begin())) {
-            os << ",";
-        }
-        os << elem;
+    else if (const auto p = std::get_if<instance::forked>(&value.info)) {
+        os << ".state=" << p->state;
     }
-    os << "}";
     os << "}";
     return os;
 }
@@ -515,33 +535,41 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 auto pretty_print(std::ostream& os, const instance& value) -> void
 {
     os << "{\n";
-    os << "  .pid=" << value.pid << ",\n";
-    if (value.children.empty()) {
-        os << "  .children={},\n";
-    }
-    else {
-        os << "  .children={\n";
-        for (auto&& entry: value.children) {
-            os << "    {\n";
-            os << "      .first='" << entry.first << "',\n";
-            os << "      .second=";
-            {
-                const detail::indenting_ostreambuf child_indent{os, {6, false}};
-                pretty_print(os, entry.second);
+    if (const auto p = std::get_if<instance::custom>(&value.info)) {
+        os << "  .pgrp=" << p->pgrp << ",\n";
+        if (p->children.empty()) {
+            os << "  .children={},\n";
+        }
+        else {
+            os << "  .children={\n";
+            for (auto&& entry: p->children) {
+                os << "    {\n";
+                os << "      .first='" << entry.first << "',\n";
+                os << "      .second=";
+                {
+                    const auto opts = detail::indenting_ostreambuf_options{
+                        6, false
+                    };
+                    const detail::indenting_ostreambuf child_indent{os, opts};
+                    pretty_print(os, entry.second);
+                }
+                os << "    },\n";
             }
-            os << "    },\n";
+            os << "  },\n";
         }
-        os << "  },\n";
-    }
-    if (value.channels.empty()) {
-        os << "  .channels={}\n";
-    }
-    else {
-        os << "  .channels={\n";
-        for (auto&& channel: value.channels) {
-            os << "    " << channel << " (" << &channel << "),\n";
+        if (p->channels.empty()) {
+            os << "  .channels={}\n";
         }
-        os << "  }\n";
+        else {
+            os << "  .channels={\n";
+            for (auto&& channel: p->channels) {
+                os << "    " << channel << " (" << &channel << "),\n";
+            }
+            os << "  }\n";
+        }
+    }
+    else if (const auto p = std::get_if<instance::forked>(&value.info)) {
+        os << "  .state=" << p->state;
     }
     os << "}\n";
 }
@@ -549,17 +577,22 @@ auto pretty_print(std::ostream& os, const instance& value) -> void
 auto total_descendants(const instance& object) -> std::size_t
 {
     auto result = std::size_t{0};
-    for (auto&& child: object.children) {
-        result += total_descendants(child.second) + 1u;
+    if (const auto p = std::get_if<instance::custom>(&object.info)) {
+        for (auto&& child: p->children) {
+            result += total_descendants(child.second) + 1u;
+        }
     }
     return result;
 }
 
 auto total_channels(const instance& object) -> std::size_t
 {
-    auto result = std::size(object.channels);
-    for (auto&& child: object.children) {
-        result += total_channels(child.second);
+    auto result = std::size_t{};
+    if (const auto p = std::get_if<instance::custom>(&object.info)) {
+        result += std::size(p->channels);
+        for (auto&& child: p->children) {
+            result += total_channels(child.second);
+        }
     }
     return result;
 }
@@ -575,9 +608,10 @@ auto instantiate(const system_name& name,
         env[entry.first] = entry.second;
     }
     result.environment = std::move(env);
-    result.pid = no_process_id;
+    result.info = instance::custom{};
+    auto& info = std::get<instance::custom>(result.info);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        fork_child(name, *p, result, result.pid, {}, {}, result, diags);
+        fork_child(name, *p, result, info.pgrp, {}, {}, result, diags);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
         for (auto&& entry: system.descriptors) {
@@ -586,10 +620,10 @@ auto instantiate(const system_name& name,
                 throw std::invalid_argument{"enclosing endpoint not connected"};
             }
         }
-        result.channels.reserve(size(p->connections));
+        info.channels.reserve(size(p->connections));
         for (auto&& connection: p->connections) {
-            result.channels.push_back(make_channel(name, system, connection,
-                                                   {}, {}));
+            info.channels.push_back(make_channel(name, system, connection,
+                                                 {}, {}));
         }
         // Create all the subsystem instances before forking any!
         for (auto&& entry: p->subsystems) {
@@ -597,14 +631,14 @@ auto instantiate(const system_name& name,
             const auto& sub_system = entry.second;
             auto kid = make_child(result, sub_name, sub_system,
                                   p->connections, diags);
-            result.children.emplace(sub_name, std::move(kid));
+            info.children.emplace(sub_name, std::move(kid));
         }
         fork_executables(*p, result, result, diags);
         // Only now, after making child processes,
         // close parent side of pipe_channels...
-        const auto max_i = size(result.channels);
+        const auto max_i = size(info.channels);
         for (auto i = 0u; i < max_i; ++i) {
-            auto& channel = result.channels[i];
+            auto& channel = info.channels[i];
             const auto& connection = p->connections[i];
             if (const auto q = std::get_if<pipe_channel>(&channel)) {
                 close_internal_ends(name, connection, *q, diags);

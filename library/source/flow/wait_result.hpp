@@ -2,10 +2,10 @@
 #define wait_result_hpp
 
 #include "os_error_code.hpp"
-#include "wait_status.hpp"
 
 #include "flow/process_id.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
+#include "flow/wait_status.hpp"
 
 namespace flow {
 

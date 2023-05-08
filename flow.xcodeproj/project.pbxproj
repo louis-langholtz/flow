@@ -275,6 +275,7 @@
 				9943E8962A021E98002F4C26 /* user_endpoint.hpp */,
 				99C1939E29F5819A00C3F53F /* utility.hpp */,
 				9943E87C29FBF8BE002F4C26 /* variant.hpp */,
+				9943E87929FBF418002F4C26 /* wait_status.hpp */,
 			);
 			path = flow;
 			sourceTree = "<group>";
@@ -311,7 +312,6 @@
 				9943E88229FC0763002F4C26 /* wait_result.cpp */,
 				9943E88329FC0763002F4C26 /* wait_result.hpp */,
 				9943E87829FBF418002F4C26 /* wait_status.cpp */,
-				9943E87929FBF418002F4C26 /* wait_status.hpp */,
 			);
 			path = flow;
 			sourceTree = "<group>";
