@@ -22,6 +22,7 @@
 #include "wait_result.hpp"
 #include "wait_status.hpp"
 
+#include "flow/connection.hpp"
 #include "flow/descriptor_id.hpp"
 #include "flow/instance.hpp"
 #include "flow/system.hpp"
@@ -305,13 +306,37 @@ auto find_index(const std::span<const connection>& connections,
     return {};
 }
 
+auto is_matching(const unidirectional_connection& conn,
+                 const system_endpoint& look_for) -> bool
+{
+    const auto ends = make_endpoints<system_endpoint>(conn);
+    for (auto&& end: ends) {
+        if (end) {
+            if (end->address == look_for.address) {
+                for (auto&& end_d: end->descriptors) {
+                    for (auto&& look_d: look_for.descriptors) {
+                        if (end_d == look_d) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
 auto find_index(const std::span<const connection>& connections,
                 const endpoint& look_for) -> std::optional<std::size_t>
 {
     const auto first = std::begin(connections);
     const auto last = std::end(connections);
     const auto iter = std::find_if(first, last, [&look_for](const auto& c){
+        const auto look_sys = std::get_if<system_endpoint>(&look_for);
         if (const auto p = std::get_if<unidirectional_connection>(&c)) {
+            if (look_sys) {
+                return is_matching(*p, *look_sys);
+            }
             return (p->src == look_for) || (p->dst == look_for);
         }
         if (const auto p = std::get_if<bidirectional_connection>(&c)) {
