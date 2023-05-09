@@ -21,15 +21,28 @@ struct descriptor_info {
 };
 
 using descriptor_map = std::map<descriptor_id, descriptor_info>;
+using descriptor_map_entry = descriptor_map::value_type;
 
 auto operator<<(std::ostream& os,
                 const descriptor_map& value)
     -> std::ostream&;
 
+const auto stdin_descriptors_entry = descriptor_map_entry{
+    descriptor_id{0}, {"stdin", io_type::in}
+};
+
+const auto stdout_descriptors_entry = descriptor_map_entry{
+    descriptor_id{1}, {"stdout", io_type::out}
+};
+
+const auto stderr_descriptors_entry = descriptor_map_entry{
+    descriptor_id{2}, {"stderr", io_type::out}
+};
+
 const auto std_descriptors = descriptor_map{
-    {descriptor_id{0}, {"stdin", io_type::in}},
-    {descriptor_id{1}, {"stdout", io_type::out}},
-    {descriptor_id{2}, {"stderr", io_type::out}},
+    stdin_descriptors_entry,
+    stdout_descriptors_entry,
+    stderr_descriptors_entry,
 };
 
 struct system
@@ -49,16 +62,22 @@ struct system
 
     system() = default;
 
-    system(custom type_info, descriptor_map map = {})
-        : descriptors{std::move(map)},
+    system(custom type_info,
+           descriptor_map des_map = {},
+           environment_map env_map = {})
+        : descriptors{std::move(des_map)},
+          environment{std::move(env_map)},
           info{std::move(type_info)}
     {
         // Intentionally empty.
     }
 
-    system(executable type_info, descriptor_map map = std_descriptors):
-        descriptors{std::move(map)},
-        info{std::move(type_info)}
+    system(executable type_info,
+           descriptor_map des_map = std_descriptors,
+           environment_map env_map = {})
+        : descriptors{std::move(des_map)},
+          environment{std::move(env_map)},
+          info{std::move(type_info)}
     {
         // Intentionally empty.
     }
