@@ -55,12 +55,10 @@ auto touch(const file_endpoint& file) -> void;
 
 auto mkfifo(const file_endpoint& file) -> void;
 
-enum class wait_mode {
-    quiet, diagnostic,
-};
+struct wait_result;
 
-auto wait(const system_name& name, instance& instance,
-          std::ostream& diags, wait_mode mode = wait_mode::quiet) -> void;
+auto wait(const system_name& name, instance& instance)
+    -> std::vector<wait_result>;
 
 enum class signal {
     interrupt,
