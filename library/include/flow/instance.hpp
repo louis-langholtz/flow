@@ -59,6 +59,11 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
 
 auto pretty_print(std::ostream& os, const instance& value) -> void;
 
+auto get_reference_process_id(const instance::forked& object)
+    -> reference_process_id;
+auto get_reference_process_id(const std::vector<system_name>& names,
+                              const instance& object)
+    -> reference_process_id;
 auto total_descendants(const instance& object) -> std::size_t;
 auto total_channels(const instance& object) -> std::size_t;
 auto get_wait_status(const instance& object) -> wait_status;
