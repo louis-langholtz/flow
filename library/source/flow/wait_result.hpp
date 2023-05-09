@@ -1,8 +1,7 @@
 #ifndef wait_result_hpp
 #define wait_result_hpp
 
-#include "os_error_code.hpp"
-
+#include "flow/os_error_code.hpp"
 #include "flow/reference_process_id.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
 #include "flow/wait_status.hpp"

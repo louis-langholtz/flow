@@ -4,9 +4,9 @@
 
 #include <unistd.h> // for pipe, close
 
-#include "os_error_code.hpp"
 #include "pipe_registry.hpp"
 
+#include "flow/os_error_code.hpp"
 #include "flow/pipe_channel.hpp"
 
 namespace flow {

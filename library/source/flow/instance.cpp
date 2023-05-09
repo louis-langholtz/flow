@@ -6,10 +6,10 @@
 #include <fcntl.h> // for ::open
 
 #include "indenting_ostreambuf.hpp"
-#include "os_error_code.hpp"
 #include "pipe_registry.hpp"
 
 #include "flow/instance.hpp"
+#include "flow/os_error_code.hpp"
 #include "flow/system.hpp"
 #include "flow/utility.hpp"
 
