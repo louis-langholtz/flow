@@ -441,7 +441,7 @@ auto fork_child(const system_name& name,
     default: // case for the spawning/parent process
         diags << "child '" << name << "' started as pid " << pid << "\n";
         if (pgrp == no_process_id) {
-            pgrp = reference_process_id(-int(pid));
+            pgrp = reference_process_id(int(pid));
         }
         break;
     }
@@ -595,6 +595,16 @@ auto total_channels(const instance& object) -> std::size_t
         }
     }
     return result;
+}
+
+auto get_wait_status(const instance& object) -> wait_status
+{
+    if (const auto q = std::get_if<instance::forked>(&object.info)) {
+        if (const auto r = std::get_if<wait_status>(&(q->state))) {
+            return *r;
+        }
+    }
+    return {wait_unknown_status{}};
 }
 
 auto instantiate(const system_name& name,

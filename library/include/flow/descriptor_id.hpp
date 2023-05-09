@@ -8,10 +8,14 @@ namespace flow {
 
 enum class descriptor_id: int;
 
-constexpr auto invalid_descriptor_id =
-    descriptor_id{static_cast<std::underlying_type_t<descriptor_id>>(-1)};
-
 auto operator<<(std::ostream& os, descriptor_id value) -> std::ostream&;
+
+namespace descriptors {
+constexpr auto invalid_id = descriptor_id{-1};
+constexpr auto stdin_id = descriptor_id{0};
+constexpr auto stdout_id = descriptor_id{1};
+constexpr auto stderr_id = descriptor_id{2};
+}
 
 }
 

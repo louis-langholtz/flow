@@ -4,24 +4,20 @@
 #include <compare> // for std::strong_ordering
 #include <ostream>
 
-#include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
+#include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
 
 struct wait_unknown_status {
+    constexpr auto operator<=>(const wait_unknown_status&) const noexcept = default;
 };
-
-constexpr auto operator<=>(wait_unknown_status, wait_unknown_status) noexcept
-    -> std::strong_ordering
-{
-    return std::strong_ordering::equal;
-}
 
 auto operator<<(std::ostream& os, const wait_unknown_status& value)
     -> std::ostream&;
 
 struct wait_exit_status {
     int value{};
+    constexpr auto operator<=>(const wait_exit_status& other) const = default;
 };
 
 auto operator<<(std::ostream& os, const wait_exit_status& value)
@@ -30,6 +26,7 @@ auto operator<<(std::ostream& os, const wait_exit_status& value)
 struct wait_signaled_status {
     int signal{};
     bool core_dumped{};
+    constexpr auto operator<=>(const wait_signaled_status& other) const = default;
 };
 
 auto operator<<(std::ostream& os, const wait_signaled_status& value)
@@ -37,12 +34,14 @@ auto operator<<(std::ostream& os, const wait_signaled_status& value)
 
 struct wait_stopped_status {
     int stop_signal{};
+    constexpr auto operator<=>(const wait_stopped_status& other) const = default;
 };
 
 auto operator<<(std::ostream& os, const wait_stopped_status& value)
     -> std::ostream&;
 
 struct wait_continued_status {
+    constexpr auto operator<=>(const wait_continued_status& other) const = default;
 };
 
 auto operator<<(std::ostream& os, const wait_continued_status&)

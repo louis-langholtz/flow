@@ -39,7 +39,7 @@ protected:
 private:
     static constexpr auto buffer_size = 1024u;
     static constexpr auto putback_size = std::ptrdiff_t{8};
-    descriptor_id id{invalid_descriptor_id};
+    descriptor_id id{descriptors::invalid_id};
     std::array<char, buffer_size> buffer{};
 };
 

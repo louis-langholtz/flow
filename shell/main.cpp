@@ -7,10 +7,12 @@
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
 #include "flow/descriptor_id.hpp"
+#include "flow/indenting_ostreambuf.hpp"
 #include "flow/instance.hpp"
 #include "flow/system_name.hpp"
 #include "flow/system.hpp"
 #include "flow/utility.hpp"
+#include "flow/wait_result.hpp"
 
 namespace {
 
@@ -33,41 +35,51 @@ auto find_channel(const flow::system::custom& custom,
     return nullptr;
 }
 
+using namespace descriptors;
+
 auto do_lsof_system() -> void
 {
     std::cerr << "Doing lsof instance...\n";
 
-    const auto lsof_process_name = system_name{"lsof"};
-    flow::system::custom custom;
-    flow::system::executable lsof_executable;
-    lsof_executable.executable_file = "/usr/sbin/lsof";
-    lsof_executable.working_directory = "/usr/local";
-    lsof_executable.arguments = {"lsof", "-p", "$$"};
-    custom.subsystems.emplace(lsof_process_name, lsof_executable);
+    const auto lsof_name = system_name{"lsof"};
     const auto lsof_stdout = unidirectional_connection{
-        system_endpoint{lsof_process_name, descriptor_id{1}},
-        user_endpoint{},
+        system_endpoint{lsof_name, stdout_id}, user_endpoint{},
     };
+
+    flow::system::custom custom;
+    custom.subsystems.emplace(lsof_name, flow::system::executable{
+        .executable_file = "/usr/sbin/lsof",
+        .arguments = {"lsof", "-p", "$$"},
+        .working_directory = "/usr/local",
+    });
     custom.connections.push_back(unidirectional_connection{
-        file_endpoint::dev_null,
-        system_endpoint{lsof_process_name, descriptor_id{0}},
+        file_endpoint::dev_null, system_endpoint{lsof_name, stdin_id},
     });
     custom.connections.push_back(lsof_stdout);
     custom.connections.push_back(unidirectional_connection{
-        system_endpoint{lsof_process_name, descriptor_id{2}},
-        file_endpoint::dev_null,
+        system_endpoint{lsof_name, stderr_id}, file_endpoint::dev_null,
     });
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system_name{}, custom, diags);
-        std::cerr << "Diagnostics for parent of lsof...\n";
-        diags.seekg(0);
-        std::copy(std::istreambuf_iterator<char>(diags),
-                  std::istreambuf_iterator<char>(),
-                  std::ostream_iterator<char>(std::cerr));
-        pretty_print(std::cerr, object);
-
-        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
+        {
+            std::cerr << "Diagnostics for instantiation of lsof...\n";
+            diags.seekg(0);
+            flow::detail::indenting_ostreambuf indenter{std::cerr};
+            std::copy(std::istreambuf_iterator<char>(diags),
+                      std::istreambuf_iterator<char>(),
+                      std::ostream_iterator<char>(std::cerr));
+            pretty_print(std::cerr, object);
+        }
+        for (auto&& wait_result: wait(system_name{}, object)) {
+            std::cerr << "wait-result: " << wait_result << "\n";
+        }
+        if (const auto p = std::get_if<instance::custom>(&object.info)) {
+            const auto ws = get_wait_status(p->children[lsof_name]);
+            if (ws != wait_status{wait_exit_status{0}}) {
+                std::cerr << "unexpected wait status: " << ws << "\n";
+            }
+        }
         if (const auto p = find_channel<pipe_channel>(custom, object,
                                                       lsof_stdout)) {
             read(*p, std::ostream_iterator<char>(std::cerr));
@@ -146,7 +158,7 @@ auto do_ls_system() -> void
         if (!outpipe) {
             std::cerr << "no pipe for xargs_stdout?!\n";
         }
-        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
+        wait(system_name{}, object);
         if (outpipe) {
             read(*outpipe, std::ostream_iterator<char>(std::cerr));
         }
@@ -254,7 +266,7 @@ auto do_nested_system() -> void
         else {
             std::cerr << "can't find " << system_stdin << "\n";
         }
-        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
+        wait(system_name{}, object);
         if (const auto pipe = find_channel<pipe_channel>(system, object, system_stdout)) {
             read(*pipe, std::ostream_iterator<char>(std::cerr));
         }
@@ -290,7 +302,7 @@ auto do_env_system() -> void
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system_name{}, base, diags, get_environ());
-        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
+        wait(system_name{}, object);
     }
 }
 
@@ -300,12 +312,10 @@ auto do_ls_outerr_system() -> void
 
     const auto ls_exe_name = system_name{"ls-exe"};
     system::custom custom;
-
     system::executable ls_executable;
     ls_executable.executable_file = "/bin/ls";
     ls_executable.arguments = {"ls", no_such_path, "/"};
     custom.subsystems.emplace(ls_exe_name, ls_executable);
-
     custom.connections.push_back(unidirectional_connection{
         file_endpoint::dev_null,
         system_endpoint{ls_exe_name, descriptor_id{0}},
@@ -315,22 +325,21 @@ auto do_ls_outerr_system() -> void
         user_endpoint{},
     };
     custom.connections.push_back(ls_outerr);
-
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system_name{}, custom, diags, get_environ());
-        wait(system_name{}, object, std::cerr, wait_mode::diagnostic);
+        wait(system_name{}, object);
         if (const auto pipe = find_channel<pipe_channel>(custom, object,
                                                          ls_outerr)) {
             std::ostringstream os;
             read(*pipe, std::ostream_iterator<char>(os));
             if (std::string_view{os.str()}.find(no_such_path) ==
                 std::string_view::npos) {
-                std::cerr << "Error about '" << no_such_path;
+                std::cerr << "Search string '" << no_such_path;
                 std::cerr << "' not found in outerr!\n";
             }
             else {
-                std::cerr << "Error about '" << no_such_path;
+                std::cerr << "Search string '" << no_such_path;
                 std::cerr << "' was found in outerr. Hooray!\n";
             }
         }

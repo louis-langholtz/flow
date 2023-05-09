@@ -97,8 +97,7 @@ auto wait_for_child() -> wait_result
 }
 
 auto handle(const system_name& name, instance& instance,
-            const wait_result::info_t& info, wait_mode mode,
-            std::ostream& diags) -> void
+            const wait_result::info_t& info) -> bool
 {
     static const auto unknown_name = system_name{"unknown"};
     const auto entry = find(name, instance, info.id);
@@ -112,12 +111,6 @@ auto handle(const system_name& name, instance& instance,
             (std::get<instance::forked>(entry->second.info)).state =
                 wait_status(status);
         }
-        if ((mode == wait_mode::diagnostic) || (status.value != 0)) {
-            diags << "child=" << (entry? entry->first: unknown_name);
-            diags << ", pid=" << info.id;
-            diags << ", " << status;
-            diags << "\n";
-        }
         break;
     }
     case wait_result::info_t::signaled: {
@@ -126,45 +119,30 @@ auto handle(const system_name& name, instance& instance,
             (std::get<instance::forked>(entry->second.info)).state =
                 wait_status(status);
         }
-        diags << "child=" << (entry? entry->first: unknown_name);
-        diags << ", pid=" << info.id;
-        diags << ", " << status;
-        diags << "\n";
         break;
     }
     case wait_result::info_t::stopped: {
-        const auto stopped_status = std::get<wait_stopped_status>(info.status);
-        diags << "child=" << (entry? entry->first: unknown_name);
-        diags << ", pid=" << info.id;
-        diags << ", " << stopped_status;
-        diags << "\n";
-        break;
+        return false;
     }
     case wait_result::info_t::continued: {
-        const auto continued_status = std::get<wait_continued_status>(info.status);
-        diags << "child=" << (entry? entry->first: unknown_name);
-        diags << ", pid=" << info.id;
-        diags << ", " << continued_status;
-        diags << "\n";
-        break;
+        return false;
     }
     }
+    return true;
 }
 
 auto handle(const system_name& name, instance& instance,
-            const wait_result& result, std::ostream& diags,
-            wait_mode mode) -> void
+            const wait_result& result) -> bool
 {
     switch (result.type()) {
     case wait_result::no_children:
-        break;
+        return false;
     case wait_result::has_error:
-        diags << "wait failed: " << result.error() << "\n";
-        break;
+        return true;
     case wait_result::has_info:
-        handle(name, instance, result.info(), mode, diags);
-        break;
+        return handle(name, instance, result.info());
     }
+    return true;
 }
 
 auto show_diags(std::ostream& os, const system_name& name,
@@ -383,22 +361,17 @@ auto mkfifo(const file_endpoint& file) -> void
     }
 }
 
-auto wait(const system_name& name, instance& instance,
-          std::ostream& diags, wait_mode mode)
-    -> void
+auto wait(const system_name& name, instance& instance)
+    -> std::vector<wait_result>
 {
-    if (mode == wait_mode::diagnostic) {
-        diags << "wait called for instance with total of ";
-        diags << total_descendants(instance) << " descendants, ";
-        diags << total_channels(instance) << " channels.\n";
-    }
+    auto results = std::vector<wait_result>{};
     auto result = decltype(wait_for_child()){};
     while (bool(result = wait_for_child())) {
-        handle(name, instance, result, diags, mode);
+        if (handle(name, instance, result)) {
+            results.push_back(result);
+        }
     }
-    if (mode == wait_mode::diagnostic) {
-        diags << "wait finished.\n";
-    }
+    return results;
 }
 
 auto operator<<(std::ostream& os, signal s) -> std::ostream&
