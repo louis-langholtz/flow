@@ -5,9 +5,9 @@
 #include <unistd.h> // for getpid, setpgid
 #include <fcntl.h> // for ::open
 
-#include "indenting_ostreambuf.hpp"
 #include "pipe_registry.hpp"
 
+#include "flow/indenting_ostreambuf.hpp"
 #include "flow/instance.hpp"
 #include "flow/os_error_code.hpp"
 #include "flow/system.hpp"
