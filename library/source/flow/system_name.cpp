@@ -18,4 +18,15 @@ auto operator+(const system_name& lhs, const system_name& rhs)
     return system_name{result};
 }
 
+auto operator<<(std::ostream& os,
+                const std::vector<system_name>& names) -> std::ostream&
+{
+    auto prefix = "";
+    for (auto&& component: names) {
+        os << prefix << component;
+        prefix = system_name::separator;
+    }
+    return os;
+}
+
 }

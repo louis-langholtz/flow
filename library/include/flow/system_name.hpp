@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace flow {
 
@@ -27,6 +28,9 @@ auto operator<<(std::ostream& os, const system_name& name) -> std::ostream&;
 
 auto operator+(const system_name& lhs, const system_name& rhs)
     -> system_name;
+
+auto operator<<(std::ostream& os,
+                const std::vector<system_name>& names) -> std::ostream&;
 
 }
 

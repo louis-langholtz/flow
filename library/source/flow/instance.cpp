@@ -341,6 +341,44 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
     return true;
 }
 
+auto close_unused_descriptors(const system_name& name,
+                              const std::span<const connection>& conns)
+    -> void
+{
+    auto using_stdin = false;
+    auto using_stdout = false;
+    auto using_stderr = false;
+    for (auto&& conn: conns) {
+        const auto ends = make_endpoints<system_endpoint>(conn);
+        for (auto&& end: ends) {
+            if (end && end->address == name) {
+                for (auto&& descriptor: end->descriptors) {
+                    switch (descriptor) {
+                    case descriptors::stdin_id:
+                        using_stdin = true;
+                        break;
+                    case descriptors::stdout_id:
+                        using_stdout = true;
+                        break;
+                    case descriptors::stderr_id:
+                        using_stderr = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (!using_stdin) {
+        ::close(int(descriptors::stdin_id));
+    }
+    if (!using_stdout) {
+        ::close(int(descriptors::stdout_id));
+    }
+    if (!using_stderr) {
+        ::close(int(descriptors::stderr_id));
+    }
+}
+
 auto close_pipes_except(instance& root,
                         instance& child) -> void
 {
@@ -379,6 +417,7 @@ auto setup(instance& root,
         }
         child_info.diags << "found UNKNOWN channel type!!!!\n";
     }
+    close_unused_descriptors(name, connections);
     close_pipes_except(root, child);
 }
 
@@ -572,6 +611,42 @@ auto pretty_print(std::ostream& os, const instance& value) -> void
         os << "  .state=" << p->state;
     }
     os << "}\n";
+}
+
+auto get_reference_process_id(const instance::forked& object)
+    -> reference_process_id
+{
+    if (const auto p = std::get_if<owning_process_id>(&object.state)) {
+        return reference_process_id(*p);
+    }
+    return invalid_process_id;
+}
+
+auto get_reference_process_id(const std::vector<system_name>& names,
+                              const instance& object)
+    -> reference_process_id
+{
+    auto* info = &object.info;
+    for (auto comps = names; !empty(comps); comps.pop_back()) {
+        const auto& comp = comps.back();
+        auto found = false;
+        if (const auto p = std::get_if<instance::custom>(info)) {
+            for (auto&& entry: p->children) {
+                if (entry.first == comp) {
+                    info = &entry.second.info;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            throw std::invalid_argument{"no such component"};
+        }
+    }
+    if (const auto p = std::get_if<instance::forked>(info)) {
+        return get_reference_process_id(*p);
+    }
+    throw std::invalid_argument{"wrong instance type found"};
 }
 
 auto total_descendants(const instance& object) -> std::size_t

@@ -158,7 +158,9 @@ auto do_ls_system() -> void
         if (!outpipe) {
             std::cerr << "no pipe for xargs_stdout?!\n";
         }
-        wait(system_name{}, object);
+        for (auto&& wait_result: wait(system_name{}, object)) {
+            std::cerr << "wait-result: " << wait_result << "\n";
+        }
         if (outpipe) {
             read(*outpipe, std::ostream_iterator<char>(std::cerr));
         }
@@ -266,7 +268,9 @@ auto do_nested_system() -> void
         else {
             std::cerr << "can't find " << system_stdin << "\n";
         }
-        wait(system_name{}, object);
+        for (auto&& wait_result: wait(system_name{}, object)) {
+            std::cerr << "wait-result: " << wait_result << "\n";
+        }
         if (const auto pipe = find_channel<pipe_channel>(system, object, system_stdout)) {
             read(*pipe, std::ostream_iterator<char>(std::cerr));
         }
@@ -285,50 +289,73 @@ auto do_nested_system() -> void
 auto do_env_system() -> void
 {
     std::cerr << "Doing env instance...\n";
-
-    flow::system exesys;
-    exesys.environment["foo"] = "too";
-    exesys.environment["base"] = "derived value";
-    system::executable exe;
-    exe.executable_file = "/usr/bin/env";
-    exesys.info = exe;
-
+    const auto env_system_name = system_name{"env-system"};
+    const auto env_out = unidirectional_connection{
+        system_endpoint{env_system_name, stdout_id},
+        user_endpoint{},
+    };
+    const auto custom = system::custom{
+        .subsystems = {{
+            system_name{"env-system"},
+            flow::system{
+                system::executable{"/usr/bin/env"},
+                {stdout_descriptors_entry},
+                {{"base", "derived value"}}
+            }
+        }},
+        .connections = {env_out},
+    };
     flow::system base;
-    base.environment["base"] = "base value";
-    system::custom custom;
-    custom.subsystems.emplace(system_name{"sub-system"}, exesys);
+    base.environment = {{"base", "base value"}};
     base.info = custom;
-
     {
         auto diags = temporary_fstream();
         auto object = instantiate(system_name{}, base, diags, get_environ());
-        wait(system_name{}, object);
+        for (auto&& wait_result: wait(system_name{}, object)) {
+            std::cerr << "wait-result: " << wait_result << "\n";
+        }
+        if (const auto pipe = find_channel<pipe_channel>(custom, object,
+                                                         env_out)) {
+            read(*pipe, std::ostream_iterator<char>(std::cerr));
+        }
     }
 }
 
 auto do_ls_outerr_system() -> void
 {
     std::cerr << "Doing ls_outerr instance...\n";
-
     const auto ls_exe_name = system_name{"ls-exe"};
-    system::custom custom;
-    system::executable ls_executable;
-    ls_executable.executable_file = "/bin/ls";
-    ls_executable.arguments = {"ls", no_such_path, "/"};
-    custom.subsystems.emplace(ls_exe_name, ls_executable);
-    custom.connections.push_back(unidirectional_connection{
-        file_endpoint::dev_null,
-        system_endpoint{ls_exe_name, descriptor_id{0}},
-    });
     const auto ls_outerr = unidirectional_connection{
-        system_endpoint{ls_exe_name, descriptor_id{1}, descriptor_id{2}},
+        system_endpoint{ls_exe_name, stdout_id, stderr_id},
         user_endpoint{},
     };
+    system::custom custom;
+    custom.subsystems.emplace(ls_exe_name, system::executable{
+        .executable_file = "/bin/ls",
+        .arguments = {"ls", no_such_path, "/"},
+    });
+    custom.connections.push_back(unidirectional_connection{
+        file_endpoint::dev_null,
+        system_endpoint{ls_exe_name, stdin_id},
+    });
     custom.connections.push_back(ls_outerr);
     {
         auto diags = temporary_fstream();
-        auto object = instantiate(system_name{}, custom, diags, get_environ());
-        wait(system_name{}, object);
+        auto object = instantiate(system_name{}, custom, diags);
+        const auto pid = get_reference_process_id({system_name{"ls-exe"}},
+                                                  object);
+        const auto expected_wait_result = wait_result{
+            wait_result::info_t{pid, wait_exit_status{1}}
+        };
+        const auto wait_results = wait(system_name{}, object);
+        if (size(wait_results) != 1u) {
+            std::cerr << "unexpected count of wait results:\n";
+        }
+        for (auto&& result: wait_results) {
+            if (result != expected_wait_result) {
+                std::cerr << "unexpected wait-result: " << result << "\n";
+            }
+        }
         if (const auto pipe = find_channel<pipe_channel>(custom, object,
                                                          ls_outerr)) {
             std::ostringstream os;
