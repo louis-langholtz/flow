@@ -18,8 +18,6 @@
 #include <sys/stat.h> // for mkfifo
 #include <unistd.h> // for ::close
 
-#include "wait_result.hpp"
-
 #include "flow/connection.hpp"
 #include "flow/descriptor_id.hpp"
 #include "flow/instance.hpp"
@@ -27,6 +25,7 @@
 #include "flow/system.hpp"
 #include "flow/utility.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, ostream support
+#include "flow/wait_result.hpp"
 #include "flow/wait_status.hpp"
 
 namespace flow {
