@@ -14,6 +14,7 @@ struct wait_result {
     enum type_enum: unsigned {no_children = 0u, has_error, has_info};
 
     struct no_kids_t {
+        constexpr auto operator<=>(const no_kids_t&) const noexcept = default;
     };
 
     using error_t = os_error_code;
@@ -24,7 +25,7 @@ struct wait_result {
         wait_status status{wait_unknown_status{}};
     };
 
-    wait_result() noexcept = default;
+    constexpr wait_result() noexcept = default;
 
     wait_result(no_kids_t) noexcept: wait_result{} {};
 
@@ -73,8 +74,23 @@ struct wait_result {
     }
 
 private:
+    friend constexpr auto operator==(const wait_result& lhs,
+                                     const wait_result& rhs) noexcept;
+
     variant<no_kids_t, error_t, info_t> data;
 };
+
+constexpr auto operator==(const wait_result::info_t& lhs,
+                          const wait_result::info_t& rhs) noexcept
+{
+    return (lhs.id == rhs.id) && (lhs.status == rhs.status);
+}
+
+constexpr auto operator==(const wait_result& lhs,
+                          const wait_result& rhs) noexcept
+{
+    return lhs.data == rhs.data;
+}
 
 auto operator<<(std::ostream& os, const wait_result::no_kids_t&)
     -> std::ostream&;
