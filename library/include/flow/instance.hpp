@@ -52,8 +52,14 @@ struct instance
 };
 
 static_assert(std::is_default_constructible_v<instance::custom>);
+static_assert(std::is_move_constructible_v<instance::custom>);
+static_assert(std::is_move_assignable_v<instance::custom>);
+
 static_assert(std::is_default_constructible_v<instance::forked>);
+
 static_assert(std::is_default_constructible_v<instance>);
+static_assert(std::is_move_constructible_v<instance>);
+static_assert(std::is_move_assignable_v<instance>);
 
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&;
 

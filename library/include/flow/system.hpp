@@ -4,6 +4,7 @@
 #include <map>
 #include <ostream>
 #include <string>
+#include <type_traits> // for std::is_default_constructible_v
 #include <vector>
 
 #include "flow/connection.hpp"
@@ -56,6 +57,12 @@ struct system
     environment_map environment;
     variant<custom, executable> info;
 };
+
+static_assert(std::is_default_constructible_v<system>);
+static_assert(std::is_copy_constructible_v<system>);
+static_assert(std::is_move_constructible_v<system>);
+static_assert(std::is_copy_assignable_v<system>);
+static_assert(std::is_move_assignable_v<system>);
 
 auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&;
