@@ -51,6 +51,10 @@
 		99A88D192A0B1BC500AFD76F /* descriptor_info.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D172A0B1BC500AFD76F /* descriptor_info.hpp */; };
 		99A88D1C2A0B1D8600AFD76F /* descriptor_map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D1A2A0B1D8600AFD76F /* descriptor_map.cpp */; };
 		99A88D1D2A0B1D8600AFD76F /* descriptor_map.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D1B2A0B1D8600AFD76F /* descriptor_map.hpp */; };
+		99A88D202A0B431300AFD76F /* system_pipeline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */; };
+		99A88D212A0B431300AFD76F /* system_pipeline.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D1F2A0B431300AFD76F /* system_pipeline.hpp */; };
+		99A88D242A0C229400AFD76F /* unset_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D222A0C229400AFD76F /* unset_endpoint.cpp */; };
+		99A88D252A0C229400AFD76F /* unset_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D232A0C229400AFD76F /* unset_endpoint.hpp */; };
 		99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* system_endpoint.cpp */; };
 		99C1937C29F4D70F00C3F53F /* system_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */; };
 		99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938129F506C200C3F53F /* file_endpoint.cpp */; };
@@ -149,6 +153,10 @@
 		99A88D172A0B1BC500AFD76F /* descriptor_info.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor_info.hpp; sourceTree = "<group>"; };
 		99A88D1A2A0B1D8600AFD76F /* descriptor_map.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor_map.cpp; sourceTree = "<group>"; };
 		99A88D1B2A0B1D8600AFD76F /* descriptor_map.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor_map.hpp; sourceTree = "<group>"; };
+		99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_pipeline.cpp; sourceTree = "<group>"; };
+		99A88D1F2A0B431300AFD76F /* system_pipeline.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_pipeline.hpp; sourceTree = "<group>"; };
+		99A88D222A0C229400AFD76F /* unset_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = unset_endpoint.cpp; sourceTree = "<group>"; };
+		99A88D232A0C229400AFD76F /* unset_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = unset_endpoint.hpp; sourceTree = "<group>"; };
 		99C1937929F4D70F00C3F53F /* system_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_endpoint.cpp; sourceTree = "<group>"; };
 		99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
@@ -281,9 +289,11 @@
 				9943E8922A021A46002F4C26 /* pipe_channel.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
 				9943E8A22A04A783002F4C26 /* reference_process_id.hpp */,
+				99C1939629F5136100C3F53F /* system.hpp */,
 				99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */,
 				99940BFE29F1F73900A77461 /* system_name.hpp */,
-				99C1939629F5136100C3F53F /* system.hpp */,
+				99A88D1F2A0B431300AFD76F /* system_pipeline.hpp */,
+				99A88D232A0C229400AFD76F /* unset_endpoint.hpp */,
 				9943E8962A021E98002F4C26 /* user_endpoint.hpp */,
 				99C1939E29F5819A00C3F53F /* utility.hpp */,
 				9943E87C29FBF8BE002F4C26 /* variant.hpp */,
@@ -317,9 +327,11 @@
 				9943E8A62A055E11002F4C26 /* pipe_registry.hpp */,
 				99940BF929F1F49F00A77461 /* process_id.cpp */,
 				9943E8A12A04A783002F4C26 /* reference_process_id.cpp */,
-				99940BFD29F1F73900A77461 /* system_name.cpp */,
-				99C1937929F4D70F00C3F53F /* system_endpoint.cpp */,
 				99C1939529F5136100C3F53F /* system.cpp */,
+				99C1937929F4D70F00C3F53F /* system_endpoint.cpp */,
+				99940BFD29F1F73900A77461 /* system_name.cpp */,
+				99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */,
+				99A88D222A0C229400AFD76F /* unset_endpoint.cpp */,
 				9943E8952A021E98002F4C26 /* user_endpoint.cpp */,
 				99C1939D29F5819A00C3F53F /* utility.cpp */,
 				9943E88229FC0763002F4C26 /* wait_result.cpp */,
@@ -344,9 +356,11 @@
 				9943E8AC2A059A28002F4C26 /* file_channel.hpp in Headers */,
 				9943E8B42A06F403002F4C26 /* env_value.hpp in Headers */,
 				99C1939C29F5774600C3F53F /* instance.hpp in Headers */,
+				99A88D212A0B431300AFD76F /* system_pipeline.hpp in Headers */,
 				9943E8942A021A46002F4C26 /* pipe_channel.hpp in Headers */,
 				99940BF829F1DAE800A77461 /* descriptor_id.hpp in Headers */,
 				99C1939829F5136100C3F53F /* system.hpp in Headers */,
+				99A88D252A0C229400AFD76F /* unset_endpoint.hpp in Headers */,
 				99C193A229F6EB4B00C3F53F /* expected.hpp in Headers */,
 				9943E8902A0068C6002F4C26 /* indenting_ostreambuf.hpp in Headers */,
 				9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */,
@@ -473,6 +487,7 @@
 				99A88D182A0B1BC500AFD76F /* descriptor_info.cpp in Sources */,
 				9943E8AB2A059A28002F4C26 /* file_channel.cpp in Sources */,
 				99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */,
+				99A88D242A0C229400AFD76F /* unset_endpoint.cpp in Sources */,
 				9943E8972A021E98002F4C26 /* user_endpoint.cpp in Sources */,
 				99940BFB29F1F49F00A77461 /* process_id.cpp in Sources */,
 				99C1939729F5136100C3F53F /* system.cpp in Sources */,
@@ -484,6 +499,7 @@
 				9943E89C2A0453F3002F4C26 /* environment_map.cpp in Sources */,
 				9943E8B32A06F403002F4C26 /* env_value.cpp in Sources */,
 				99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */,
+				99A88D202A0B431300AFD76F /* system_pipeline.cpp in Sources */,
 				99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
