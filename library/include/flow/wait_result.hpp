@@ -2,6 +2,7 @@
 #define wait_result_hpp
 
 #include <ostream>
+#include <vector>
 
 #include "flow/os_error_code.hpp"
 #include "flow/reference_process_id.hpp"
@@ -97,6 +98,12 @@ auto operator<<(std::ostream& os, const wait_result::no_kids_t&)
 auto operator<<(std::ostream& os, const wait_result::info_t& value)
     -> std::ostream&;
 auto operator<<(std::ostream& os, const wait_result& value) -> std::ostream&;
+
+struct system_name;
+struct instance;
+
+auto wait(const system_name& name, instance& object)
+    -> std::vector<wait_result>;
 
 }
 
