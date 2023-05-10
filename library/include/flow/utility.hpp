@@ -55,11 +55,6 @@ auto touch(const file_endpoint& file) -> void;
 
 auto mkfifo(const file_endpoint& file) -> void;
 
-struct wait_result;
-
-auto wait(const system_name& name, instance& instance)
-    -> std::vector<wait_result>;
-
 enum class signal {
     interrupt,
     terminate,
