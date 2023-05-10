@@ -4,13 +4,29 @@
 #include <ostream>
 #include <set>
 #include <utility> // for std::move
+#include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/descriptor_id.hpp"
 #include "flow/system_name.hpp"
 
 namespace flow {
 
-struct system_endpoint {
+struct system_endpoint
+{
+    system_endpoint() = default;
+
+    explicit system_endpoint(system_name a):
+        address{std::move(a)}
+    {
+        // Intentionally empty.
+    }
+
+    system_endpoint(system_name a, std::set<descriptor_id> d):
+        address{std::move(a)}, descriptors{std::move(d)}
+    {
+        // Intentionally empty.
+    }
+
     template <class... T>
     system_endpoint(system_name a = {}, T... d)
     : address{std::move(a)}, descriptors{std::move(d)...} {}
@@ -20,6 +36,25 @@ struct system_endpoint {
     ///@brief Well known descriptor ID of endpoint for systems.
     std::set<descriptor_id> descriptors;
 };
+
+// Ensure regularity in terms of special member functions supported...
+static_assert(std::is_default_constructible_v<system_endpoint>);
+static_assert(std::is_copy_constructible_v<system_endpoint>);
+static_assert(std::is_move_constructible_v<system_endpoint>);
+static_assert(std::is_copy_assignable_v<system_endpoint>);
+static_assert(std::is_move_assignable_v<system_endpoint>);
+
+// Ensure initializing construction supported for contained types...
+static_assert(std::is_constructible_v<system_endpoint,
+              system_name>);
+static_assert(std::is_constructible_v<system_endpoint,
+              system_name, std::set<descriptor_id>>);
+
+// Ensure pack-expansion constructor works for descriptor_id's...
+static_assert(std::is_constructible_v<system_endpoint,
+              system_name, descriptor_id>);
+static_assert(std::is_constructible_v<system_endpoint,
+              system_name, descriptor_id, descriptor_id>);
 
 constexpr auto operator==(const system_endpoint& lhs,
                           const system_endpoint& rhs) -> bool
