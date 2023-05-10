@@ -2,22 +2,6 @@
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const descriptor_map& value)
-    -> std::ostream&
-{
-    os << "{";
-    for (auto&& entry: value) {
-        if (&entry != &(*value.begin())) {
-            os << ",";
-        }
-        os << "{";
-        // TODO
-        os << "}";
-    }
-    os << "}";
-    return os;
-}
-
 auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&
 {
