@@ -29,7 +29,7 @@ struct filebuf: public std::streambuf {
     using state_type = typename traits_type::state_type;
 
     /// @brief Open mode.
-    using openmode = std::uint32_t;
+    enum openmode: std::uint32_t;
 
     static constexpr auto app       = openmode{0x001};
     static constexpr auto binary    = openmode{0x002};
@@ -126,6 +126,29 @@ private:
     bool owns_eb_{};
     bool owns_ib_{};
 };
+
+constexpr auto operator|(const filebuf::openmode& lhs,
+                         const filebuf::openmode& rhs) noexcept
+    -> filebuf::openmode
+{
+    using under_type = std::underlying_type_t<filebuf::openmode>;
+    return filebuf::openmode(static_cast<under_type>(lhs)|static_cast<under_type>(rhs));
+}
+
+constexpr auto operator&(const filebuf::openmode& lhs,
+                         const filebuf::openmode& rhs) noexcept
+    -> filebuf::openmode
+{
+    using under_type = std::underlying_type_t<filebuf::openmode>;
+    return filebuf::openmode(static_cast<under_type>(lhs)&static_cast<under_type>(rhs));
+}
+
+constexpr auto operator~(const filebuf::openmode& val) noexcept
+    -> filebuf::openmode
+{
+    using under_type = std::underlying_type_t<filebuf::openmode>;
+    return filebuf::openmode(~static_cast<under_type>(val));
+}
 
 constexpr auto filebuf::to_fopen_mode(openmode value) -> const char*
 {
@@ -235,8 +258,8 @@ inline filebuf::filebuf(filebuf&& other) noexcept
     other.fp = nullptr;
     other.st_ = state_type();
     other.st_last_ = state_type();
-    other.opened_mode = 0;
-    other.iomode = 0;
+    other.opened_mode = {};
+    other.iomode = {};
     other.owns_eb_ = false;
     other.owns_ib_ = false;
     other.setg(nullptr, nullptr, nullptr);
@@ -452,7 +475,7 @@ inline auto filebuf::close() noexcept -> filebuf*
         return nullptr;
     }
     (void) fp.release();
-    opened_mode = 0;
+    opened_mode = {};
     internal_setbuf(nullptr, 0);
     return this;
 }
@@ -621,7 +644,7 @@ inline auto filebuf::internal_sync() -> int
             return -1;
         }
         setg(nullptr, nullptr, nullptr);
-        iomode = 0;
+        iomode = {};
     }
     return 0;
 }
@@ -725,9 +748,12 @@ struct fstream: public std::iostream
 
     auto is_open() const -> bool;
     auto close() -> void;
-    auto open(const char* path, filebuf::openmode mode = in|out) -> void;
-    auto open(const std::string& path, filebuf::openmode mode = in|out) -> void;
-    auto open(const std::filesystem::path& path, filebuf::openmode mode = in|out) -> void;
+    auto open(const char* path,
+              filebuf::openmode mode = filebuf::in|filebuf::out) -> void;
+    auto open(const std::string& path,
+              filebuf::openmode mode = filebuf::in|filebuf::out) -> void;
+    auto open(const std::filesystem::path& path,
+              filebuf::openmode mode = filebuf::in|filebuf::out) -> void;
 
 private:
     filebuf fb;
