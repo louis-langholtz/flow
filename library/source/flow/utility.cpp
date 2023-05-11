@@ -91,13 +91,13 @@ auto temporary_fstream() -> ext::fstream
 {
     // "w+xb"
     constexpr auto mode =
-        ext::fstream::in|
-        ext::fstream::out|
-        ext::fstream::trunc|
-        ext::fstream::binary|
-        ext::fstream::noreplace|
-        ext::fstream::tmpfile|
-        ext::fstream::cloexec;
+        ext::filebuf::in|
+        ext::filebuf::out|
+        ext::filebuf::trunc|
+        ext::filebuf::binary|
+        ext::filebuf::noreplace|
+        ext::filebuf::tmpfile|
+        ext::filebuf::cloexec;
 
     ext::fstream stream;
     stream.open(std::filesystem::temp_directory_path(), mode);
@@ -108,8 +108,8 @@ auto nulldev_fstream() -> ext::fstream
 {
     static constexpr auto dev_null_path = "/dev/null";
     constexpr auto mode =
-        ext::fstream::in|
-        ext::fstream::out;
+        ext::filebuf::in|
+        ext::filebuf::out;
 
     ext::fstream stream;
     stream.open(dev_null_path, mode);
