@@ -1,3 +1,4 @@
+#include <concepts> // for std::convertible_to
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -23,7 +24,7 @@ constexpr auto no_such_path = "/fee/fii/foo/fum";
 
 /// @brief Finds the channel requested.
 /// @return Pointer to channel of the type requested or <code>nullptr</code>.
-template <class T>
+template <std::convertible_to<channel> T>
 auto find_channel(const flow::system::custom& custom,
                   instance& instance,
                   const connection& look_for) -> T*

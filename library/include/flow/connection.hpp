@@ -2,6 +2,7 @@
 #define connection_hpp
 
 #include <array>
+#include <concepts> // for std::convertible_to
 #include <ostream>
 
 #include "flow/endpoint.hpp"
@@ -43,14 +44,14 @@ using connection = variant<
     bidirectional_connection
 >;
 
-template <class T>
+template <std::convertible_to<endpoint> T>
 auto make_endpoints(const unidirectional_connection& c)
     -> std::array<const T*, 2u>
 {
     return {std::get_if<T>(&c.src), std::get_if<T>(&c.dst)};
 }
 
-template <class T>
+template <std::convertible_to<endpoint> T>
 auto make_endpoints(const bidirectional_connection& c)
     -> std::array<const T*, 2u>
 {
@@ -60,7 +61,7 @@ auto make_endpoints(const bidirectional_connection& c)
     };
 }
 
-template <class T>
+template <std::convertible_to<endpoint> T>
 auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
 {
     if (const auto p = std::get_if<unidirectional_connection>(&c)) {

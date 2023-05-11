@@ -1,6 +1,7 @@
 #ifndef system_endpoint_hpp
 #define system_endpoint_hpp
 
+#include <concepts> // for std::convertible_to
 #include <ostream>
 #include <set>
 #include <utility> // for std::move
@@ -13,23 +14,13 @@ namespace flow {
 
 struct system_endpoint
 {
-    system_endpoint() = default;
+    explicit system_endpoint(system_name a = {},
+                             std::set<descriptor_id> d = {}):
+        address{std::move(a)}, descriptors{std::move(d)} {}
 
-    explicit system_endpoint(system_name a):
-        address{std::move(a)}
-    {
-        // Intentionally empty.
-    }
-
-    system_endpoint(system_name a, std::set<descriptor_id> d):
-        address{std::move(a)}, descriptors{std::move(d)}
-    {
-        // Intentionally empty.
-    }
-
-    template <class... T>
-    system_endpoint(system_name a = {}, T... d)
-    : address{std::move(a)}, descriptors{std::move(d)...} {}
+    system_endpoint(system_name a,
+                    std::convertible_to<descriptor_id> auto&& ...d):
+        address{std::move(a)}, descriptors{std::move(d)...} {}
 
     system_name address;
 
