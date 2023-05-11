@@ -1,3 +1,4 @@
+#include <concepts> // for std::convertible_to
 #include <cstdlib> // for std::exit, EXIT_FAILURE
 #include <cstring> // for std::strcmp
 #include <sstream> // for std::ostringstream
@@ -79,7 +80,7 @@ auto fully_deref(T&& chan_p)
     return chan_p;
 }
 
-template <class T>
+template <std::convertible_to<channel> T>
 auto is_channel_for(const std::span<const channel>& channels,
                     const T *key) -> bool
 {
