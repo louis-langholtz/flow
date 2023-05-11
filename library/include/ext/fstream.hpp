@@ -22,18 +22,11 @@
 
 namespace ext {
 
-/// @brief File based I/O stream class for POSIX systems.
-/// @note This supports C++23's <code>noreplace</code> and a new <code>tmpfile</code>
-///   openmode. The latter results in the stream being opened for reading/writing to a temporary file that
-///   either never shows up in the file system, or is deleted from it right after its creation. One has to use
-///   the open modes however from this class; not from <code>std::ios_base</code> or any derived
-///   classes of that other than this class.
-/// @note Much of this class's implementation comes from LLVM's code for
-///   <code>std::fstream</code> sans support for character encodings & locales. Any code herein
-///   that may appear thrown together is likely mine or due to my effort to shoehorn LLVM's code into
-///   this class without having to provide alternatives for additional standard library classes.
-/// @see https://github.com/llvm/llvm-project/blob/main/libcxx/include/fstream.
-struct fstream: public std::iostream {
+struct filebuf: public std::streambuf {
+    using int_type = typename traits_type::int_type;
+    using pos_type = typename traits_type::pos_type;
+    using off_type = typename traits_type::off_type;
+    using state_type = typename traits_type::state_type;
 
     /// @brief Open mode.
     using openmode = std::uint32_t;
@@ -60,104 +53,81 @@ struct fstream: public std::iostream {
 
     static constexpr auto to_fopen_mode(openmode value) -> const char*;
 
-    struct filebuf: public std::streambuf {
-        using int_type = typename traits_type::int_type;
-        using pos_type = typename traits_type::pos_type;
-        using off_type = typename traits_type::off_type;
-        using state_type = typename traits_type::state_type;
-
-        filebuf();
-        filebuf(const filebuf& other) = delete;
-        filebuf(filebuf&& other) noexcept;
-        ~filebuf() override;
-        auto operator=(const filebuf& other) -> filebuf& = delete;
-        auto operator=(filebuf&& other) noexcept -> filebuf&;
-        auto swap(filebuf& rhs) -> void;
-        [[nodiscard]] auto is_open() const noexcept -> bool;
-        auto open(const char* path, openmode mode) -> filebuf*;
-        auto open(const std::filesystem::path& path, openmode mode) -> filebuf*;
-        auto open(const std::string& path, openmode mode) -> filebuf*;
-        auto close() noexcept -> filebuf*;
-
-    private:
-        struct fcloser {
-            auto operator()(FILE* p) const -> void {
-                ::fclose(p); // NOLINT(cppcoreguidelines-owning-memory)
-            }
-        };
-
-        static constexpr auto default_buffer_size = 4096u;
-        static constexpr auto extbuf_min_size = 8u;
-
-        auto internal_setbuf(char_type* s, std::streamsize n) -> basic_streambuf<char_type, traits_type>*;
-        auto internal_sync() -> int;
-        auto internal_overflow(int_type c = traits_type::eof()) -> int_type;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/underflow.
-        auto underflow() -> int_type override;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/uflow.
-        //int_type uflow() override;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pbackfail.
-        auto pbackfail(int_type c = traits_type::eof()) -> int_type override;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/overflow.
-        auto overflow(int_type c = traits_type::eof()) -> int_type override;
-
-        auto setbuf(char_type* s, std::streamsize n) -> basic_streambuf<char_type, traits_type>* override;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/sputn.
-        auto xsputn(const char* s, std::streamsize n) -> std::streamsize override;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubseekoff.
-        auto seekoff(off_type off, seekdir way,
-                     std::ios_base::openmode wch = std::ios_base::in|std::ios_base::out) -> pos_type override;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubseekpos.
-        auto seekpos(pos_type sp,
-                     std::ios_base::openmode wch = std::ios_base::in|std::ios_base::out) -> pos_type override;
-
-        /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubsync.
-        auto sync() -> int override;
-
-        auto read_mode() -> bool;
-        auto write_mode() -> void;
-
-        char* extbuf_{};
-        const char* extbufnext_{};
-        const char* extbufend_{};
-        std::array<char, extbuf_min_size> extbuf_min_{};
-        size_t ebs_{};
-        char_type* intbuf_{};
-        size_t ibs_{};
-        std::unique_ptr<FILE, fcloser> fp;
-        state_type st_{};
-        state_type st_last_{};
-        openmode opened_mode{};
-        openmode iomode{};
-        bool owns_eb_{};
-        bool owns_ib_{};
-    };
-
-    fstream();
-    fstream(const fstream& other) = delete;
-    fstream(fstream&& other) noexcept;
-
-    auto operator=(const fstream& other) noexcept -> fstream& = delete;
-    auto operator=(fstream&& other) noexcept -> fstream&;
-
-    auto is_open() const -> bool;
-    auto close() -> void;
-    auto open(const char* path, openmode mode = in|out) -> void;
-    auto open(const std::string& path, openmode mode = in|out) -> void;
-    auto open(const std::filesystem::path& path, openmode mode = in|out) -> void;
+    filebuf();
+    filebuf(const filebuf& other) = delete;
+    filebuf(filebuf&& other) noexcept;
+    ~filebuf() override;
+    auto operator=(const filebuf& other) -> filebuf& = delete;
+    auto operator=(filebuf&& other) noexcept -> filebuf&;
+    auto swap(filebuf& rhs) -> void;
+    [[nodiscard]] auto is_open() const noexcept -> bool;
+    auto open(const char* path, openmode mode) -> filebuf*;
+    auto open(const std::filesystem::path& path, openmode mode) -> filebuf*;
+    auto open(const std::string& path, openmode mode) -> filebuf*;
+    auto close() noexcept -> filebuf*;
 
 private:
-    filebuf fb;
+    struct fcloser {
+        auto operator()(FILE* p) const -> void {
+            ::fclose(p); // NOLINT(cppcoreguidelines-owning-memory)
+        }
+    };
+
+    static constexpr auto default_buffer_size = 4096u;
+    static constexpr auto extbuf_min_size = 8u;
+
+    auto internal_setbuf(char_type* s, std::streamsize n) -> basic_streambuf<char_type, traits_type>*;
+    auto internal_sync() -> int;
+    auto internal_overflow(int_type c = traits_type::eof()) -> int_type;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/underflow.
+    auto underflow() -> int_type override;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/uflow.
+    //int_type uflow() override;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pbackfail.
+    auto pbackfail(int_type c = traits_type::eof()) -> int_type override;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/overflow.
+    auto overflow(int_type c = traits_type::eof()) -> int_type override;
+
+    auto setbuf(char_type* s, std::streamsize n) -> basic_streambuf<char_type, traits_type>* override;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/sputn.
+    auto xsputn(const char* s, std::streamsize n) -> std::streamsize override;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubseekoff.
+    auto seekoff(off_type off, std::ios_base::seekdir way,
+                 std::ios_base::openmode wch = std::ios_base::in|std::ios_base::out) -> pos_type override;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubseekpos.
+    auto seekpos(pos_type sp,
+                 std::ios_base::openmode wch = std::ios_base::in|std::ios_base::out) -> pos_type override;
+
+    /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubsync.
+    auto sync() -> int override;
+
+    auto read_mode() -> bool;
+    auto write_mode() -> void;
+
+    char* extbuf_{};
+    const char* extbufnext_{};
+    const char* extbufend_{};
+    std::array<char, extbuf_min_size> extbuf_min_{};
+    size_t ebs_{};
+    char_type* intbuf_{};
+    size_t ibs_{};
+    std::unique_ptr<FILE, fcloser> fp;
+    state_type st_{};
+    state_type st_last_{};
+    openmode opened_mode{};
+    openmode iomode{};
+    bool owns_eb_{};
+    bool owns_ib_{};
 };
 
-constexpr auto fstream::to_fopen_mode(openmode value) -> const char*
+constexpr auto filebuf::to_fopen_mode(openmode value) -> const char*
 {
     switch (value) {
     case out:
@@ -201,12 +171,12 @@ constexpr auto fstream::to_fopen_mode(openmode value) -> const char*
     return nullptr;
 }
 
-inline fstream::filebuf::filebuf()
+inline filebuf::filebuf()
 {
     internal_setbuf(nullptr, default_buffer_size);
 }
 
-inline fstream::filebuf::filebuf(filebuf&& other) noexcept
+inline filebuf::filebuf(filebuf&& other) noexcept
     : std::streambuf(other)
 {
     if (other.extbuf_ == std::data(other.extbuf_min_))
@@ -273,7 +243,7 @@ inline fstream::filebuf::filebuf(filebuf&& other) noexcept
     other.setp(nullptr, nullptr);
 }
 
-inline fstream::filebuf::~filebuf()
+inline filebuf::~filebuf()
 {
     close();
     if (owns_eb_) {
@@ -284,14 +254,14 @@ inline fstream::filebuf::~filebuf()
     }
 }
 
-inline auto fstream::filebuf::operator=(filebuf&& other) noexcept -> filebuf&
+inline auto filebuf::operator=(filebuf&& other) noexcept -> filebuf&
 {
     close();
     swap(other);
     return *this;
 }
 
-inline auto fstream::filebuf::swap(filebuf& rhs) -> void
+inline auto filebuf::swap(filebuf& rhs) -> void
 {
     basic_streambuf<char_type, traits_type>::swap(rhs);
     if ((extbuf_ != std::data(extbuf_min_)) && (rhs.extbuf_ != std::data(rhs.extbuf_min_)))
@@ -381,17 +351,17 @@ inline auto fstream::filebuf::swap(filebuf& rhs) -> void
 }
 
 inline void
-swap(fstream::filebuf& x, fstream::filebuf& y)
+swap(filebuf& x, filebuf& y)
 {
     x.swap(y);
 }
 
-inline auto fstream::filebuf::is_open() const noexcept -> bool
+inline auto filebuf::is_open() const noexcept -> bool
 {
     return fp != nullptr;
 }
 
-inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
+inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
 {
     if (fp) {
         return nullptr;
@@ -461,17 +431,17 @@ inline auto fstream::filebuf::open(const char* path, openmode mode) -> filebuf*
     return this;
 }
 
-inline auto fstream::filebuf::open(const std::filesystem::path& path, openmode mode) -> filebuf*
+inline auto filebuf::open(const std::filesystem::path& path, openmode mode) -> filebuf*
 {
     return open(path.c_str(), mode);
 }
 
-inline auto fstream::filebuf::open(const std::string& path, openmode mode) -> filebuf*
+inline auto filebuf::open(const std::string& path, openmode mode) -> filebuf*
 {
     return open(path.c_str(), mode);
 }
 
-inline auto fstream::filebuf::close() noexcept -> filebuf*
+inline auto filebuf::close() noexcept -> filebuf*
 {
     if (!fp) {
         return nullptr;
@@ -487,7 +457,7 @@ inline auto fstream::filebuf::close() noexcept -> filebuf*
     return this;
 }
 
-inline auto fstream::filebuf::underflow() -> int_type
+inline auto filebuf::underflow() -> int_type
 {
     if (!fp) {
         return traits_type::eof();
@@ -521,7 +491,7 @@ inline auto fstream::filebuf::underflow() -> int_type
     return c;
 }
 
-inline auto fstream::filebuf::pbackfail(int_type c) -> int_type
+inline auto filebuf::pbackfail(int_type c) -> int_type
 {
     if (fp && this->eback() < this->gptr())
     {
@@ -541,7 +511,7 @@ inline auto fstream::filebuf::pbackfail(int_type c) -> int_type
     return traits_type::eof();
 }
 
-inline auto fstream::filebuf::internal_overflow(int_type c) -> int_type
+inline auto filebuf::internal_overflow(int_type c) -> int_type
 {
     if (!fp) {
         return traits_type::eof();
@@ -567,12 +537,12 @@ inline auto fstream::filebuf::internal_overflow(int_type c) -> int_type
     return traits_type::not_eof(c);
 }
 
-inline auto fstream::filebuf::overflow(int_type c) -> int_type
+inline auto filebuf::overflow(int_type c) -> int_type
 {
     return internal_overflow(c);
 }
 
-inline auto fstream::filebuf::internal_setbuf(char_type* s, std::streamsize n)
+inline auto filebuf::internal_setbuf(char_type* s, std::streamsize n)
     -> basic_streambuf<char_type, traits_type>*
 {
     assert(n < std::numeric_limits<int>::max());
@@ -607,13 +577,13 @@ inline auto fstream::filebuf::internal_setbuf(char_type* s, std::streamsize n)
     return this;
 }
 
-inline auto fstream::filebuf::setbuf(char_type* s, std::streamsize n)
+inline auto filebuf::setbuf(char_type* s, std::streamsize n)
     -> basic_streambuf<char_type, traits_type>*
 {
     return internal_setbuf(s, n);
 }
 
-inline auto fstream::filebuf::xsputn(const char* s, std::streamsize n)
+inline auto filebuf::xsputn(const char* s, std::streamsize n)
     -> std::streamsize
 {
     if (!(iomode & out))
@@ -628,7 +598,7 @@ inline auto fstream::filebuf::xsputn(const char* s, std::streamsize n)
     return static_cast<std::streamsize>(rv);
 }
 
-inline auto fstream::filebuf::internal_sync() -> int
+inline auto filebuf::internal_sync() -> int
 {
     if (!fp) {
         return 0;
@@ -656,13 +626,13 @@ inline auto fstream::filebuf::internal_sync() -> int
     return 0;
 }
 
-inline auto fstream::filebuf::sync() -> int
+inline auto filebuf::sync() -> int
 {
     return internal_sync();
 }
 
 inline auto
-fstream::filebuf::seekoff(off_type off, seekdir way, std::ios_base::openmode) -> pos_type
+filebuf::seekoff(off_type off, std::ios_base::seekdir way, std::ios_base::openmode) -> pos_type
 {
     if (!fp || sync()) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
@@ -670,13 +640,13 @@ fstream::filebuf::seekoff(off_type off, seekdir way, std::ios_base::openmode) ->
     int whence{};
     switch (way)
     {
-    case beg:
+    case std::ios_base::beg:
         whence = SEEK_SET;
         break;
-    case cur:
+    case std::ios_base::cur:
         whence = SEEK_CUR;
         break;
-    case end:
+    case std::ios_base::end:
         whence = SEEK_END;
         break;
     default:
@@ -691,7 +661,7 @@ fstream::filebuf::seekoff(off_type off, seekdir way, std::ios_base::openmode) ->
 }
 
 inline auto
-fstream::filebuf::seekpos(pos_type sp, std::ios_base::openmode) -> pos_type
+filebuf::seekpos(pos_type sp, std::ios_base::openmode) -> pos_type
 {
     if (!fp || sync()) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
@@ -703,7 +673,7 @@ fstream::filebuf::seekpos(pos_type sp, std::ios_base::openmode) -> pos_type
     return sp;
 }
 
-inline auto fstream::filebuf::read_mode() -> bool
+inline auto filebuf::read_mode() -> bool
 {
     if (!(iomode & in))
     {
@@ -717,7 +687,7 @@ inline auto fstream::filebuf::read_mode() -> bool
     return false;
 }
 
-inline auto fstream::filebuf::write_mode() -> void
+inline auto filebuf::write_mode() -> void
 {
     if (!(iomode & out))
     {
@@ -732,6 +702,36 @@ inline auto fstream::filebuf::write_mode() -> void
         iomode = out;
     }
 }
+
+/// @brief File based I/O stream class for POSIX systems.
+/// @note This supports C++23's <code>noreplace</code> and a new <code>tmpfile</code>
+///   openmode. The latter results in the stream being opened for reading/writing to a temporary file that
+///   either never shows up in the file system, or is deleted from it right after its creation. One has to use
+///   the open modes however from this class; not from <code>std::ios_base</code> or any derived
+///   classes of that other than this class.
+/// @note Much of this class's implementation comes from LLVM's code for
+///   <code>std::fstream</code> sans support for character encodings & locales. Any code herein
+///   that may appear thrown together is likely mine or due to my effort to shoehorn LLVM's code into
+///   this class without having to provide alternatives for additional standard library classes.
+/// @see https://github.com/llvm/llvm-project/blob/main/libcxx/include/fstream.
+struct fstream: public std::iostream
+{
+    fstream();
+    fstream(const fstream& other) = delete;
+    fstream(fstream&& other) noexcept;
+
+    auto operator=(const fstream& other) noexcept -> fstream& = delete;
+    auto operator=(fstream&& other) noexcept -> fstream&;
+
+    auto is_open() const -> bool;
+    auto close() -> void;
+    auto open(const char* path, filebuf::openmode mode = in|out) -> void;
+    auto open(const std::string& path, filebuf::openmode mode = in|out) -> void;
+    auto open(const std::filesystem::path& path, filebuf::openmode mode = in|out) -> void;
+
+private:
+    filebuf fb;
+};
 
 inline fstream::fstream():
     std::iostream{&fb}
@@ -765,7 +765,7 @@ inline auto fstream::close() -> void
     }
 }
 
-inline auto fstream::open(const char* path, openmode mode) -> void
+inline auto fstream::open(const char* path, filebuf::openmode mode) -> void
 {
     if (fb.open(path, mode)) {
         clear();
@@ -775,13 +775,13 @@ inline auto fstream::open(const char* path, openmode mode) -> void
     }
 }
 
-inline auto fstream::open(const std::string& path, openmode mode) -> void
+inline auto fstream::open(const std::string& path, filebuf::openmode mode) -> void
 {
     open(path.c_str(), mode);
 }
 
 inline auto fstream::open(const std::filesystem::path& path,
-                          openmode mode) -> void
+                          filebuf::openmode mode) -> void
 {
     open(path.c_str(), mode);
 }
