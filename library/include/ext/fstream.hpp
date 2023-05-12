@@ -75,8 +75,11 @@ private:
 
     static constexpr auto default_buffer_size = 4096u;
     static constexpr auto extbuf_min_size = 8u;
+    static constexpr auto default_seek_openmode =
+        std::ios_base::in|std::ios_base::out;
 
-    auto internal_setbuf(char_type* s, std::streamsize n) -> basic_streambuf<char_type, traits_type>*;
+    auto internal_setbuf(char_type* s, std::streamsize n)
+        -> basic_streambuf<char_type, traits_type>*;
     auto internal_sync() -> int;
     auto internal_overflow(int_type c = traits_type::eof()) -> int_type;
 
@@ -92,18 +95,21 @@ private:
     /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/overflow.
     auto overflow(int_type c = traits_type::eof()) -> int_type override;
 
-    auto setbuf(char_type* s, std::streamsize n) -> basic_streambuf<char_type, traits_type>* override;
+    auto setbuf(char_type* s, std::streamsize n)
+        -> basic_streambuf<char_type, traits_type>* override;
 
     /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/sputn.
     auto xsputn(const char* s, std::streamsize n) -> std::streamsize override;
 
     /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubseekoff.
     auto seekoff(off_type off, std::ios_base::seekdir way,
-                 std::ios_base::openmode wch = std::ios_base::in|std::ios_base::out) -> pos_type override;
+                 std::ios_base::openmode wch = default_seek_openmode)
+        -> pos_type override;
 
     /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubseekpos.
     auto seekpos(pos_type sp,
-                 std::ios_base::openmode wch = std::ios_base::in|std::ios_base::out) -> pos_type override;
+                 std::ios_base::openmode wch = default_seek_openmode)
+        -> pos_type override;
 
     /// @see https://en.cppreference.com/w/cpp/io/basic_streambuf/pubsync.
     auto sync() -> int override;
@@ -132,7 +138,8 @@ constexpr auto operator|(const filebuf::openmode& lhs,
     -> filebuf::openmode
 {
     using under_type = std::underlying_type_t<filebuf::openmode>;
-    return filebuf::openmode(static_cast<under_type>(lhs)|static_cast<under_type>(rhs));
+    return filebuf::openmode(static_cast<under_type>(lhs) |
+                             static_cast<under_type>(rhs));
 }
 
 constexpr auto operator&(const filebuf::openmode& lhs,
@@ -140,7 +147,8 @@ constexpr auto operator&(const filebuf::openmode& lhs,
     -> filebuf::openmode
 {
     using under_type = std::underlying_type_t<filebuf::openmode>;
-    return filebuf::openmode(static_cast<under_type>(lhs)&static_cast<under_type>(rhs));
+    return filebuf::openmode(static_cast<under_type>(lhs) &
+                             static_cast<under_type>(rhs));
 }
 
 constexpr auto operator~(const filebuf::openmode& val) noexcept
@@ -227,26 +235,26 @@ inline filebuf::filebuf(filebuf&& other) noexcept
     if (other.pbase())
     {
         if (other.pbase() == other.intbuf_) {
-            this->setp(intbuf_, intbuf_ + (other.epptr() - other.pbase()));
+            setp(intbuf_, intbuf_ + (other.epptr() - other.pbase()));
         }
         else {
-            this->setp((char_type*)extbuf_,
-                       (char_type*)extbuf_ + (other.epptr() - other.pbase()));
+            setp((char_type*)extbuf_,
+                 (char_type*)extbuf_ + (other.epptr() - other.pbase()));
         }
         const auto diff = other.pptr() - other.pbase();
         assert(std::abs(diff) < std::numeric_limits<int>::max());
-        this->pbump(static_cast<int>(diff));
+        pbump(static_cast<int>(diff));
     }
     else if (other.eback())
     {
         if (other.eback() == other.intbuf_) {
-            this->setg(intbuf_, intbuf_ + (other.gptr() - other.eback()),
-                       intbuf_ + (other.egptr() - other.eback()));
+            setg(intbuf_, intbuf_ + (other.gptr() - other.eback()),
+                 intbuf_ + (other.egptr() - other.eback()));
         }
         else {
-            this->setg((char_type*)extbuf_,
-                       (char_type*)extbuf_ + (other.gptr() - other.eback()),
-                       (char_type*)extbuf_ + (other.egptr() - other.eback()));
+            setg((char_type*)extbuf_,
+                 (char_type*)extbuf_ + (other.gptr() - other.eback()),
+                 (char_type*)extbuf_ + (other.egptr() - other.eback()));
         }
     }
     other.extbuf_ = nullptr;
@@ -287,9 +295,11 @@ inline auto filebuf::operator=(filebuf&& other) noexcept -> filebuf&
 inline auto filebuf::swap(filebuf& rhs) -> void
 {
     basic_streambuf<char_type, traits_type>::swap(rhs);
-    if ((extbuf_ != std::data(extbuf_min_)) && (rhs.extbuf_ != std::data(rhs.extbuf_min_)))
+    if ((extbuf_ != std::data(extbuf_min_)) &&
+        (rhs.extbuf_ != std::data(rhs.extbuf_min_)))
     {
-        // Neither *this nor rhs uses the small buffer, so we can simply swap the pointers.
+        // Neither *this nor rhs uses the small buffer,
+        // so we can simply swap the pointers.
         std::swap(extbuf_, rhs.extbuf_);
         std::swap(extbufnext_, rhs.extbufnext_);
         std::swap(extbufend_, rhs.extbufend_);
@@ -300,27 +310,39 @@ inline auto filebuf::swap(filebuf& rhs) -> void
         const auto le = extbufend_      ? extbufend_ - extbuf_          : 0;
         const auto rn = rhs.extbufnext_ ? rhs.extbufnext_ - rhs.extbuf_ : 0;
         const auto re = rhs.extbufend_  ? rhs.extbufend_ - rhs.extbuf_  : 0;
-        if ((extbuf_ == std::data(extbuf_min_)) && (rhs.extbuf_ != std::data(rhs.extbuf_min_)))
+        if ((extbuf_ == std::data(extbuf_min_)) &&
+            (rhs.extbuf_ != std::data(rhs.extbuf_min_)))
         {
             // *this uses the small buffer, but rhs doesn't.
             extbuf_ = rhs.extbuf_;
             rhs.extbuf_ = std::data(rhs.extbuf_min_);
-            std::memmove(std::data(rhs.extbuf_min_), std::data(extbuf_min_), sizeof(extbuf_min_));
+            std::memmove(std::data(rhs.extbuf_min_),
+                         std::data(extbuf_min_),
+                         sizeof(extbuf_min_));
         }
-        else if (extbuf_ != std::data(extbuf_min_) && rhs.extbuf_ == std::data(rhs.extbuf_min_))
+        else if ((extbuf_ != std::data(extbuf_min_)) &&
+                 (rhs.extbuf_ == std::data(rhs.extbuf_min_)))
         {
             // *this doesn't use the small buffer, but rhs does.
             rhs.extbuf_ = extbuf_;
             extbuf_ = std::data(extbuf_min_);
-            std::memmove(std::data(extbuf_min_), std::data(rhs.extbuf_min_), sizeof(extbuf_min_));
+            std::memmove(std::data(extbuf_min_),
+                         std::data(rhs.extbuf_min_),
+                         sizeof(extbuf_min_));
         }
         else
         {
             // Both *this and rhs use the small buffer.
             std::array<char, extbuf_min_size> tmp{};
-            std::memmove(std::data(tmp), std::data(extbuf_min_), sizeof(extbuf_min_));
-            std::memmove(std::data(extbuf_min_), std::data(rhs.extbuf_min_), sizeof(extbuf_min_));
-            std::memmove(std::data(rhs.extbuf_min_), std::data(tmp), sizeof(extbuf_min_));
+            std::memmove(std::data(tmp),
+                         std::data(extbuf_min_),
+                         sizeof(extbuf_min_));
+            std::memmove(std::data(extbuf_min_),
+                         std::data(rhs.extbuf_min_),
+                         sizeof(extbuf_min_));
+            std::memmove(std::data(rhs.extbuf_min_),
+                         std::data(tmp),
+                         sizeof(extbuf_min_));
         }
         extbufnext_ = extbuf_ + rn;
         extbufend_ = extbuf_ + re;
@@ -337,22 +359,19 @@ inline auto filebuf::swap(filebuf& rhs) -> void
     std::swap(iomode, rhs.iomode);
     std::swap(owns_eb_, rhs.owns_eb_);
     std::swap(owns_ib_, rhs.owns_ib_);
-    if (this->eback() == data(rhs.extbuf_min_))
+    if (eback() == data(rhs.extbuf_min_))
     {
-        const auto n = this->gptr() - this->eback();
-        const auto e = this->egptr() - this->eback();
-        this->setg(data(extbuf_min_),
-                   data(extbuf_min_) + n,
-                   data(extbuf_min_) + e);
+        const auto n = gptr() - eback();
+        const auto e = egptr() - eback();
+        setg(data(extbuf_min_), data(extbuf_min_) + n, data(extbuf_min_) + e);
     }
-    else if (this->pbase() == data(rhs.extbuf_min_))
+    else if (pbase() == data(rhs.extbuf_min_))
     {
-        const auto n = this->pptr() - this->pbase();
-        const auto e = this->epptr() - this->pbase();
-        this->setp(data(extbuf_min_),
-                   data(extbuf_min_) + e);
+        const auto n = pptr() - pbase();
+        const auto e = epptr() - pbase();
+        setp(data(extbuf_min_), data(extbuf_min_) + e);
         assert(n < static_cast<std::ptrdiff_t>(std::numeric_limits<int>::max()));
-        this->pbump(static_cast<int>(n));
+        pbump(static_cast<int>(n));
     }
     if (rhs.eback() == data(extbuf_min_))
     {
@@ -454,7 +473,8 @@ inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
     return this;
 }
 
-inline auto filebuf::open(const std::filesystem::path& path, openmode mode) -> filebuf*
+inline auto filebuf::open(const std::filesystem::path& path, openmode mode)
+    -> filebuf*
 {
     return open(path.c_str(), mode);
 }
@@ -487,47 +507,47 @@ inline auto filebuf::underflow() -> int_type
     }
     const auto mode_changed = read_mode();
     char_type char_buf{};
-    if (!this->gptr()) {
-        this->setg(&char_buf, &char_buf+1, &char_buf+1);
+    if (!gptr()) {
+        setg(&char_buf, &char_buf+1, &char_buf+1);
     }
-    const size_t unget_sz = mode_changed ? 0 : std::min<size_t>((this->egptr() - this->eback()) / 2, 4);
+    const size_t unget_sz = mode_changed
+        ? 0
+        : std::min<size_t>((egptr() - eback()) / 2, 4);
     int_type c = traits_type::eof();
-    if (this->gptr() == this->egptr())
+    if (gptr() == egptr())
     {
-        std::memmove(this->eback(), this->egptr() - unget_sz, unget_sz * sizeof(char_type));
-        auto nmemb = static_cast<size_t>(this->egptr() - this->eback() - unget_sz);
-        nmemb = ::fread(this->eback() + unget_sz, 1, nmemb, fp.get());
+        std::memmove(eback(), egptr() - unget_sz, unget_sz * sizeof(char_type));
+        auto nmemb = static_cast<size_t>(egptr() - eback() - unget_sz);
+        nmemb = ::fread(eback() + unget_sz, 1, nmemb, fp.get());
         if (nmemb != 0)
         {
-            this->setg(this->eback(),
-                       this->eback() + unget_sz,
-                       this->eback() + unget_sz + nmemb);
-            c = traits_type::to_int_type(*this->gptr());
+            setg(eback(), eback() + unget_sz, eback() + unget_sz + nmemb);
+            c = traits_type::to_int_type(*gptr());
         }
     }
     else {
-        c = traits_type::to_int_type(*this->gptr());
+        c = traits_type::to_int_type(*gptr());
     }
-    if (this->eback() == &char_buf) {
-        this->setg(nullptr, nullptr, nullptr);
+    if (eback() == &char_buf) {
+        setg(nullptr, nullptr, nullptr);
     }
     return c;
 }
 
 inline auto filebuf::pbackfail(int_type c) -> int_type
 {
-    if (fp && this->eback() < this->gptr())
+    if (fp && eback() < gptr())
     {
         if (traits_type::eq_int_type(c, traits_type::eof()))
         {
-            this->gbump(-1);
+            gbump(-1);
             return traits_type::not_eof(c);
         }
         if ((opened_mode & out) ||
-            traits_type::eq(traits_type::to_char_type(c), this->gptr()[-1]))
+            traits_type::eq(traits_type::to_char_type(c), gptr()[-1]))
         {
-            this->gbump(-1);
-            *this->gptr() = traits_type::to_char_type(c);
+            gbump(-1);
+            *gptr() = traits_type::to_char_type(c);
             return c;
         }
     }
@@ -541,8 +561,8 @@ inline auto filebuf::internal_overflow(int_type c) -> int_type
     }
     write_mode();
     char_type char_buf{};
-    char_type* pb_save = this->pbase();
-    char_type* epb_save = this->epptr();
+    char_type* pb_save = pbase();
+    char_type* epb_save = epptr();
     if (!traits_type::eq_int_type(c, traits_type::eof())) {
         if (!pptr()) {
             setp(&char_buf, &char_buf+1);
@@ -551,8 +571,8 @@ inline auto filebuf::internal_overflow(int_type c) -> int_type
         pbump(1);
     }
     if (pptr() != pbase()) {
-        const auto nmemb = static_cast<size_t>(this->pptr() - this->pbase());
-        if (std::fwrite(this->pbase(), sizeof(char_type), nmemb, fp.get()) != nmemb) {
+        const auto nmemb = static_cast<size_t>(pptr() - pbase());
+        if (std::fwrite(pbase(), sizeof(char_type), nmemb, fp.get()) != nmemb) {
             return traits_type::eof();
         }
         setp(pb_save, epb_save);
@@ -655,7 +675,8 @@ inline auto filebuf::sync() -> int
 }
 
 inline auto
-filebuf::seekoff(off_type off, std::ios_base::seekdir way, std::ios_base::openmode) -> pos_type
+filebuf::seekoff(off_type off, std::ios_base::seekdir way,
+                 std::ios_base::openmode) -> pos_type
 {
     if (!fp || sync()) {
         return static_cast<pos_type>(static_cast<off_type>(-1));
@@ -727,15 +748,18 @@ inline auto filebuf::write_mode() -> void
 }
 
 /// @brief File based I/O stream class for POSIX systems.
-/// @note This supports C++23's <code>noreplace</code> and a new <code>tmpfile</code>
-///   openmode. The latter results in the stream being opened for reading/writing to a temporary file that
-///   either never shows up in the file system, or is deleted from it right after its creation. One has to use
-///   the open modes however from this class; not from <code>std::ios_base</code> or any derived
-///   classes of that other than this class.
+/// @note This supports C++23's <code>noreplace</code> and a new
+///   <code>tmpfile</code> openmode. The latter results in the stream being
+///   opened for reading/writing to a temporary file that either never shows up
+///   in the file system, or is deleted from it right after its creation. One
+///   has to use the open modes however from this class; not from
+///   <code>std::ios_base</code> or any derived classes of that other than this
+///   class.
 /// @note Much of this class's implementation comes from LLVM's code for
-///   <code>std::fstream</code> sans support for character encodings & locales. Any code herein
-///   that may appear thrown together is likely mine or due to my effort to shoehorn LLVM's code into
-///   this class without having to provide alternatives for additional standard library classes.
+///   <code>std::fstream</code> sans support for character encodings & locales.
+///   Any code herein that may appear thrown together is likely mine or due to
+///   my effort to shoehorn LLVM's code into this class without having to
+///   provide alternatives for additional standard library classes.
 /// @see https://github.com/llvm/llvm-project/blob/main/libcxx/include/fstream.
 struct fstream: public std::iostream
 {
@@ -801,7 +825,8 @@ inline auto fstream::open(const char* path, filebuf::openmode mode) -> void
     }
 }
 
-inline auto fstream::open(const std::string& path, filebuf::openmode mode) -> void
+inline auto fstream::open(const std::string& path, filebuf::openmode mode)
+    -> void
 {
     open(path.c_str(), mode);
 }
