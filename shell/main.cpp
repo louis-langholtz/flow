@@ -62,7 +62,7 @@ auto do_lsof_system() -> void
         system_endpoint{lsof_name, stderr_id}, file_endpoint::dev_null,
     });
     {
-        auto diags = temporary_fstream();
+        auto diags = ext::temporary_fstream();
         auto object = instantiate(system_name{}, custom, diags);
         {
             std::cerr << "Diagnostics for instantiation of lsof...\n";
@@ -141,7 +141,7 @@ auto do_ls_system() -> void
     });
 
     {
-        auto diags = temporary_fstream();
+        auto diags = ext::temporary_fstream();
         auto object = instantiate(system_name{}, system, diags);
         std::cerr << "Diagnostics for root instance...\n";
         diags.seekg(0);
@@ -255,7 +255,7 @@ auto do_nested_system() -> void
     system.connections.push_back(system_stdout);
 
     {
-        auto diags = temporary_fstream();
+        auto diags = ext::temporary_fstream();
         auto object = instantiate(system_name{}, system, diags);
         std::cerr << "Diagnostics for nested instance...\n";
         diags.seekg(0);
@@ -311,7 +311,7 @@ auto do_env_system() -> void
     base.environment = {{"base", "base value"}};
     base.info = custom;
     {
-        auto diags = temporary_fstream();
+        auto diags = ext::temporary_fstream();
         auto object = instantiate(system_name{}, base, diags, get_environ());
         for (auto&& wait_result: wait(system_name{}, object)) {
             std::cerr << "wait-result: " << wait_result << "\n";
@@ -342,7 +342,7 @@ auto do_ls_outerr_system() -> void
     });
     custom.connections.push_back(ls_outerr);
     {
-        auto diags = temporary_fstream();
+        auto diags = ext::temporary_fstream();
         auto object = instantiate(system_name{}, custom, diags);
         const auto pid = get_reference_process_id({system_name{"ls-exe"}},
                                                   object);

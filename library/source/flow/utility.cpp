@@ -87,23 +87,6 @@ auto kill(const reference_process_id& pid, signal sig) -> int
 
 }
 
-auto temporary_fstream() -> ext::fstream
-{
-    // "w+xb"
-    constexpr auto mode =
-        ext::filebuf::in|
-        ext::filebuf::out|
-        ext::filebuf::trunc|
-        ext::filebuf::binary|
-        ext::filebuf::noreplace|
-        ext::filebuf::tmpfile|
-        ext::filebuf::cloexec;
-
-    ext::fstream stream;
-    stream.open(std::filesystem::temp_directory_path(), mode);
-    return stream;
-}
-
 auto nulldev_fstream() -> ext::fstream
 {
     static constexpr auto dev_null_path = "/dev/null";
@@ -296,6 +279,18 @@ auto set_signal_handler(signal sig) -> void
     if (::sigaction(to_posix_signal(sig), &act, nullptr) == -1) {
         throw std::system_error{errno, std::system_category()};
     }
+}
+
+auto get_matching_set(const descriptor_map& descriptors, io_type io)
+    -> std::set<descriptor_id>
+{
+    auto result = std::set<descriptor_id>{};
+    for (auto&& entry: descriptors) {
+        if (entry.second.direction == io) {
+            result.insert(entry.first);
+        }
+    }
+    return result;
 }
 
 }

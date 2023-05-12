@@ -4,6 +4,7 @@
 #include <map>
 #include <optional>
 #include <ostream>
+#include <set>
 #include <span>
 #include <string>
 #include <vector>
@@ -11,6 +12,7 @@
 #include "ext/fstream.hpp"
 
 #include "flow/connection.hpp"
+#include "flow/descriptor_map.hpp"
 #include "flow/environment_map.hpp"
 
 namespace flow {
@@ -19,7 +21,6 @@ struct file_endpoint;
 struct instance;
 struct system_name;
 
-auto temporary_fstream() -> ext::fstream;
 auto nulldev_fstream() -> ext::fstream;
 
 /// @note This is NOT an "async-signal-safe" function. So, it's not suitable
@@ -69,6 +70,9 @@ auto send_signal(signal sig,
                  std::ostream& diags) -> void;
 
 auto set_signal_handler(signal sig) -> void;
+
+auto get_matching_set(const descriptor_map& descriptors, io_type io)
+    -> std::set<descriptor_id>;
 
 }
 
