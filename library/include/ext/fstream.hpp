@@ -837,6 +837,22 @@ inline auto fstream::open(const std::filesystem::path& path,
     open(path.c_str(), mode);
 }
 
+inline auto temporary_fstream() -> fstream
+{
+    // "w+xb"
+    constexpr auto mode =
+        filebuf::in|
+        filebuf::out|
+        filebuf::trunc|
+        filebuf::binary|
+        filebuf::noreplace|
+        filebuf::tmpfile|
+        filebuf::cloexec;
+    fstream stream;
+    stream.open(std::filesystem::temp_directory_path(), mode);
+    return stream;
+}
+
 }
 
 #endif /* fstream_hpp */

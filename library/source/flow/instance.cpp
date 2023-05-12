@@ -304,7 +304,7 @@ auto make_child(instance& parent,
     }
     if (const auto p = std::get_if<system::executable>(&system.info)) {
         instance::forked info;
-        info.diags = temporary_fstream();
+        info.diags = ext::temporary_fstream();
         result.info = std::move(info);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {

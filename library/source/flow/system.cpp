@@ -1,4 +1,5 @@
 #include "flow/system.hpp"
+#include "flow/utility.hpp"
 
 namespace flow {
 
@@ -25,6 +26,12 @@ auto operator<<(std::ostream& os, const system& value)
     }
     os << "}";
     return os;
+}
+
+auto get_matching_set(const system& sys, io_type io)
+    -> std::set<descriptor_id>
+{
+    return get_matching_set(sys.descriptors, io);
 }
 
 }

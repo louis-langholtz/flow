@@ -1,24 +1,7 @@
 #include "flow/system_pipeline.hpp"
-#include "flow/utility.hpp"
 #include "flow/wait_result.hpp"
 
 namespace flow {
-
-namespace {
-
-auto get_matching_set(const descriptor_map& descriptors, io_type io)
-    -> std::set<descriptor_id>
-{
-    auto result = std::set<descriptor_id>{};
-    for (auto&& entry: descriptors) {
-        if (entry.second.direction == io) {
-            result.insert(entry.first);
-        }
-    }
-    return result;
-}
-
-}
 
 system_pipeline::~system_pipeline()
 {
@@ -48,7 +31,7 @@ auto system_pipeline::append(const system& sys) -> system_pipeline&
     if (!std::holds_alternative<unset_endpoint>(dst_end)) {
         throw std::invalid_argument{"append system after dst end not allowed"};
     }
-    auto sys_inputs = get_matching_set(sys.descriptors, io_type::in);
+    auto sys_inputs = get_matching_set(sys, io_type::in);
     const auto count = size(info.subsystems);
     const auto sys_name = system_name{std::to_string(count)};
     if (count == 0u) {
@@ -69,7 +52,7 @@ auto system_pipeline::append(const system& sys) -> system_pipeline&
     else {
         const auto last_name = system_name{std::to_string(count - 1u)};
         auto &last = info.subsystems.at(last_name);
-        auto last_outputs = get_matching_set(last.descriptors, io_type::out);
+        auto last_outputs = get_matching_set(last, io_type::out);
         if (empty(last_outputs)) {
             throw std::invalid_argument{"last system must have outputs"};
         }
@@ -110,7 +93,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
         dst_end = end;
         const auto last_name = system_name{std::to_string(count - 1u)};
         auto &last = info.subsystems.at(last_name);
-        auto last_outputs = get_matching_set(last.descriptors, io_type::out);
+        auto last_outputs = get_matching_set(last, io_type::out);
         if (empty(last_outputs)) {
             throw std::invalid_argument{"last system must have outputs"};
         }
@@ -128,7 +111,7 @@ auto system_pipeline::instantiate() -> system_pipeline&
     if (current_state != state::setup) {
         throw std::logic_error{"run only supported during setup"};
     }
-    diags = temporary_fstream();
+    diags = ext::temporary_fstream();
     object = flow::instantiate({}, info, diags);
     current_state = state::instantiated;
     return *this;

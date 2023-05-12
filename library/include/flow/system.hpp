@@ -3,6 +3,7 @@
 
 #include <map>
 #include <ostream>
+#include <set>
 #include <string>
 #include <type_traits> // for std::is_default_constructible_v
 #include <vector>
@@ -66,6 +67,9 @@ static_assert(std::is_move_assignable_v<system>);
 
 auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&;
+
+auto get_matching_set(const system& sys, io_type io)
+    -> std::set<descriptor_id>;
 
 }
 
