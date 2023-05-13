@@ -22,27 +22,8 @@ owning_process_id::owning_process_id(owning_process_id&& other) noexcept
 
 owning_process_id::~owning_process_id()
 {
-    if (int(pid) > 0) {
-        int status{};
-        const auto id = ::waitpid(pid_t(pid), &status, WNOHANG);
-        switch (id) {
-        case -1: {
-            auto err = errno;
-            switch (err) {
-            case ECHILD:
-                return; // all is well
-            default:
-                break;
-            }
-            // not much can be done.
-            break;
-        }
-        case 0: {
-            ::kill(pid_t(pid), SIGTERM);
-            ::waitpid(pid_t(pid), &status, 0);
-            break;
-        }
-        }
+    while (int(pid) > 0) {
+        wait(wait_option{});
     }
 }
 
@@ -53,6 +34,31 @@ auto owning_process_id::operator=(owning_process_id&& other) noexcept
         pid = std::exchange(other.pid, default_process_id);
     }
     return *this;
+}
+
+auto owning_process_id::wait(wait_option flags) noexcept -> wait_result
+{
+    const auto result = flow::wait(pid, flags);
+    switch (result.type()) {
+    case wait_result::has_error:
+        return result;
+    case wait_result::no_children:
+        pid = default_process_id;
+        break;
+    case wait_result::has_info: {
+        const auto info = result.info();
+        if (info.id == pid) {
+            if (std::holds_alternative<wait_exit_status>(info.status)) {
+                pid = default_process_id;
+            }
+            else if (std::holds_alternative<wait_signaled_status>(info.status)) {
+                pid = default_process_id;
+            }
+        }
+        break;
+    }
+    }
+    return result;
 }
 
 }

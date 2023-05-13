@@ -4,6 +4,7 @@
 #include <type_traits> // for std::underlying_type_t
 
 #include "flow/reference_process_id.hpp"
+#include "flow/wait_result.hpp"
 
 namespace flow {
 
@@ -21,6 +22,8 @@ struct owning_process_id
 
     operator reference_process_id() const { return pid; }
     explicit operator std::int32_t() const { return std::int32_t(pid); }
+
+    auto wait(wait_option flags = {}) noexcept -> wait_result;
 
     auto operator<=>(const owning_process_id&) const = default;
 
