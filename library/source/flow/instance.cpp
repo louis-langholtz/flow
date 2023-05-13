@@ -278,19 +278,16 @@ auto exec_child(const std::filesystem::path& path,
     diags.flush();
     ::execve(path.c_str(), argv, envp);
     const auto ec = os_error_code(errno);
-    diags << "execve of " << path << "failed: " << ec << "\n";
+    diags << "execve of '" << path.native() << "' failed: " << ec << "\n";
     diags.flush();
     exit(exit_failure_code);
 }
 
-auto make_child(instance& parent,
-                const system_name& name,
-                const system& system,
-                const std::span<const connection>& connections,
-                std::ostream& diags) -> instance
+auto confirm_closed(const system_name& name,
+                    const descriptor_map& descriptors,
+                    const std::span<const connection>& connections) -> void
 {
-    instance result;
-    for (auto&& entry: system.descriptors) {
+    for (auto&& entry: descriptors) {
         const auto look_for = system_endpoint{name, entry.first};
         if (!find_index(connections, look_for)) {
             std::ostringstream os;
@@ -298,6 +295,15 @@ auto make_child(instance& parent,
             throw std::invalid_argument{os.str()};
         }
     }
+}
+
+auto make_child(instance& parent,
+                const system_name& name,
+                const system& system,
+                const std::span<const connection>& connections) -> instance
+{
+    instance result;
+    confirm_closed(name, system.descriptors, connections);
     result.environment = parent.environment;
     for (auto&& entry: system.environment) {
         result.environment[entry.first] = entry.second;
@@ -318,12 +324,14 @@ auto make_child(instance& parent,
         }
         for (auto&& entry: p->subsystems) {
             auto kid = make_child(result, entry.first, entry.second,
-                                  p->connections, diags);
+                                  p->connections);
             info.children.emplace(entry.first, std::move(kid));
         }
     }
     else {
-        diags << "parent: unrecognized system type for " << name << "\n";
+        std::ostringstream os;
+        os << "parent: unrecognized system type for " << name << "\n";
+        throw std::logic_error{os.str()};
     }
     return result;
 }
@@ -383,14 +391,14 @@ auto close_unused_descriptors(const system_name& name,
 auto close_pipes_except(instance& root,
                         instance& child) -> void
 {
-    const auto parent = find_parent(root, child);
-    assert(parent != nullptr);
-    auto& parent_info = std::get<instance::custom>(parent->info);
-    auto& child_info = std::get<instance::forked>(child.info);
-    for (auto&& pipe: the_pipe_registry().pipes) {
-        if (!is_channel_for(parent_info.channels, pipe)) {
-            pipe->close(pipe_channel::io::read, child_info.diags);
-            pipe->close(pipe_channel::io::write, child_info.diags);
+    if (const auto parent = find_parent(root, child)) {
+        auto& parent_info = std::get<instance::custom>(parent->info);
+        auto& child_info = std::get<instance::forked>(child.info);
+        for (auto&& pipe: the_pipe_registry().pipes) {
+            if (!is_channel_for(parent_info.channels, pipe)) {
+                pipe->close(pipe_channel::io::read, child_info.diags);
+                pipe->close(pipe_channel::io::write, child_info.diags);
+            }
         }
     }
 }
@@ -479,7 +487,6 @@ auto fork_child(const system_name& name,
                    child_info.diags);
     }
     default: // case for the spawning/parent process
-        diags << "child '" << name << "' started as pid " << pid << "\n";
         if (pgrp == no_process_id) {
             pgrp = reference_process_id(int(pid));
         }
@@ -694,12 +701,18 @@ auto instantiate(const system_name& name,
         env[entry.first] = entry.second;
     }
     result.environment = std::move(env);
-    result.info = instance::custom{};
-    auto& info = std::get<instance::custom>(result.info);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        fork_child(name, *p, result, info.pgrp, {}, {}, result, diags);
+        confirm_closed({}, system.descriptors, {});
+        result.info = instance::forked{};
+        auto& info = std::get<instance::forked>(result.info);
+        info.diags = ext::temporary_fstream();
+        auto pgrp = no_process_id;
+        fork_child(name, *p, result, pgrp, {}, {}, result, diags);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
+        confirm_closed({}, system.descriptors, p->connections);
+        result.info = instance::custom{};
+        auto& info = std::get<instance::custom>(result.info);
         for (auto&& entry: system.descriptors) {
             const auto look_for = system_endpoint{{}, entry.first};
             if (!find_index(p->connections, look_for)) {
@@ -715,8 +728,7 @@ auto instantiate(const system_name& name,
         for (auto&& entry: p->subsystems) {
             const auto& sub_name = entry.first;
             const auto& sub_system = entry.second;
-            auto kid = make_child(result, sub_name, sub_system,
-                                  p->connections, diags);
+            auto kid = make_child(result, sub_name, sub_system, p->connections);
             info.children.emplace(sub_name, std::move(kid));
         }
         fork_executables(*p, result, result, diags);
