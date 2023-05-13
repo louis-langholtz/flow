@@ -30,9 +30,9 @@ struct wait_result {
 
     wait_result(no_kids_t) noexcept: wait_result{} {};
 
-    wait_result(error_t error): data{error} {}
+    wait_result(error_t error) noexcept: data{error} {}
 
-    wait_result(info_t info): data{info} {}
+    wait_result(info_t info) noexcept: data{info} {}
 
     [[nodiscard]] constexpr auto type() const noexcept -> type_enum
     {
@@ -101,6 +101,44 @@ auto operator<<(std::ostream& os, const wait_result& value) -> std::ostream&;
 
 struct system_name;
 struct instance;
+
+enum class wait_option: int;
+
+constexpr auto operator|(const wait_option& lhs,
+                         const wait_option& rhs) noexcept
+    -> wait_option
+{
+    return wait_option(int(lhs) | int(rhs));
+}
+
+constexpr auto operator&(const wait_option& lhs,
+                         const wait_option& rhs) noexcept
+    -> wait_option
+{
+    return wait_option(int(lhs) & int(rhs));
+}
+
+constexpr auto operator~(const wait_option& val) noexcept
+    -> wait_option
+{
+    return wait_option(~int(val));
+}
+
+namespace detail {
+
+auto get_nohang_wait_option() noexcept -> wait_option;
+
+}
+
+namespace wait_options {
+
+const wait_option nohang = detail::get_nohang_wait_option();
+
+}
+
+auto wait(reference_process_id id = invalid_process_id,
+          wait_option flags = {}) noexcept
+    -> wait_result;
 
 auto wait(const system_name& name, instance& object)
     -> std::vector<wait_result>;

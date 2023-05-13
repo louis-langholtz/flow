@@ -9,48 +9,6 @@ namespace flow {
 
 namespace {
 
-auto wait_for_child() -> wait_result
-{
-    auto status = 0;
-    auto pid = decltype(::wait(&status)){};
-    auto err = 0;
-    do { // NOLINT(cppcoreguidelines-avoid-do-while)
-        //itimerval new_timer{};
-        //itimerval old_timer;
-        //setitimer(ITIMER_REAL, &new_timer, &old_timer);
-        pid = ::wait(&status);
-        err = errno;
-        //setitimer(ITIMER_REAL, &old_timer, nullptr);
-    } while ((pid == -1) && (err == EINTR));
-    if ((pid == -1) && (err == ECHILD)) {
-        return wait_result::no_kids_t{};
-    }
-    if (pid == -1) {
-        return wait_result::error_t(errno);
-    }
-    if (WIFEXITED(status)) {
-        // process terminated normally
-        return wait_result::info_t{reference_process_id{pid},
-            wait_exit_status{WEXITSTATUS(status)}};
-    }
-    if (WIFSIGNALED(status)) {
-        // process terminated due to signal
-        return wait_result::info_t{reference_process_id{pid},
-            wait_signaled_status{WTERMSIG(status), WCOREDUMP(status) != 0}};
-    }
-    if (WIFSTOPPED(status)) {
-        // process not terminated, but stopped and can be restarted
-        return wait_result::info_t{reference_process_id{pid},
-            wait_stopped_status{WSTOPSIG(status)}};
-    }
-    if (WIFCONTINUED(status)) {
-        // process was resumed
-        return wait_result::info_t{reference_process_id{pid},
-            wait_continued_status{}};
-    }
-    return wait_result::info_t{reference_process_id{pid}};
-}
-
 auto find(const system_name& name, instance& object,
           const reference_process_id& pid)
     -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
@@ -152,12 +110,64 @@ auto operator<<(std::ostream& os, const wait_result& value) -> std::ostream&
     return os;
 }
 
+namespace detail {
+
+auto get_nohang_wait_option() noexcept -> wait_option
+{
+    return wait_option(WNOHANG);
+}
+
+}
+
+auto wait(reference_process_id id, wait_option flags) noexcept
+    -> wait_result
+{
+    auto status = 0;
+    auto pid = decltype(::waitpid(pid_t(id), &status, int(flags))){};
+    auto err = 0;
+    do { // NOLINT(cppcoreguidelines-avoid-do-while)
+        //itimerval new_timer{};
+        //itimerval old_timer;
+        //setitimer(ITIMER_REAL, &new_timer, &old_timer);
+        pid = ::waitpid(pid_t(id), &status, int(flags));
+        err = errno;
+        //setitimer(ITIMER_REAL, &old_timer, nullptr);
+    } while ((pid == -1) && (err == EINTR));
+    if ((pid == -1) && (err == ECHILD)) {
+        return wait_result::no_kids_t{};
+    }
+    if (pid == -1) {
+        return wait_result::error_t(err);
+    }
+    if (WIFEXITED(status)) {
+        // process terminated normally
+        return wait_result::info_t{reference_process_id{pid},
+            wait_exit_status{WEXITSTATUS(status)}};
+    }
+    if (WIFSIGNALED(status)) {
+        // process terminated due to signal
+        return wait_result::info_t{reference_process_id{pid},
+            wait_signaled_status{WTERMSIG(status), WCOREDUMP(status) != 0}};
+    }
+    if (WIFSTOPPED(status)) {
+        // process not terminated, but stopped and can be restarted
+        return wait_result::info_t{reference_process_id{pid},
+            wait_stopped_status{WSTOPSIG(status)}};
+    }
+    if (WIFCONTINUED(status)) {
+        // process was resumed
+        return wait_result::info_t{reference_process_id{pid},
+            wait_continued_status{}};
+    }
+    return wait_result::info_t{reference_process_id{pid}};
+}
+
 auto wait(const system_name& name, instance& object)
     -> std::vector<wait_result>
 {
     auto results = std::vector<wait_result>{};
-    auto result = decltype(wait_for_child()){};
-    while (bool(result = wait_for_child())) {
+    auto result = decltype(wait()){};
+    while (bool(result = wait())) {
         if (handle(name, object, result)) {
             results.push_back(result);
         }
