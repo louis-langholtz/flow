@@ -12,38 +12,10 @@ namespace flow {
 /// be streamed.
 using std::variant;
 
-namespace detail {
-
-template<class T>
-struct streamer {
-    const T& val; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
-};
-
-template<class T> streamer(T) -> streamer<T>;
-
-template<class T>
-auto operator<<(std::ostream& os, streamer<T> s) -> std::ostream&
-{
-    os << s.val;
-    return os;
-}
-
-/// @brief Variant stream output support.
-/// @note Code for this came from StackOverflow user "T.C." dated Nov 7, 2017.
-/// @see https://stackoverflow.com/a/47169101/7410358.
-template<class... Ts>
-auto operator<<(std::ostream& os, streamer<variant<Ts...>> sv) -> std::ostream&
-{
-    std::visit([&os](const auto& v) { os << streamer{v}; }, sv.val);
-    return os;
-}
-
-}
-
 template<class... Ts>
 auto operator<<(std::ostream& os, const variant<Ts...>& sv) -> std::ostream&
 {
-    os << detail::streamer{sv};
+    std::visit([&os](const auto& v) { os << v; }, sv);
     return os;
 }
 
