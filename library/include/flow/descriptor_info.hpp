@@ -13,8 +13,8 @@ struct descriptor_info {
     io_type direction;
 };
 
-constexpr auto operator==(const descriptor_info& lhs,
-                          const descriptor_info& rhs) noexcept
+inline auto operator==(const descriptor_info& lhs,
+                       const descriptor_info& rhs) noexcept
 {
     return (lhs.comment == rhs.comment) && (lhs.direction == rhs.direction);
 }

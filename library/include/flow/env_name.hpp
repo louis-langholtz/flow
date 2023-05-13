@@ -10,7 +10,7 @@ namespace flow {
 
 struct env_name_checker
 {
-    constexpr auto operator()() const -> std::string
+    auto operator()() const -> std::string
     {
         return {};
     }

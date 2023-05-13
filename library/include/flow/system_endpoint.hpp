@@ -47,8 +47,8 @@ static_assert(std::is_constructible_v<system_endpoint,
 static_assert(std::is_constructible_v<system_endpoint,
               system_name, descriptor_id, descriptor_id>);
 
-constexpr auto operator==(const system_endpoint& lhs,
-                          const system_endpoint& rhs) -> bool
+inline auto operator==(const system_endpoint& lhs,
+                       const system_endpoint& rhs) -> bool
 {
     return (lhs.address == rhs.address)
         && (lhs.descriptors == rhs.descriptors);
