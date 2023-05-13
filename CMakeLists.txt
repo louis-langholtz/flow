@@ -102,9 +102,6 @@ endif(FLOW_BUILD_SHELL)
 # Unit tests console application.
 if(FLOW_BUILD_UNITTESTS)
   # Have CMake produce a "test" make target.
-  # From https://cmake.org/cmake/help/v3.4/command/enable_testing.html :
-  #   "Enable testing for current directory and below".
-  enable_testing()
   add_subdirectory(tests)
 endif(FLOW_BUILD_UNITTESTS)
 
