@@ -15,8 +15,6 @@ FetchContent_MakeAvailable(googletest)
 
 file(GLOB Test_SRCS *.cpp)
 
-enable_testing()
-
 # Add an executable to the project using specified source files.
 # See details at: https://cmake.org/cmake/help/v3.1/command/add_executable.html
 add_executable(tests ${Test_SRCS})
