@@ -12,14 +12,14 @@ struct system_name {
     std::string value;
 };
 
-constexpr auto operator==(const system_name& lhs,
-                          const system_name& rhs) noexcept
+inline auto operator==(const system_name& lhs,
+                       const system_name& rhs) noexcept
 {
     return lhs.value == rhs.value;
 }
 
-constexpr auto operator<(const system_name& lhs,
-                         const system_name& rhs) noexcept
+inline auto operator<(const system_name& lhs,
+                      const system_name& rhs) noexcept
 {
     return lhs.value < rhs.value;
 }
