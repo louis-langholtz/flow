@@ -6,6 +6,12 @@
 #include "flow/system.hpp"
 #include "flow/utility.hpp"
 
+namespace {
+
+constexpr auto no_such_path = "/fee/fii/foo/fum";
+
+}
+
 TEST(instance, default_construction)
 {
     flow::instance obj;
@@ -79,6 +85,106 @@ TEST(instance, instantiate_empty_executable)
                       std::istreambuf_iterator<char>(),
                       std::ostream_iterator<char>(os));
             EXPECT_EQ(os.str(), std::string(expected_msg));
+        }
+    }
+}
+
+TEST(instance, ls_system)
+{
+    const auto input_file_endpoint = flow::file_endpoint{"flow.in"};
+    const auto output_file_endpoint = flow::file_endpoint{"flow.out"};
+    touch(output_file_endpoint);
+    flow::system::custom system;
+
+    const auto cat_process_name = flow::system_name{"cat"};
+    flow::system::executable cat_executable;
+    cat_executable.executable_file = "/bin/cat";
+    system.subsystems.emplace(cat_process_name, cat_executable);
+
+    const auto xargs_process_name = flow::system_name{"xargs"};
+    flow::system::executable xargs_executable;
+    xargs_executable.executable_file = "/usr/bin/xargs";
+    xargs_executable.working_directory = no_such_path;
+    xargs_executable.arguments = {"xargs", "ls", "-alF"};
+    system.subsystems.emplace(xargs_process_name, xargs_executable);
+
+    const auto cat_stdin = flow::unidirectional_connection{
+        flow::user_endpoint{},
+        flow::system_endpoint{cat_process_name, flow::descriptor_id{0}}
+    };
+    const auto xargs_stdout = flow::unidirectional_connection{
+        flow::system_endpoint{xargs_process_name, flow::descriptor_id{1}},
+        flow::user_endpoint{},
+    };
+    system.connections.push_back(cat_stdin);
+    system.connections.push_back(flow::unidirectional_connection{
+        flow::system_endpoint{cat_process_name, flow::descriptor_id{1}},
+        flow::system_endpoint{xargs_process_name, flow::descriptor_id{0}},
+    });
+    system.connections.push_back(flow::unidirectional_connection{
+        flow::system_endpoint{cat_process_name, flow::descriptor_id{2}},
+        flow::file_endpoint::dev_null,
+    });
+    system.connections.push_back(flow::unidirectional_connection{
+        flow::system_endpoint{xargs_process_name, flow::descriptor_id{2}},
+        flow::file_endpoint::dev_null,
+    });
+    system.connections.push_back(xargs_stdout);
+
+    {
+        std::ostringstream os;
+        auto diags = ext::temporary_fstream();
+        auto object = instantiate(flow::system_name{}, system, diags);
+        diags.seekg(0);
+        std::copy(std::istreambuf_iterator<char>(diags),
+                  std::istreambuf_iterator<char>(),
+                  std::ostream_iterator<char>(os));
+        EXPECT_FALSE(empty(os.str()));
+        EXPECT_TRUE(empty(object.environment));
+        EXPECT_TRUE(std::holds_alternative<flow::instance::custom>(object.info));
+        auto cat_stdin_pipe = static_cast<flow::pipe_channel*>(nullptr);
+        auto xargs_stdout_pipe = static_cast<flow::pipe_channel*>(nullptr);
+        if (const auto p = std::get_if<flow::instance::custom>(&object.info)) {
+            EXPECT_EQ(size(p->channels), 5u);
+            if (size(p->channels) == 5u) {
+                cat_stdin_pipe = std::get_if<flow::pipe_channel>(&(p->channels[0]));
+                xargs_stdout_pipe = std::get_if<flow::pipe_channel>(&(p->channels[4u]));
+            }
+            EXPECT_EQ(size(p->children), 2u);
+            if (size(p->children) == 2u) {
+                EXPECT_EQ(p->children.count(cat_process_name), 1u);
+                EXPECT_EQ(p->children.count(xargs_process_name), 1u);
+            }
+        }
+        EXPECT_NE(cat_stdin_pipe, nullptr);
+        EXPECT_NE(xargs_stdout_pipe, nullptr);
+        if (cat_stdin_pipe) {
+            write(*cat_stdin_pipe, "/bin\n/sbin");
+        }
+        auto waited = 0;
+        for (auto&& wait_result: wait(flow::system_name{}, object)) {
+            EXPECT_EQ(wait_result.type(), flow::wait_result::has_info);
+            if (wait_result.holds_info()) {
+                const auto& info = wait_result.info();
+                if (const auto p = std::get_if<flow::wait_exit_status>(&info.status)) {
+                    EXPECT_EQ(p->value, 1); // because no_such_path used
+                }
+                else if (const auto p = std::get_if<flow::wait_signaled_status>(&info.status)) {
+                    EXPECT_EQ(p->signal, SIGPIPE);
+                    EXPECT_FALSE(p->core_dumped);
+                }
+                else {
+                    EXPECT_EQ(info.status.index(), 0);
+                }
+            }
+            ++waited;
+        }
+        EXPECT_EQ(waited, 2);
+        if (xargs_stdout_pipe) {
+            os.clear();
+            read(*xargs_stdout_pipe, std::ostream_iterator<char>(os));
+            const auto result = os.str();
+            EXPECT_FALSE(empty(result));
         }
     }
 }
