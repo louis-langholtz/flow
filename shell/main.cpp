@@ -240,61 +240,6 @@ auto do_env_system() -> void
     }
 }
 
-auto do_ls_outerr_system() -> void
-{
-    std::cerr << "Doing ls_outerr instance...\n";
-    const auto ls_exe_name = system_name{"ls-exe"};
-    const auto ls_outerr = unidirectional_connection{
-        system_endpoint{ls_exe_name, stdout_id, stderr_id},
-        user_endpoint{},
-    };
-    system::custom custom;
-    custom.subsystems.emplace(ls_exe_name, system::executable{
-        .executable_file = "/bin/ls",
-        .arguments = {"ls", no_such_path, "/"},
-    });
-    custom.connections.push_back(unidirectional_connection{
-        file_endpoint::dev_null,
-        system_endpoint{ls_exe_name, stdin_id},
-    });
-    custom.connections.push_back(ls_outerr);
-    {
-        auto diags = ext::temporary_fstream();
-        auto object = instantiate(system_name{}, custom, diags);
-        const auto pid = get_reference_process_id({system_name{"ls-exe"}},
-                                                  object);
-        const auto expected_wait_result = wait_result{
-            info_wait_result{pid, wait_exit_status{1}}
-        };
-        const auto wait_results = wait(system_name{}, object);
-        if (size(wait_results) != 1u) {
-            std::cerr << "unexpected count of wait results:\n";
-        }
-        for (auto&& result: wait_results) {
-            if (result != expected_wait_result) {
-                std::cerr << "unexpected wait-result: " << result << "\n";
-            }
-        }
-        if (const auto pipe = find_channel<pipe_channel>(custom, object,
-                                                         ls_outerr)) {
-            std::ostringstream os;
-            read(*pipe, std::ostream_iterator<char>(os));
-            if (std::string_view{os.str()}.find(no_such_path) ==
-                std::string_view::npos) {
-                std::cerr << "Search string '" << no_such_path;
-                std::cerr << "' not found in outerr!\n";
-            }
-            else {
-                std::cerr << "Search string '" << no_such_path;
-                std::cerr << "' was found in outerr. Hooray!\n";
-            }
-        }
-        else {
-            std::cerr << "can't find " << ls_outerr << "\n";
-        }
-    }
-}
-
 }
 
 auto main(int argc, const char * argv[]) -> int
@@ -305,6 +250,5 @@ auto main(int argc, const char * argv[]) -> int
     do_lsof_system();
     do_nested_system();
     do_env_system();
-    do_ls_outerr_system();
     return 0;
 }
