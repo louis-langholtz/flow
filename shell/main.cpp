@@ -205,41 +205,6 @@ auto do_nested_system() -> void
     }
 }
 
-auto do_env_system() -> void
-{
-    std::cerr << "Doing env instance...\n";
-    const auto env_system_name = system_name{"env-system"};
-    const auto env_out = unidirectional_connection{
-        system_endpoint{env_system_name, stdout_id},
-        user_endpoint{},
-    };
-    const auto custom = system::custom{
-        .subsystems = {{
-            system_name{"env-system"},
-            flow::system{
-                system::executable{"/usr/bin/env"},
-                {stdout_descriptors_entry},
-                {{"base", "derived value"}}
-            }
-        }},
-        .connections = {env_out},
-    };
-    flow::system base;
-    base.environment = {{"base", "base value"}};
-    base.info = custom;
-    {
-        auto diags = ext::temporary_fstream();
-        auto object = instantiate(system_name{}, base, diags, get_environ());
-        for (auto&& wait_result: wait(system_name{}, object)) {
-            std::cerr << "wait-result: " << wait_result << "\n";
-        }
-        if (const auto pipe = find_channel<pipe_channel>(custom, object,
-                                                         env_out)) {
-            read(*pipe, std::ostream_iterator<char>(std::cerr));
-        }
-    }
-}
-
 }
 
 auto main(int argc, const char * argv[]) -> int
@@ -249,6 +214,5 @@ auto main(int argc, const char * argv[]) -> int
     set_signal_handler(signal::terminate);
     do_lsof_system();
     do_nested_system();
-    do_env_system();
     return 0;
 }
