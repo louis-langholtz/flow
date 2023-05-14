@@ -217,7 +217,8 @@ TEST(instantiate, ls_system)
         EXPECT_EQ(waited, 2);
         if (xargs_stdout_pipe) {
             os.clear();
-            read(*xargs_stdout_pipe, std::ostream_iterator<char>(os));
+            EXPECT_NO_THROW(read(*xargs_stdout_pipe,
+                                 std::ostream_iterator<char>(os)));
             const auto result = os.str();
             EXPECT_FALSE(empty(result));
         }
