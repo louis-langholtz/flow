@@ -9,6 +9,11 @@ namespace flow {
 
 namespace {
 
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
 auto find(const system_name& name, instance& object,
           const reference_process_id& pid)
     -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
@@ -36,33 +41,23 @@ auto handle(const system_name& name, instance& instance,
 {
     static const auto unknown_name = system_name{"unknown"};
     const auto entry = find(name, instance, info.id);
-    using status_enum = wait_result::info_t::status_enum;
-    switch (status_enum(info.status.index())) {
-    case wait_result::info_t::unknown:
-        break;
-    case wait_result::info_t::exit: {
-        const auto status = std::get<wait_exit_status>(info.status);
-        if (entry) {
-            (std::get<instance::forked>(entry->second.info)).state =
-                wait_status(status);
-        }
-        break;
-    }
-    case wait_result::info_t::signaled: {
-        const auto status = std::get<wait_signaled_status>(info.status);
-        if (entry) {
-            (std::get<instance::forked>(entry->second.info)).state =
-                wait_status(status);
-        }
-        break;
-    }
-    case wait_result::info_t::stopped: {
-        return false;
-    }
-    case wait_result::info_t::continued: {
-        return false;
-    }
-    }
+    std::visit(overloaded{
+        [](const wait_unknown_status&) {},
+        [&entry](const wait_exit_status& arg) {
+            if (entry) {
+                (std::get<instance::forked>(entry->second.info)).state =
+                    wait_status{arg};
+            }
+        },
+        [&entry](const wait_signaled_status& arg) {
+            if (entry) {
+                (std::get<instance::forked>(entry->second.info)).state =
+                    wait_status{arg};
+            }
+        },
+        [](const wait_stopped_status&){},
+        [](const wait_continued_status&){},
+    }, info.status);
     return true;
 }
 
