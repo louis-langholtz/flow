@@ -20,8 +20,6 @@ namespace {
 
 using namespace flow;
 
-constexpr auto no_such_path = "/fee/fii/foo/fum";
-
 /// @brief Finds the channel requested.
 /// @return Pointer to channel of the type requested or <code>nullptr</code>.
 template <std::convertible_to<channel> T>
