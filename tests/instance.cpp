@@ -144,6 +144,10 @@ TEST(instance, ls_system)
         EXPECT_TRUE(std::holds_alternative<flow::instance::custom>(object.info));
         auto cat_stdin_pipe = static_cast<flow::pipe_channel*>(nullptr);
         auto xargs_stdout_pipe = static_cast<flow::pipe_channel*>(nullptr);
+        auto cat_info = static_cast<flow::instance::forked*>(nullptr);
+        auto xargs_info = static_cast<flow::instance::forked*>(nullptr);
+        auto cat_pid = flow::no_process_id;
+        auto xargs_pid = flow::no_process_id;
         if (const auto p = std::get_if<flow::instance::custom>(&object.info)) {
             EXPECT_EQ(size(p->channels), 5u);
             if (size(p->channels) == 5u) {
@@ -152,10 +156,27 @@ TEST(instance, ls_system)
             }
             EXPECT_EQ(size(p->children), 2u);
             if (size(p->children) == 2u) {
+                if (const auto f = p->children.find(cat_process_name); f != p->children.end()) {
+                    cat_info = std::get_if<flow::instance::forked>(&(f->second.info));
+                }
+                if (const auto f = p->children.find(xargs_process_name); f != p->children.end()) {
+                    xargs_info = std::get_if<flow::instance::forked>(&(f->second.info));
+                }
                 EXPECT_EQ(p->children.count(cat_process_name), 1u);
                 EXPECT_EQ(p->children.count(xargs_process_name), 1u);
             }
         }
+        if (cat_info) {
+            if (const auto p = std::get_if<flow::owning_process_id>(&(cat_info->state))) {
+                cat_pid = flow::reference_process_id(*p);
+            }
+        }
+        if (xargs_info) {
+            if (const auto p = std::get_if<flow::owning_process_id>(&(xargs_info->state))) {
+                xargs_pid = flow::reference_process_id(*p);
+            }
+        }
+        EXPECT_NE(cat_pid, flow::no_process_id);
         EXPECT_NE(cat_stdin_pipe, nullptr);
         EXPECT_NE(xargs_stdout_pipe, nullptr);
         if (cat_stdin_pipe) {
@@ -166,6 +187,13 @@ TEST(instance, ls_system)
             EXPECT_EQ(wait_result.type(), flow::wait_result::has_info);
             if (wait_result.holds_info()) {
                 const auto& info = wait_result.info();
+                EXPECT_TRUE(info.id == cat_pid || info.id == xargs_pid);
+                if (info.id == cat_pid) {
+                    EXPECT_TRUE(std::holds_alternative<flow::wait_signaled_status>(info.status));
+                }
+                else if (info.id == xargs_pid) {
+                    EXPECT_TRUE(std::holds_alternative<flow::wait_exit_status>(info.status));
+                }
                 if (const auto p = std::get_if<flow::wait_exit_status>(&info.status)) {
                     EXPECT_EQ(p->value, 1); // because no_such_path used
                 }
