@@ -14,6 +14,7 @@ constexpr auto no_such_path = "/fee/fii/foo/fum";
 }
 
 using namespace flow;
+using namespace flow::descriptors;
 
 TEST(instance, default_construction)
 {
@@ -227,7 +228,6 @@ TEST(instantiate, ls_system)
 
 TEST(instantiate, ls_outerr_system)
 {
-    using namespace flow::descriptors;
     const auto ls_exe_name = system_name{"ls-exe"};
     const auto ls_exe_sys = system::executable{
         .executable_file = "/bin/ls",
@@ -248,7 +248,7 @@ TEST(instantiate, ls_outerr_system)
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
         auto object = instantiate(system_name{}, custom, diags);
-        auto info = std::get_if<instance::custom>(&object.info);
+        const auto info = std::get_if<instance::custom>(&object.info);
         auto pipe = static_cast<pipe_channel*>(nullptr);
         EXPECT_NE(info, nullptr);
         if (info) {
@@ -280,5 +280,73 @@ TEST(instantiate, ls_outerr_system)
             EXPECT_NE(os.str().find(no_such_path), std::string::npos);
         }
     }
+}
 
+TEST(instantiate, env_system)
+{
+    const auto base_env_name = env_name{"base"};
+    const auto base_env_val = env_value{"base value"};
+    const auto derived_env_val = env_value{"derived value"};
+    const auto env_exe_name = system_name{"env-exe"};
+    const auto env_out = unidirectional_connection{
+        system_endpoint{env_exe_name, stdout_id},
+        user_endpoint{},
+    };
+    const auto env_exe_sys = flow::system{
+        system::executable{"/usr/bin/env"},
+        {stdout_descriptors_entry},
+        {{base_env_name, derived_env_val}}
+    };
+    flow::system base;
+    base.environment = {{base_env_name, base_env_val}};
+    base.info = system::custom{
+        .subsystems = {{env_exe_name, env_exe_sys}},
+        .connections = {env_out},
+    };
+    {
+        std::ostringstream os;
+        auto diags = ext::temporary_fstream();
+        auto object = instance{};
+        EXPECT_NO_THROW(object = instantiate(system_name{}, base, diags,
+                                             get_environ()));
+        EXPECT_FALSE(empty(object.environment));
+        const auto info = std::get_if<instance::custom>(&object.info);
+        EXPECT_NE(info, nullptr);
+        auto pipe = static_cast<pipe_channel*>(nullptr);
+        if (info) {
+            EXPECT_EQ(size(info->channels), 1u);
+            if (size(info->channels) == 1u) {
+                pipe = std::get_if<pipe_channel>(&(info->channels[0]));
+            }
+            EXPECT_EQ(size(info->children), 1u);
+        }
+        const auto pid = get_reference_process_id({env_exe_name}, object);
+        EXPECT_NE(pid, invalid_process_id);
+        const auto expected_wait_result = wait_result{
+            info_wait_result{pid, wait_exit_status{EXIT_SUCCESS}}
+        };
+        for (auto&& result: wait(system_name{}, object)) {
+            EXPECT_EQ(result, expected_wait_result);
+        }
+        EXPECT_NE(pipe, nullptr);
+        if (pipe) {
+            EXPECT_NO_THROW(read(*pipe, std::ostream_iterator<char>(os)));
+        }
+        const auto output = os.str();
+        EXPECT_FALSE(empty(output));
+        const auto base_name = std::string(base_env_name);
+        auto found = output.find(base_name);
+        EXPECT_NE(found, std::string::npos);
+        if (found != std::string::npos) {
+            found += base_name.length();
+            EXPECT_EQ(output.at(found), '=');
+            if (output.at(found) == '=') {
+                ++found;
+            }
+            EXPECT_EQ(output.find(std::string(base_env_val), found),
+                      std::string::npos);
+            EXPECT_NE(output.find(std::string(derived_env_val), found),
+                      std::string::npos);
+        }
+    }
 }
