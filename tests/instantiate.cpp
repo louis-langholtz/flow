@@ -73,7 +73,7 @@ TEST(instantiate, empty_executable)
             EXPECT_EQ(info.diags.tellg(), 58);
             EXPECT_TRUE(info.diags.good());
             info.diags.seekg(0, std::ios_base::beg);
-            os.clear();
+            os.str(std::string());
             std::copy(std::istreambuf_iterator<char>(info.diags),
                       std::istreambuf_iterator<char>(),
                       std::ostream_iterator<char>(os));
@@ -207,11 +207,11 @@ TEST(instantiate, ls_system)
         }
         EXPECT_EQ(waited, 2);
         if (xargs_stdout_pipe) {
-            os.clear();
+            os.str(std::string());
             EXPECT_NO_THROW(read(*xargs_stdout_pipe,
                                  std::ostream_iterator<char>(os)));
             const auto result = os.str();
-            EXPECT_FALSE(empty(result));
+            EXPECT_TRUE(empty(result));
         }
     }
 }
@@ -265,7 +265,7 @@ TEST(instantiate, ls_outerr_system)
         }
         EXPECT_NE(pipe, nullptr);
         if (pipe) {
-            os.clear();
+            os.str(std::string());
             EXPECT_NO_THROW(read(*pipe, std::ostream_iterator<char>(os)));
             EXPECT_NE(os.str().find(no_such_path), std::string::npos);
         }
@@ -337,5 +337,205 @@ TEST(instantiate, env_system)
             EXPECT_NE(output.find(std::string(derived_env_val), found),
                       std::string::npos);
         }
+    }
+}
+
+TEST(instantiate, lsof_system)
+{
+    const auto lsof_name = system_name{"lsof"};
+    const auto lsof_stdout = unidirectional_connection{
+        system_endpoint{lsof_name, stdout_id}, user_endpoint{},
+    };
+
+    flow::system::custom custom;
+    custom.subsystems.emplace(lsof_name, flow::system::executable{
+        .executable_file = "/usr/sbin/lsof",
+        .arguments = {"lsof", "-p", "$$"},
+        .working_directory = "/usr/local",
+    });
+    custom.connections.push_back(unidirectional_connection{
+        file_endpoint::dev_null, system_endpoint{lsof_name, stdin_id},
+    });
+    custom.connections.push_back(lsof_stdout);
+    custom.connections.push_back(unidirectional_connection{
+        system_endpoint{lsof_name, stderr_id}, file_endpoint::dev_null,
+    });
+    {
+        std::stringstream os;
+        auto diags = ext::temporary_fstream();
+        auto object = instantiate(custom, diags);
+        const auto info = std::get_if<instance::custom>(&object.info);
+        auto pipe = static_cast<pipe_channel*>(nullptr);
+        EXPECT_NE(info, nullptr);
+        if (info) {
+            EXPECT_EQ(size(info->channels), 3u);
+            EXPECT_EQ(size(info->children), 1u);
+            if (size(info->channels) == 3u) {
+                EXPECT_NE(std::get_if<file_channel>(&(info->channels[0])),
+                          nullptr);
+                EXPECT_NE(std::get_if<pipe_channel>(&(info->channels[1])),
+                          nullptr);
+                EXPECT_NE(std::get_if<file_channel>(&(info->channels[2])),
+                          nullptr);
+                pipe = std::get_if<pipe_channel>(&(info->channels[1]));
+            }
+        }
+        const auto pid = get_reference_process_id({lsof_name}, object);
+        EXPECT_NE(pid, invalid_process_id);
+        const auto expected_wait_result = wait_result{
+            info_wait_result{pid, wait_exit_status{EXIT_SUCCESS}}
+        };
+        auto waited = 0;
+        for (auto&& result: wait(system_name{}, object)) {
+            EXPECT_EQ(result, expected_wait_result);
+            ++waited;
+        }
+        EXPECT_EQ(waited, 1);
+        if (const auto p = std::get_if<instance::custom>(&object.info)) {
+            const auto ws = get_wait_status(p->children[lsof_name]);
+            EXPECT_EQ(ws, wait_status(wait_exit_status{0}));
+        }
+        EXPECT_NE(pipe, nullptr);
+        if (pipe) {
+            EXPECT_NO_THROW(read(*pipe, std::ostream_iterator<char>(os)));
+        }
+        const auto output = os.str();
+        EXPECT_NE(output, std::string());
+        os.str(std::string());
+        write_diags(system_name{}, object, os);
+        EXPECT_NE(os.str(), std::string());
+    }
+}
+
+TEST(instantiate, nested_system)
+{
+    const auto cat_system_name = system_name{"cat-system"};
+    const auto cat_process_name = system_name{"cat-process"};
+    const auto xargs_system_name = system_name{"xargs-system"};
+    const auto xargs_process_name = system_name{"xargs-process"};
+    system::custom system;
+    {
+        system::custom cat_system;
+        system::executable cat_executable;
+        cat_executable.executable_file = "/bin/cat";
+        cat_system.subsystems.emplace(cat_process_name, cat_executable);
+        cat_system.connections.push_back(unidirectional_connection{
+            system_endpoint{system_name{}, descriptor_id{0}},
+            system_endpoint{cat_process_name, descriptor_id{0}}
+        });
+        cat_system.connections.push_back(unidirectional_connection{
+            system_endpoint{cat_process_name, descriptor_id{1}},
+            system_endpoint{system_name{}, descriptor_id{1}},
+        });
+        cat_system.connections.push_back(unidirectional_connection{
+            system_endpoint{cat_process_name, descriptor_id{2}},
+            system_endpoint{system_name{}, descriptor_id{2}},
+        });
+        system.subsystems.emplace(cat_system_name,
+                                  flow::system{cat_system, std_descriptors});
+    }
+    {
+        system::custom xargs_system;
+        system::executable xargs_executable;
+        xargs_executable.executable_file = "/usr/bin/xargs";
+        xargs_executable.arguments = {"xargs", "ls", "-alF"};
+        xargs_system.subsystems.emplace(xargs_process_name, xargs_executable);
+        xargs_system.connections.push_back(unidirectional_connection{
+            system_endpoint{system_name{}, descriptor_id{0}},
+            system_endpoint{xargs_process_name, descriptor_id{0}}
+        });
+        xargs_system.connections.push_back(unidirectional_connection{
+            system_endpoint{xargs_process_name, descriptor_id{1}},
+            system_endpoint{system_name{}, descriptor_id{1}},
+        });
+        xargs_system.connections.push_back(unidirectional_connection{
+            system_endpoint{xargs_process_name, descriptor_id{2}},
+            system_endpoint{system_name{}, descriptor_id{2}},
+        });
+        system.subsystems.emplace(xargs_system_name,
+                                  flow::system{xargs_system, std_descriptors});
+    }
+    const auto system_stdin = unidirectional_connection{
+        user_endpoint{},
+        system_endpoint{cat_system_name, descriptor_id{0}},
+    };
+    const auto system_stdout = unidirectional_connection{
+        system_endpoint{xargs_system_name, descriptor_id{1}},
+        user_endpoint{},
+    };
+
+    system.connections.push_back(system_stdin);
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{cat_system_name, descriptor_id{1}},
+        system_endpoint{xargs_system_name, descriptor_id{0}},
+    });
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{cat_system_name, descriptor_id{2}},
+        file_endpoint::dev_null,
+    });
+    system.connections.push_back(unidirectional_connection{
+        system_endpoint{xargs_system_name, descriptor_id{2}},
+        file_endpoint::dev_null,
+    });
+    system.connections.push_back(system_stdout);
+    {
+        std::stringstream os;
+        auto diags = ext::temporary_fstream();
+        auto object = instantiate(system, diags);
+        const auto cat_names = {cat_process_name, cat_system_name};
+        const auto cat_pid = get_reference_process_id(cat_names, object);
+        EXPECT_NE(cat_pid, invalid_process_id);
+        const auto xarg_names = {xargs_process_name, xargs_system_name};
+        const auto xargs_pid = get_reference_process_id(xarg_names, object);
+        EXPECT_NE(xargs_pid, invalid_process_id);
+        const auto info = std::get_if<instance::custom>(&object.info);
+        auto in_pipe = static_cast<pipe_channel*>(nullptr);
+        auto out_pipe = static_cast<pipe_channel*>(nullptr);
+        EXPECT_NE(info, nullptr);
+        if (info) {
+            EXPECT_EQ(size(info->channels), 5u);
+            EXPECT_EQ(size(info->children), 2u);
+            if (size(info->channels) == 5u) {
+                EXPECT_NE(std::get_if<pipe_channel>(&(info->channels[0])),
+                          nullptr);
+                EXPECT_NE(std::get_if<pipe_channel>(&(info->channels[1])),
+                          nullptr);
+                EXPECT_NE(std::get_if<file_channel>(&(info->channels[2])),
+                          nullptr);
+                EXPECT_NE(std::get_if<file_channel>(&(info->channels[3])),
+                          nullptr);
+                EXPECT_NE(std::get_if<pipe_channel>(&(info->channels[4])),
+                          nullptr);
+                in_pipe = std::get_if<pipe_channel>(&(info->channels[0]));
+                out_pipe = std::get_if<pipe_channel>(&(info->channels[4]));
+            }
+        }
+        if (in_pipe) {
+            EXPECT_NO_THROW(write(*in_pipe, "/bin\n/sbin"));
+        }
+        for (auto&& result: wait(system_name{}, object)) {
+            std::visit(detail::overloaded{
+                [](auto){
+                    FAIL();
+                },
+                [&](const info_wait_result& arg){
+                    EXPECT_TRUE(arg.id == cat_pid || arg.id == xargs_pid);
+                    EXPECT_EQ(arg.status,
+                              wait_status(wait_exit_status{EXIT_SUCCESS}));
+                }
+            }, result);
+        }
+        if (out_pipe) {
+            EXPECT_NO_THROW(read(*out_pipe, std::ostream_iterator<char>(os)));
+        }
+        const auto output = os.str();
+        EXPECT_NE(output, std::string());
+        std::copy(begin(output), end(output),
+                  std::ostream_iterator<char>(std::cerr));
+        diags.seekg(0);
+        std::copy(std::istreambuf_iterator<char>(diags),
+                  std::istreambuf_iterator<char>(),
+                  std::ostream_iterator<char>(std::cerr));
+        write_diags(system_name{}, object, std::cerr);
     }
 }
