@@ -337,7 +337,7 @@ auto make_child(instance& parent,
 }
 
 auto change_directory(const std::filesystem::path& path, std::ostream& diags)
-    -> bool
+    -> void
 {
     auto ec = std::error_code{};
     std::filesystem::current_path(path, ec);
@@ -347,7 +347,6 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
         diags << "\n";
         exit(exit_failure_code);
     }
-    return true;
 }
 
 auto close_unused_descriptors(const system_name& name,
