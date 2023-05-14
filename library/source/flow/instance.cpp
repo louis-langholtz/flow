@@ -520,8 +520,7 @@ auto fork_executables(const system::custom& system,
     }
 }
 
-auto close_internal_ends(const system_name& name,
-                         const connection& connection,
+auto close_internal_ends(const connection& connection,
                          pipe_channel& channel,
                          std::ostream& diags) -> void
 {
@@ -529,14 +528,14 @@ auto close_internal_ends(const system_name& name,
     const auto ends = make_endpoints<system_endpoint>(connection);
     if (ends[0] && (ends[0]->address != system_name{})) {
         const auto pio = pipe_channel::io::write;
-        diags << "parent '" << name << "': closing ";
+        diags << "parent: closing ";
         diags << std::setw(iowidth) << pio << " side of ";
         diags << connection << " " << channel << "\n";
         channel.close(pio, diags);
     }
     if (ends[1] && (ends[1]->address != system_name{})) {
         const auto pio = pipe_channel::io::read;
-        diags << "parent '" << name << "': closing ";
+        diags << "parent: closing ";
         diags << std::setw(iowidth) << pio << " side of ";
         diags << connection << " " << channel << "\n";
         channel.close(pio, diags);
@@ -689,8 +688,7 @@ auto get_wait_status(const instance& object) -> wait_status
     return {wait_unknown_status{}};
 }
 
-auto instantiate(const system_name& name,
-                 const system& system,
+auto instantiate(const system& system,
                  std::ostream& diags,
                  environment_map env)
     -> instance
@@ -706,7 +704,7 @@ auto instantiate(const system_name& name,
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();
         auto pgrp = no_process_id;
-        fork_child(name, *p, result, pgrp, {}, {}, result, diags);
+        fork_child({}, *p, result, pgrp, {}, {}, result, diags);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
         confirm_closed({}, system.descriptors, p->connections);
@@ -720,7 +718,7 @@ auto instantiate(const system_name& name,
         }
         info.channels.reserve(size(p->connections));
         for (auto&& connection: p->connections) {
-            info.channels.push_back(make_channel(name, system, connection,
+            info.channels.push_back(make_channel({}, system, connection,
                                                  {}, {}));
         }
         // Create all the subsystem instances before forking any!
@@ -738,7 +736,7 @@ auto instantiate(const system_name& name,
             auto& channel = info.channels[i];
             const auto& connection = p->connections[i];
             if (const auto q = std::get_if<pipe_channel>(&channel)) {
-                close_internal_ends(name, connection, *q, diags);
+                close_internal_ends(connection, *q, diags);
                 continue;
             }
         }
