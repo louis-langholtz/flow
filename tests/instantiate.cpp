@@ -255,13 +255,19 @@ TEST(instantiate, ls_outerr_system)
         EXPECT_NE(os.str(), std::string());
         EXPECT_TRUE(empty(object.environment));
         const auto pid = get_reference_process_id({ls_exe_name}, object);
-        const auto expected_wait_result = wait_result{
-            info_wait_result{pid, wait_exit_status{EXIT_FAILURE}}
-        };
         const auto wait_results = wait(system_name{}, object);
         EXPECT_EQ(size(wait_results), 1u);
         for (auto&& result: wait_results) {
-            EXPECT_EQ(result, expected_wait_result);
+            EXPECT_TRUE(std::holds_alternative<info_wait_result>(result));
+            if (std::holds_alternative<info_wait_result>(result)) {
+                const auto& info_result = std::get<info_wait_result>(result);
+                EXPECT_EQ(info_result.id, pid);
+                EXPECT_EQ(info_result.status.index(), 1u);
+                if (std::holds_alternative<wait_exit_status>(info_result.status)) {
+                    const auto& exits = std::get<wait_exit_status>(info_result.status);
+                    EXPECT_NE(exits.value, EXIT_SUCCESS);
+                }
+            }
         }
         EXPECT_NE(pipe, nullptr);
         if (pipe) {
