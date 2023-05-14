@@ -9,11 +9,6 @@ namespace flow {
 
 namespace {
 
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
-
 auto find(const system_name& name, instance& object,
           const reference_process_id& pid)
     -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
@@ -37,11 +32,11 @@ auto find(const system_name& name, instance& object,
 }
 
 auto handle(const system_name& name, instance& instance,
-            const wait_result::info_t& info) -> bool
+            const info_wait_result& info) -> bool
 {
     static const auto unknown_name = system_name{"unknown"};
     const auto entry = find(name, instance, info.id);
-    std::visit(overloaded{
+    std::visit(detail::overloaded{
         [](const wait_unknown_status&) {},
         [&entry](const wait_exit_status& arg) {
             if (entry) {
@@ -64,44 +59,39 @@ auto handle(const system_name& name, instance& instance,
 auto handle(const system_name& name, instance& instance,
             const wait_result& result) -> bool
 {
-    switch (result.type()) {
-    case wait_result::no_children:
-        return false;
-    case wait_result::has_error:
-        return true;
-    case wait_result::has_info:
-        return handle(name, instance, result.info());
-    }
-    return true;
+    return std::visit(detail::overloaded{
+        [](const nokids_wait_result&){
+            return false;
+        },
+        [](const error_wait_result&){
+            return true;
+        },
+        [&name,&instance](const info_wait_result& arg){
+            return handle(name, instance, arg);
+        },
+    }, result);
 }
 
 }
 
-auto operator<<(std::ostream& os, const wait_result::no_kids_t&)
+auto operator<<(std::ostream& os, const nokids_wait_result&)
     -> std::ostream&
 {
     os << "no child processes to wait for";
     return os;
 }
 
-auto operator<<(std::ostream& os, const wait_result::info_t& value)
+auto operator<<(std::ostream& os, const error_wait_result& arg)
     -> std::ostream&
 {
-    os << value.id << ", " << value.status;
+    os << arg.data;
     return os;
 }
 
-auto operator<<(std::ostream& os, const wait_result& value) -> std::ostream&
+auto operator<<(std::ostream& os, const info_wait_result& arg)
+    -> std::ostream&
 {
-    if (value.holds_no_kids()) {
-        os << value.no_kids();
-    }
-    else if (value.holds_error()) {
-        os << value.error();
-    }
-    else if (value.holds_info()) {
-        os << value.info();
-    }
+    os << arg.id << ", " << arg.status;
     return os;
 }
 
@@ -129,32 +119,32 @@ auto wait(reference_process_id id, wait_option flags) noexcept
         //setitimer(ITIMER_REAL, &old_timer, nullptr);
     } while ((pid == -1) && (err == EINTR));
     if ((pid == -1) && (err == ECHILD)) {
-        return wait_result::no_kids_t{};
+        return nokids_wait_result{};
     }
     if (pid == -1) {
-        return wait_result::error_t(err);
+        return error_wait_result{os_error_code(err)};
     }
     if (WIFEXITED(status)) {
         // process terminated normally
-        return wait_result::info_t{reference_process_id{pid},
+        return info_wait_result{reference_process_id{pid},
             wait_exit_status{WEXITSTATUS(status)}};
     }
     if (WIFSIGNALED(status)) {
         // process terminated due to signal
-        return wait_result::info_t{reference_process_id{pid},
+        return info_wait_result{reference_process_id{pid},
             wait_signaled_status{WTERMSIG(status), WCOREDUMP(status) != 0}};
     }
     if (WIFSTOPPED(status)) {
         // process not terminated, but stopped and can be restarted
-        return wait_result::info_t{reference_process_id{pid},
+        return info_wait_result{reference_process_id{pid},
             wait_stopped_status{WSTOPSIG(status)}};
     }
     if (WIFCONTINUED(status)) {
         // process was resumed
-        return wait_result::info_t{reference_process_id{pid},
+        return info_wait_result{reference_process_id{pid},
             wait_continued_status{}};
     }
-    return wait_result::info_t{reference_process_id{pid}};
+    return info_wait_result{reference_process_id{pid}};
 }
 
 auto wait(const system_name& name, instance& object)
@@ -162,7 +152,7 @@ auto wait(const system_name& name, instance& object)
 {
     auto results = std::vector<wait_result>{};
     auto result = decltype(wait()){};
-    while (bool(result = wait())) {
+    while (!std::holds_alternative<nokids_wait_result>(result = wait())) {
         if (handle(name, object, result)) {
             results.push_back(result);
         }

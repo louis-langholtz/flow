@@ -64,11 +64,11 @@ TEST(instance, instantiate_empty_executable)
             const auto pid = int(state);
             EXPECT_GT(pid, 0);
             const auto result = state.wait();
-            EXPECT_EQ(result.type(), flow::wait_result::has_info);
+            EXPECT_TRUE(std::holds_alternative<flow::info_wait_result>(result));
             EXPECT_EQ(flow::invalid_process_id,
                       flow::reference_process_id(state));
-            if (result.holds_info()) {
-                const auto info = result.info();
+            if (std::holds_alternative<flow::info_wait_result>(result)) {
+                const auto info = std::get<flow::info_wait_result>(result);
                 EXPECT_EQ(flow::reference_process_id(pid), info.id);
                 EXPECT_TRUE(std::holds_alternative<flow::wait_exit_status>(info.status));
                 if (const auto p = std::get_if<flow::wait_exit_status>(&info.status)) {
@@ -183,10 +183,10 @@ TEST(instance, ls_system)
             EXPECT_NO_THROW(write(*cat_stdin_pipe, "/bin\n/sbin"));
         }
         auto waited = 0;
-        for (auto&& wait_result: wait(flow::system_name{}, object)) {
-            EXPECT_EQ(wait_result.type(), flow::wait_result::has_info);
-            if (wait_result.holds_info()) {
-                const auto& info = wait_result.info();
+        for (auto&& result: wait(flow::system_name{}, object)) {
+            EXPECT_TRUE(std::holds_alternative<flow::info_wait_result>(result));
+            if (std::holds_alternative<flow::info_wait_result>(result)) {
+                const auto& info = std::get<flow::info_wait_result>(result);
                 EXPECT_TRUE(info.id == cat_pid || info.id == xargs_pid);
                 if (info.id == cat_pid) {
                     // Maybe there's a race between cat & xargs where if xargs

@@ -73,8 +73,8 @@ auto do_lsof_system() -> void
                       std::ostream_iterator<char>(std::cerr));
             pretty_print(std::cerr, object);
         }
-        for (auto&& wait_result: wait(system_name{}, object)) {
-            std::cerr << "wait-result: " << wait_result << "\n";
+        for (auto&& result: wait(system_name{}, object)) {
+            std::cerr << "wait-result: " << result << "\n";
         }
         if (const auto p = std::get_if<instance::custom>(&object.info)) {
             const auto ws = get_wait_status(p->children[lsof_name]);
@@ -264,7 +264,7 @@ auto do_ls_outerr_system() -> void
         const auto pid = get_reference_process_id({system_name{"ls-exe"}},
                                                   object);
         const auto expected_wait_result = wait_result{
-            wait_result::info_t{pid, wait_exit_status{1}}
+            info_wait_result{pid, wait_exit_status{1}}
         };
         const auto wait_results = wait(system_name{}, object);
         if (size(wait_results) != 1u) {

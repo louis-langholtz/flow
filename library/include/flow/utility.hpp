@@ -17,6 +17,13 @@
 
 namespace flow {
 
+namespace detail {
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+}
+
 struct file_endpoint;
 struct instance;
 struct system_name;

@@ -6,10 +6,9 @@
 
 #include "flow/instance.hpp"
 #include "flow/system.hpp"
+#include "flow/wait_result.hpp"
 
 namespace flow {
-
-struct wait_result;
 
 struct system_pipeline
 {

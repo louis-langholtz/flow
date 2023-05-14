@@ -6,6 +6,7 @@
 #include <utility> // for std::exchange
 
 #include "flow/owning_process_id.hpp"
+#include "flow/utility.hpp"
 
 namespace flow {
 
@@ -39,24 +40,24 @@ auto owning_process_id::operator=(owning_process_id&& other) noexcept
 auto owning_process_id::wait(wait_option flags) noexcept -> wait_result
 {
     const auto result = flow::wait(pid, flags);
-    switch (result.type()) {
-    case wait_result::has_error:
-        return result;
-    case wait_result::no_children:
-        pid = default_process_id;
-        break;
-    case wait_result::has_info: {
-        const auto info = result.info();
-        if (info.id == pid) {
-            if (std::holds_alternative<wait_exit_status>(info.status)) {
+    assert(!result.valueless_by_exception());
+    try {
+        std::visit(detail::overloaded{
+            [](auto) noexcept {},
+            [this](const nokids_wait_result&) noexcept {
                 pid = default_process_id;
-            }
-            else if (std::holds_alternative<wait_signaled_status>(info.status)) {
-                pid = default_process_id;
-            }
-        }
-        break;
+            },
+            [this](const info_wait_result& arg) noexcept {
+                assert(arg.id == pid);
+                if (std::holds_alternative<wait_exit_status>(arg.status) ||
+                    std::holds_alternative<wait_signaled_status>(arg.status)) {
+                    pid = default_process_id;
+                }
+            },
+        }, result);
     }
+    catch (...) {
+        // Intentionally empty.
     }
     return result;
 }
