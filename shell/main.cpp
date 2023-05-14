@@ -1,6 +1,8 @@
+#include <iomanip> // for std::quoted
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <string> // for std::getline
 #include <string_view>
 #include <type_traits>
 
@@ -20,5 +22,10 @@ auto main(int argc, const char * argv[]) -> int
     using namespace flow;
     set_signal_handler(signal::interrupt);
     set_signal_handler(signal::terminate);
+    std::string word;
+    while (std::cin >> std::quoted(word)) {
+        // TODO: make this into a shell-like application!
+        std::cout << word << "\n";
+    }
     return 0;
 }
