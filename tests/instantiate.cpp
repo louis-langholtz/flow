@@ -405,11 +405,13 @@ TEST(instantiate, lsof_system)
         if (pipe) {
             EXPECT_NO_THROW(read(*pipe, std::ostream_iterator<char>(os)));
         }
-        const auto output = os.str();
-        EXPECT_NE(output, std::string());
+        const auto pipe_output = os.str();
+        EXPECT_NE(pipe_output, std::string());
         os.str(std::string());
         write_diags(system_name{}, object, os);
-        EXPECT_NE(os.str(), std::string());
+        const auto diags_output = os.str();
+        EXPECT_NE(diags_output, std::string());
+        std::cerr << diags_output;
     }
 }
 
