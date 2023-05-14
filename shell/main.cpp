@@ -93,89 +93,6 @@ auto do_lsof_system() -> void
     }
 }
 
-auto do_ls_system() -> void
-{
-    std::cerr << "Doing ls instance...\n";
-
-    const auto input_file_endpoint = file_endpoint{"flow.in"};
-
-    const auto output_file_endpoint = file_endpoint{"flow.out"};
-    touch(output_file_endpoint);
-    std::cerr << "running in " << std::filesystem::current_path() << '\n';
-
-    system::custom system;
-
-    const auto cat_process_name = system_name{"cat"};
-    system::executable cat_executable;
-    cat_executable.executable_file = "/bin/cat";
-    system.subsystems.emplace(cat_process_name, cat_executable);
-
-    const auto xargs_process_name = system_name{"xargs"};
-    system::executable xargs_executable;
-    xargs_executable.executable_file = "/usr/bin/xargs";
-    xargs_executable.working_directory = no_such_path;
-    xargs_executable.arguments = {"xargs", "ls", "-alF"};
-    system.subsystems.emplace(xargs_process_name, xargs_executable);
-
-    const auto cat_stdin = unidirectional_connection{
-        user_endpoint{},
-        system_endpoint{cat_process_name, descriptor_id{0}}
-    };
-    const auto xargs_stdout = unidirectional_connection{
-        system_endpoint{xargs_process_name, descriptor_id{1}},
-        user_endpoint{},
-    };
-    system.connections.push_back(cat_stdin);
-    system.connections.push_back(unidirectional_connection{
-        system_endpoint{cat_process_name, descriptor_id{1}},
-        system_endpoint{xargs_process_name, descriptor_id{0}},
-    });
-    system.connections.push_back(unidirectional_connection{
-        system_endpoint{cat_process_name, descriptor_id{2}},
-        file_endpoint::dev_null,
-    });
-    system.connections.push_back(xargs_stdout);
-    system.connections.push_back(unidirectional_connection{
-        system_endpoint{xargs_process_name, descriptor_id{2}},
-        file_endpoint::dev_null,
-    });
-
-    {
-        auto diags = ext::temporary_fstream();
-        auto object = instantiate(system_name{}, system, diags);
-        std::cerr << "Diagnostics for root instance...\n";
-        diags.seekg(0);
-        std::copy(std::istreambuf_iterator<char>(diags),
-                  std::istreambuf_iterator<char>(),
-                  std::ostream_iterator<char>(std::cerr));
-        if (const auto pipe = find_channel<pipe_channel>(system, object,
-                                                         cat_stdin)) {
-            write(*pipe, "/bin\n/sbin");
-        }
-        else {
-            std::cerr << "no pipe for cat_stdin?!\n";
-        }
-        const auto outpipe = find_channel<pipe_channel>(system, object,
-                                                        xargs_stdout);
-        if (!outpipe) {
-            std::cerr << "no pipe for xargs_stdout?!\n";
-        }
-        for (auto&& wait_result: wait(system_name{}, object)) {
-            std::cerr << "wait-result: " << wait_result << "\n";
-        }
-        if (outpipe) {
-            read(*outpipe, std::ostream_iterator<char>(std::cerr));
-        }
-
-        write_diags(system_name{}, object, std::cerr);
-        std::cerr << "system ran: ";
-        std::cerr << ", children[";
-        std::cerr << size(std::get<instance::custom>(object.info).children);
-        std::cerr << "]";
-        std::cerr << "\n";
-    }
-}
-
 auto do_nested_system() -> void
 {
     std::cerr << "Doing nested instance...\n";
@@ -386,7 +303,6 @@ auto main(int argc, const char * argv[]) -> int
     set_signal_handler(signal::interrupt);
     set_signal_handler(signal::terminate);
     do_lsof_system();
-    do_ls_system();
     do_nested_system();
     do_env_system();
     do_ls_outerr_system();

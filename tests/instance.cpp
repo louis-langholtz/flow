@@ -190,19 +190,19 @@ TEST(instance, ls_system)
                 EXPECT_TRUE(info.id == cat_pid || info.id == xargs_pid);
                 if (info.id == cat_pid) {
                     EXPECT_TRUE(std::holds_alternative<flow::wait_signaled_status>(info.status));
+                    if (const auto p = std::get_if<flow::wait_signaled_status>(&info.status)) {
+                        EXPECT_EQ(p->signal, SIGPIPE);
+                        EXPECT_FALSE(p->core_dumped);
+                    }
                 }
                 else if (info.id == xargs_pid) {
                     EXPECT_TRUE(std::holds_alternative<flow::wait_exit_status>(info.status));
-                }
-                if (const auto p = std::get_if<flow::wait_exit_status>(&info.status)) {
-                    EXPECT_EQ(p->value, 1); // because no_such_path used
-                }
-                else if (const auto p = std::get_if<flow::wait_signaled_status>(&info.status)) {
-                    EXPECT_EQ(p->signal, SIGPIPE);
-                    EXPECT_FALSE(p->core_dumped);
+                    if (const auto p = std::get_if<flow::wait_exit_status>(&info.status)) {
+                        EXPECT_EQ(p->value, 1); // because no_such_path used
+                    }
                 }
                 else {
-                    EXPECT_EQ(info.status.index(), 0);
+                    FAIL(); // unknown pid
                 }
             }
             ++waited;
