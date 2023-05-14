@@ -20,10 +20,20 @@
 namespace flow {
 
 /// @brief Instance of a <code>system</code>.
+/// @note This type is intended to be moveable, but not copyable.
+///   Relatedly, it's not intended to support any kind of comparison.
+///   This alleviates all component types from having to be copyable or
+///   having to support comparison.
+/// @see system.
 struct instance
 {
+    /// @brief Information specific to "custom" instances.
+    /// @note Instantiating a custom system, should result in a custom instance.
+    /// @see system::custom.
     struct custom
     {
+        static constexpr auto default_pgrp = no_process_id;
+
         /// @brief Default constructor.
         /// @note This ensures C++ sees this class as default constructable.
         custom() noexcept {}; // NOLINT(modernize-use-equals-default)
@@ -34,9 +44,13 @@ struct instance
         /// @brief Channels made for this instance.
         std::vector<channel> channels;
 
-        reference_process_id pgrp{no_process_id};
+        reference_process_id pgrp{default_pgrp};
     };
 
+    /// @brief Information specific to "forked" instances.
+    /// @note Instantiating an executable system, should result in a forked
+    ///   instance.
+    /// @see system::executable.
     struct forked
     {
         /// @brief Diagnostics stream.

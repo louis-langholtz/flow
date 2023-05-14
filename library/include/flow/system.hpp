@@ -17,6 +17,12 @@
 
 namespace flow {
 
+/// @brief Recursive structure for defining systems.
+/// @note Systems can be instantiated through calls to <code>instantiate</code>
+///   into instances of the <code>instance</code> type.
+/// @note This type is intended to be moveable, copyable, and equality
+///   comparable.
+/// @see instantiate, instance.
 struct system
 {
     struct custom
@@ -64,6 +70,29 @@ static_assert(std::is_copy_constructible_v<system>);
 static_assert(std::is_move_constructible_v<system>);
 static_assert(std::is_copy_assignable_v<system>);
 static_assert(std::is_move_assignable_v<system>);
+
+inline auto operator==(const system::custom& lhs,
+                       const system::custom& rhs) noexcept -> bool
+{
+    return (lhs.subsystems == rhs.subsystems)
+        && (lhs.connections == rhs.connections);
+}
+
+inline auto operator==(const system::executable& lhs,
+                       const system::executable& rhs) noexcept -> bool
+{
+    return (lhs.executable_file == rhs.executable_file)
+        && (lhs.arguments == rhs.arguments)
+        && (lhs.working_directory == rhs.working_directory);
+}
+
+inline auto operator==(const system& lhs,
+                       const system& rhs) noexcept -> bool
+{
+    return (lhs.descriptors == rhs.descriptors)
+        && (lhs.environment == rhs.environment)
+        && (lhs.info == rhs.info);
+}
 
 auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&;
