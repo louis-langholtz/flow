@@ -21,7 +21,6 @@ struct wait_result {
     using error_t = os_error_code;
 
     struct info_t {
-        enum status_enum: unsigned {unknown, exit, signaled, stopped, continued};
         reference_process_id id{invalid_process_id};
         wait_status status{wait_unknown_status{}};
     };
