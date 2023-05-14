@@ -112,7 +112,7 @@ auto system_pipeline::instantiate() -> system_pipeline&
         throw std::logic_error{"run only supported during setup"};
     }
     diags = ext::temporary_fstream();
-    object = flow::instantiate({}, info, diags);
+    object = flow::instantiate(info, diags);
     current_state = state::instantiated;
     return *this;
 }

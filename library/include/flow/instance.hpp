@@ -76,8 +76,8 @@ auto get_wait_status(const instance& object) -> wait_status;
 
 struct system;
 
-auto instantiate(const system_name& name, const system& sys,
-                 std::ostream& diags, environment_map env = {})
+auto instantiate(const system& sys, std::ostream& diags,
+                 environment_map env = {})
     -> instance;
 
 }

@@ -26,8 +26,7 @@ TEST(instance, default_construction)
 TEST(instantiate, default_custom)
 {
     std::ostringstream os;
-    const auto obj = instantiate(system_name{},
-                                 system::custom{}, os);
+    const auto obj = instantiate(system::custom{}, os);
     EXPECT_TRUE(empty(os.str()));
     EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(std::holds_alternative<instance::custom>(obj.info));
@@ -42,8 +41,7 @@ TEST(instantiate, default_custom)
 TEST(instantiate, default_executable)
 {
     std::ostringstream os;
-    EXPECT_THROW(instantiate(system_name{}, system::executable{},
-                             os),
+    EXPECT_THROW(instantiate(system::executable{}, os),
                  std::invalid_argument);
     EXPECT_TRUE(empty(os.str()));
 }
@@ -54,7 +52,7 @@ TEST(instantiate, empty_executable)
         "execve of '' failed: system:2 (No such file or directory)\n";
     const auto sys = flow::system{system::executable{}, {}, {}};
     std::ostringstream os;
-    auto obj = instantiate(system_name{}, sys, os);
+    auto obj = instantiate(sys, os);
     EXPECT_TRUE(empty(os.str()));
     EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(std::holds_alternative<instance::forked>(obj.info));
@@ -138,7 +136,7 @@ TEST(instantiate, ls_system)
     {
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
-        auto object = instantiate(system_name{}, system, diags);
+        auto object = instantiate(system, diags);
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
                   std::istreambuf_iterator<char>(),
@@ -247,7 +245,7 @@ TEST(instantiate, ls_outerr_system)
     {
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
-        auto object = instantiate(system_name{}, custom, diags);
+        auto object = instantiate(custom, diags);
         const auto info = std::get_if<instance::custom>(&object.info);
         auto pipe = static_cast<pipe_channel*>(nullptr);
         EXPECT_NE(info, nullptr);
@@ -307,8 +305,7 @@ TEST(instantiate, env_system)
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
         auto object = instance{};
-        EXPECT_NO_THROW(object = instantiate(system_name{}, base, diags,
-                                             get_environ()));
+        EXPECT_NO_THROW(object = instantiate(base, diags, get_environ()));
         EXPECT_FALSE(empty(object.environment));
         const auto info = std::get_if<instance::custom>(&object.info);
         EXPECT_NE(info, nullptr);

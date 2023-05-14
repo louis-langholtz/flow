@@ -61,7 +61,7 @@ auto do_lsof_system() -> void
     });
     {
         auto diags = ext::temporary_fstream();
-        auto object = instantiate(system_name{}, custom, diags);
+        auto object = instantiate(custom, diags);
         {
             std::cerr << "Diagnostics for instantiation of lsof...\n";
             diags.seekg(0);
@@ -171,7 +171,7 @@ auto do_nested_system() -> void
 
     {
         auto diags = ext::temporary_fstream();
-        auto object = instantiate(system_name{}, system, diags);
+        auto object = instantiate(system, diags);
         std::cerr << "Diagnostics for nested instance...\n";
         diags.seekg(0);
         std::copy(std::istreambuf_iterator<char>(diags),
