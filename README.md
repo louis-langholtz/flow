@@ -20,6 +20,8 @@ Additionally, it has benefits that are more attractive than ever, like:
 
 ## Status
 
+[![linux](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml/badge.svg)](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml)
+
 This is just a work in progress at the moment.
 
 ## Requirements
