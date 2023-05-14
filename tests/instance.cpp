@@ -180,7 +180,7 @@ TEST(instance, ls_system)
         EXPECT_NE(cat_stdin_pipe, nullptr);
         EXPECT_NE(xargs_stdout_pipe, nullptr);
         if (cat_stdin_pipe) {
-            write(*cat_stdin_pipe, "/bin\n/sbin");
+            EXPECT_NO_THROW(write(*cat_stdin_pipe, "/bin\n/sbin"));
         }
         auto waited = 0;
         for (auto&& wait_result: wait(flow::system_name{}, object)) {
@@ -189,10 +189,15 @@ TEST(instance, ls_system)
                 const auto& info = wait_result.info();
                 EXPECT_TRUE(info.id == cat_pid || info.id == xargs_pid);
                 if (info.id == cat_pid) {
-                    EXPECT_TRUE(std::holds_alternative<flow::wait_signaled_status>(info.status));
+                    // Maybe there's a race between cat & xargs where if xargs
+                    // exits before cat outputs, then cat gets SIGPIPE, else
+                    // exits with status 0?
                     if (const auto p = std::get_if<flow::wait_signaled_status>(&info.status)) {
                         EXPECT_EQ(p->signal, SIGPIPE);
                         EXPECT_FALSE(p->core_dumped);
+                    }
+                    else if (const auto p = std::get_if<flow::wait_exit_status>(&info.status)) {
+                        EXPECT_EQ(p->value, 0);
                     }
                 }
                 else if (info.id == xargs_pid) {
