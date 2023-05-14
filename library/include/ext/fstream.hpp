@@ -415,9 +415,28 @@ inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
     auto new_fp = std::unique_ptr<FILE, fcloser>{};
     if (mode & tmpfile) {
 #if defined(O_TMPFILE)
-        // TODO: translate mode to Linux/POSIX open(2) flags plus O_TMPFILE!
-        auto oflags = 0;
-        oflags |= O_TMPFILE;
+        auto oflags = O_TMPFILE;
+        if (mode & (in|out)) {
+            oflags |= O_RDWR;
+        }
+        else if (mode & in) {
+            oflags |= O_RDONLY;
+        }
+        else if (mode & out) {
+            oflags |= O_WRONLY;
+        }
+        if (mode & trunc) {
+            oflags |= O_TRUNC;
+        }
+        if (mode & app) {
+            oflags |= O_APPEND;
+        }
+        if (mode & noreplace) {
+            oflags |= O_EXCL;
+        }
+        if (mode & cloexec) {
+            oflags |= O_CLOEXEC;
+        }
         const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
                                path, oflags, 0666);
 #else
