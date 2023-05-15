@@ -9,7 +9,12 @@ In data-flow systems, instead of instructions or control moving through them
 (like computers are typically thought of as doing),
 the focus is on data moving through them.
 
-See the references section below to find out more about data-flow.
+See the references section below to find out more about data-flow in general.
+
+For the moment at least, the project uses existing POSIX descriptor based file I/O to implement the flow of data,
+and applications using well known descriptors to implement underlying leaf execution units.
+As abstractions, these conveniently fit the data flow model.
+See the [system.hpp](library/include/flow/system.hpp) header file for specifics on how systems can be designed in C++.
 
 ## Why?
 
