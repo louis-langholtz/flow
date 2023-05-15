@@ -309,6 +309,13 @@ auto make_child(instance& parent,
         result.environment[entry.first] = entry.second;
     }
     if (const auto p = std::get_if<system::executable>(&system.info)) {
+        if (p->executable_file.empty()) {
+            std::ostringstream os;
+            os << "cannot instantiate executable system '";
+            os << name;
+            os << "': no executable file specified - it's empty";
+            throw std::invalid_argument{os.str()};
+        }
         instance::forked info;
         info.diags = ext::temporary_fstream();
         result.info = std::move(info);
@@ -429,8 +436,36 @@ auto setup(instance& root,
     close_pipes_except(root, child);
 }
 
+auto find_file(const std::filesystem::path& file,
+               const env_value& path)
+    -> std::optional<std::filesystem::path>
+{
+    static constexpr auto delimiter = ':';
+    auto ec = std::error_code{};
+    auto last = std::size_t{};
+    auto next = std::size_t{};
+    while ((next = path.get().find(delimiter, last)) != std::string::npos) {
+        const auto dir = path.get().substr(last, next - last);
+        if (!dir.empty()) {
+            const auto full_path = dir / file;
+            if (exists(full_path, ec) && !ec) {
+                return full_path;
+            }
+        }
+        last = next + 1u;
+    }
+    const auto dir = path.get().substr(last);
+    if (!dir.empty()) {
+        const auto full_path = dir / file;
+        if (exists(full_path, ec) && !ec) {
+            return full_path;
+        }
+    }
+    return {};
+}
+
 auto fork_child(const system_name& name,
-                const system::executable& system,
+                const system::executable& exe,
                 instance& child,
                 reference_process_id& pgrp,
                 const std::span<const connection>& connections,
@@ -438,9 +473,30 @@ auto fork_child(const system_name& name,
                 instance& root,
                 std::ostream& diags) -> void
 {
+    auto exe_path = exe.executable_file;
+    if (exe_path.empty()) {
+        diags << "no file specified to execute\n";
+        return;
+    }
+    if (exe_path.is_relative() && !exe_path.has_parent_path()) {
+        auto path_env_value = static_cast<const env_value*>(nullptr);
+        if (const auto it = child.environment.find("PATH");
+            it != child.environment.end()) {
+            path_env_value = &(it->second);
+        }
+        if (!path_env_value) {
+            diags << "no PATH to find file " << exe_path << "\n";
+            return;
+        }
+        const auto found = find_file(exe_path, *path_env_value);
+        if (!found) {
+            diags << "no such file in PATH as " << exe_path << "\n";
+            return;
+        }
+        exe_path = *found;
+    }
     auto& child_info = std::get<instance::forked>(child.info);
-    auto arg_buffers = make_arg_bufs(system.arguments,
-                                     system.executable_file);
+    auto arg_buffers = make_arg_bufs(exe.arguments, exe_path);
     auto env_buffers = make_arg_bufs(child.environment);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
@@ -478,12 +534,11 @@ auto fork_child(const system_name& name,
         setup(root, name, connections, channels, child);
         // NOTE: child.diags streams opened close-on-exec, so no need
         //   to close them.
-        if (!system.working_directory.empty()) {
-            change_directory(system.working_directory, child_info.diags);
+        if (!exe.working_directory.empty()) {
+            change_directory(exe.working_directory, child_info.diags);
         }
         // NOTE: the following does not return!
-        exec_child(system.executable_file, argv.data(), envp.data(),
-                   child_info.diags);
+        exec_child(exe_path, argv.data(), envp.data(), child_info.diags);
     }
     default: // case for the spawning/parent process
         if (pgrp == no_process_id) {
@@ -700,6 +755,9 @@ auto instantiate(const system& system,
     result.environment = std::move(env);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
         confirm_closed({}, system.descriptors, {});
+        if (p->executable_file.empty()) {
+            throw std::invalid_argument{"no executable file - it's empty"};
+        }
         result.info = instance::forked{};
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();

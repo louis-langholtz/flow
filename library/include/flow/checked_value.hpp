@@ -49,6 +49,11 @@ struct checked_value
         return data;
     }
 
+    [[nodiscard]] auto get() const & noexcept -> const value_type&
+    {
+        return data;
+    }
+
 private:
     value_type data;
 };
