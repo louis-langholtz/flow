@@ -10,7 +10,10 @@ namespace flow {
 
 struct env_value_checker
 {
-    auto operator()() const -> std::string
+    static_assert(std::is_nothrow_default_constructible_v<std::string>);
+
+    auto operator()() const noexcept // NOLINT(bugprone-exception-escape)
+        -> std::string
     {
         return {};
     }
@@ -29,13 +32,18 @@ struct env_value_checker
     }
 };
 
+/// @brief Environment variable value strong type.
+/// @note Environment variable values may not contain the null-character ('\0').
+///   This character is invalid.
+/// @throws std::invalid_argument if an attempt is made to construct this type
+///   with one or more invalid characters.
 using env_value = detail::checked_value<std::string, env_value_checker>;
 
-static_assert(std::is_default_constructible_v<env_value>);
+static_assert(std::is_nothrow_default_constructible_v<env_value>);
+static_assert(std::is_nothrow_move_constructible_v<env_value>);
+static_assert(std::is_nothrow_move_assignable_v<env_value>);
 static_assert(std::is_copy_constructible_v<env_value>);
-static_assert(std::is_move_constructible_v<env_value>);
 static_assert(std::is_copy_assignable_v<env_value>);
-static_assert(std::is_move_assignable_v<env_value>);
 
 }
 

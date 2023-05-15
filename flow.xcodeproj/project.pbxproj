@@ -61,6 +61,8 @@
 		99A88D3C2A0FB2B100AFD76F /* instance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D3B2A0FB2B100AFD76F /* instance.cpp */; };
 		99A88D3E2A1003DC00AFD76F /* fstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D3D2A1003DC00AFD76F /* fstream.cpp */; };
 		99A88D402A115E5D00AFD76F /* instantiate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D3F2A115E5D00AFD76F /* instantiate.cpp */; };
+		99A88D422A128CCB00AFD76F /* env_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D412A128CCB00AFD76F /* env_name.cpp */; };
+		99A88D442A12A69D00AFD76F /* env_value.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D432A12A69D00AFD76F /* env_value.cpp */; };
 		99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* system_endpoint.cpp */; };
 		99C1937C29F4D70F00C3F53F /* system_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */; };
 		99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938129F506C200C3F53F /* file_endpoint.cpp */; };
@@ -195,6 +197,8 @@
 		99A88D3B2A0FB2B100AFD76F /* instance.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = instance.cpp; sourceTree = "<group>"; };
 		99A88D3D2A1003DC00AFD76F /* fstream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = fstream.cpp; sourceTree = "<group>"; };
 		99A88D3F2A115E5D00AFD76F /* instantiate.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = instantiate.cpp; sourceTree = "<group>"; };
+		99A88D412A128CCB00AFD76F /* env_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = env_name.cpp; sourceTree = "<group>"; };
+		99A88D432A12A69D00AFD76F /* env_value.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = env_value.cpp; sourceTree = "<group>"; };
 		99C1937929F4D70F00C3F53F /* system_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_endpoint.cpp; sourceTree = "<group>"; };
 		99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
@@ -391,6 +395,8 @@
 		99A88D272A0EF52400AFD76F /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				99A88D412A128CCB00AFD76F /* env_name.cpp */,
+				99A88D432A12A69D00AFD76F /* env_value.cpp */,
 				99A88D3D2A1003DC00AFD76F /* fstream.cpp */,
 				99A88D3B2A0FB2B100AFD76F /* instance.cpp */,
 				99A88D3F2A115E5D00AFD76F /* instantiate.cpp */,
@@ -590,6 +596,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99A88D422A128CCB00AFD76F /* env_name.cpp in Sources */,
+				99A88D442A12A69D00AFD76F /* env_value.cpp in Sources */,
 				99A88D402A115E5D00AFD76F /* instantiate.cpp in Sources */,
 				99A88D3C2A0FB2B100AFD76F /* instance.cpp in Sources */,
 				99A88D3A2A0EF73800AFD76F /* system.cpp in Sources */,
