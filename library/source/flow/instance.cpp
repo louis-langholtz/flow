@@ -309,7 +309,7 @@ auto make_child(instance& parent,
         result.environment[entry.first] = entry.second;
     }
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        if (p->executable_file.empty()) {
+        if (p->file.empty()) {
             std::ostringstream os;
             os << "cannot instantiate executable system '";
             os << name;
@@ -473,7 +473,7 @@ auto fork_child(const system_name& name,
                 instance& root,
                 std::ostream& diags) -> void
 {
-    auto exe_path = exe.executable_file;
+    auto exe_path = exe.file;
     if (exe_path.empty()) {
         diags << "no file specified to execute\n";
         return;
@@ -755,7 +755,7 @@ auto instantiate(const system& system,
     result.environment = std::move(env);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
         confirm_closed({}, system.descriptors, {});
-        if (p->executable_file.empty()) {
+        if (p->file.empty()) {
             throw std::invalid_argument{"no executable file - it's empty"};
         }
         result.info = instance::forked{};

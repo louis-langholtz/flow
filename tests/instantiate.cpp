@@ -55,12 +55,12 @@ TEST(instantiate, ls_system)
 
     const auto cat_process_name = system_name{"cat"};
     system::executable cat_executable;
-    cat_executable.executable_file = "/bin/cat";
+    cat_executable.file = "/bin/cat";
     system.subsystems.emplace(cat_process_name, cat_executable);
 
     const auto xargs_process_name = system_name{"xargs"};
     system::executable xargs_executable;
-    xargs_executable.executable_file = "/usr/bin/xargs";
+    xargs_executable.file = "/usr/bin/xargs";
     xargs_executable.working_directory = no_such_path;
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
     system.subsystems.emplace(xargs_process_name, xargs_executable);
@@ -184,7 +184,7 @@ TEST(instantiate, ls_outerr_system)
 {
     const auto ls_exe_name = system_name{"ls-exe"};
     const auto ls_exe_sys = system::executable{
-        .executable_file = "/bin/ls",
+        .file = "/bin/ls",
         .arguments = {"ls", no_such_path, "/"},
     };
     const auto ls_in = unidirectional_connection{
@@ -319,7 +319,7 @@ TEST(instantiate, lsof_system)
 
     flow::system::custom custom;
     custom.subsystems.emplace(lsof_name, flow::system{flow::system::executable{
-        .executable_file = "lsof",
+        .file = "lsof",
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
     }, std_descriptors, get_environ()});
@@ -389,7 +389,7 @@ TEST(instantiate, nested_system)
     {
         system::custom cat_system;
         system::executable cat_executable;
-        cat_executable.executable_file = "/bin/cat";
+        cat_executable.file = "/bin/cat";
         cat_system.subsystems.emplace(cat_process_name, cat_executable);
         cat_system.connections.push_back(unidirectional_connection{
             system_endpoint{system_name{}, descriptor_id{0}},
@@ -409,7 +409,7 @@ TEST(instantiate, nested_system)
     {
         system::custom xargs_system;
         system::executable xargs_executable;
-        xargs_executable.executable_file = "/usr/bin/xargs";
+        xargs_executable.file = "/usr/bin/xargs";
         xargs_executable.arguments = {"xargs", "ls", "-alF"};
         xargs_system.subsystems.emplace(xargs_process_name, xargs_executable);
         xargs_system.connections.push_back(unidirectional_connection{
