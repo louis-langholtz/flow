@@ -22,7 +22,7 @@ TEST(system_custom, equality)
 TEST(system_executable, default_construction)
 {
     flow::system::executable obj;
-    EXPECT_TRUE(obj.executable_file.empty());
+    EXPECT_TRUE(obj.file.empty());
     EXPECT_TRUE(obj.arguments.empty());
     EXPECT_TRUE(obj.working_directory.empty());
 }
@@ -30,7 +30,7 @@ TEST(system_executable, default_construction)
 TEST(system_executable, equality)
 {
     flow::system::executable obj_a, obj_b;
-    obj_b.executable_file = "/";
+    obj_b.file = "/";
     EXPECT_TRUE(flow::system::executable() == flow::system::executable());
     EXPECT_TRUE(obj_a == flow::system::executable());
     EXPECT_TRUE(flow::system::executable() == obj_a);
@@ -77,7 +77,7 @@ TEST(system, executable_construction)
     EXPECT_TRUE(std::holds_alternative<flow::system::executable>(obj.info));
     if (std::holds_alternative<flow::system::executable>(obj.info)) {
         const auto& info = std::get<flow::system::executable>(obj.info);
-        EXPECT_TRUE(info.executable_file.empty());
+        EXPECT_TRUE(info.file.empty());
         EXPECT_TRUE(empty(info.arguments));
         EXPECT_TRUE(info.working_directory.empty());
     }

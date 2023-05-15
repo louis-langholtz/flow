@@ -33,7 +33,7 @@ struct system
 
     struct executable
     {
-        std::filesystem::path executable_file;
+        std::filesystem::path file;
         std::vector<std::string> arguments;
         std::filesystem::path working_directory;
     };
@@ -81,7 +81,7 @@ inline auto operator==(const system::custom& lhs,
 inline auto operator==(const system::executable& lhs,
                        const system::executable& rhs) noexcept -> bool
 {
-    return (lhs.executable_file == rhs.executable_file)
+    return (lhs.file == rhs.file)
         && (lhs.arguments == rhs.arguments)
         && (lhs.working_directory == rhs.working_directory);
 }

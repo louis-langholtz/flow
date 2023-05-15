@@ -12,7 +12,7 @@ auto operator<<(std::ostream& os, const system& value)
     os << ".info=";
     if (const auto p = std::get_if<system::executable>(&(value.info))) {
         os << "executable_info{";
-        os << ".path=" << p->executable_file;
+        os << ".path=" << p->file;
         os << ",.working_directory=" << p->working_directory;
         os << "}";
     }
