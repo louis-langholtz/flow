@@ -39,47 +39,11 @@ TEST(instantiate, default_executable)
 
 TEST(instantiate, empty_executable)
 {
-    const auto expected_msg =
-        "execve of '' failed: system:2 (No such file or directory)\n";
     const auto sys = flow::system{system::executable{}, {}, {}};
     std::ostringstream os;
-    auto obj = instantiate(sys, os);
+    auto obj = instance{};
+    EXPECT_THROW(obj = instantiate(sys, os), std::invalid_argument);
     EXPECT_TRUE(empty(os.str()));
-    EXPECT_TRUE(empty(obj.environment));
-    EXPECT_TRUE(std::holds_alternative<instance::forked>(obj.info));
-    if (std::holds_alternative<instance::forked>(obj.info)) {
-        auto& info = std::get<instance::forked>(obj.info);
-        EXPECT_TRUE(info.diags.is_open());
-        EXPECT_TRUE(info.diags.good());
-        EXPECT_TRUE(std::holds_alternative<owning_process_id>(info.state));
-        if (std::holds_alternative<owning_process_id>(info.state)) {
-            auto& state = std::get<owning_process_id>(info.state);
-            const auto pid = int(state);
-            EXPECT_GT(pid, 0);
-            const auto result = state.wait();
-            EXPECT_TRUE(std::holds_alternative<info_wait_result>(result));
-            EXPECT_EQ(invalid_process_id,
-                      reference_process_id(state));
-            if (std::holds_alternative<info_wait_result>(result)) {
-                const auto info = std::get<info_wait_result>(result);
-                EXPECT_EQ(reference_process_id(pid), info.id);
-                EXPECT_TRUE(std::holds_alternative<wait_exit_status>(info.status));
-                if (const auto p = std::get_if<wait_exit_status>(&info.status)) {
-                    EXPECT_EQ(p->value, 1);
-                }
-            }
-            info.diags.seekg(0, std::ios_base::end);
-            EXPECT_TRUE(info.diags.good());
-            EXPECT_EQ(info.diags.tellg(), 58);
-            EXPECT_TRUE(info.diags.good());
-            info.diags.seekg(0, std::ios_base::beg);
-            os.str(std::string());
-            std::copy(std::istreambuf_iterator<char>(info.diags),
-                      std::istreambuf_iterator<char>(),
-                      std::ostream_iterator<char>(os));
-            EXPECT_EQ(os.str(), std::string(expected_msg));
-        }
-    }
 }
 
 TEST(instantiate, ls_system)
@@ -354,11 +318,11 @@ TEST(instantiate, lsof_system)
     };
 
     flow::system::custom custom;
-    custom.subsystems.emplace(lsof_name, flow::system::executable{
-        .executable_file = "/usr/sbin/lsof",
+    custom.subsystems.emplace(lsof_name, flow::system{flow::system::executable{
+        .executable_file = "lsof",
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
-    });
+    }, std_descriptors, get_environ()});
     custom.connections.push_back(unidirectional_connection{
         file_endpoint::dev_null, system_endpoint{lsof_name, stdin_id},
     });
