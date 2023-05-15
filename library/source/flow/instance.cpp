@@ -278,7 +278,7 @@ auto exec_child(const std::filesystem::path& path,
     diags.flush();
     ::execve(path.c_str(), argv, envp);
     const auto ec = os_error_code(errno);
-    diags << "execve of '" << path.native() << "' failed: " << ec << "\n";
+    diags << "execve of " << path << " failed: " << ec << "\n";
     diags.flush();
     exit(exit_failure_code);
 }
@@ -297,6 +297,15 @@ auto confirm_closed(const system_name& name,
     }
 }
 
+[[noreturn]]
+auto throw_no_filename(const std::filesystem::path& path,
+                       const std::string& prefix = {}) -> void
+{
+    std::ostringstream os;
+    os << prefix << path << " has no filename component";
+    throw std::invalid_argument{os.str()};
+}
+
 auto make_child(instance& parent,
                 const system_name& name,
                 const system& system,
@@ -309,12 +318,10 @@ auto make_child(instance& parent,
         result.environment[entry.first] = entry.second;
     }
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        if (p->file.empty()) {
+        if (!p->file.has_filename()) {
             std::ostringstream os;
-            os << "cannot instantiate executable system '";
-            os << name;
-            os << "': no executable file specified - it's empty";
-            throw std::invalid_argument{os.str()};
+            os << "cannot instantiate " << name << ": executable file path ";
+            throw_no_filename(p->file, os.str());
         }
         instance::forked info;
         info.diags = ext::temporary_fstream();
@@ -644,7 +651,7 @@ auto pretty_print(std::ostream& os, const instance& value) -> void
             os << "  .children={\n";
             for (auto&& entry: p->children) {
                 os << "    {\n";
-                os << "      .first='" << entry.first << "',\n";
+                os << "      .first=" << entry.first << ",\n";
                 os << "      .second=";
                 {
                     const auto opts = detail::indenting_ostreambuf_options{
@@ -754,10 +761,10 @@ auto instantiate(const system& system,
     }
     result.environment = std::move(env);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        confirm_closed({}, system.descriptors, {});
-        if (p->file.empty()) {
-            throw std::invalid_argument{"no executable file - it's empty"};
+        if (!p->file.has_filename()) {
+            throw_no_filename(p->file, "executable file path ");
         }
+        confirm_closed({}, system.descriptors, {});
         result.info = instance::forked{};
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();

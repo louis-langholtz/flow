@@ -29,7 +29,7 @@ auto validate(const system_endpoint& end,
                 os << "system's";
             }
             else {
-                os << "'" << name << "' subsystem's";
+                os << name << " subsystem's";
             }
             os << " descriptor mapping: ";
             os << ex.what();

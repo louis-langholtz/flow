@@ -48,7 +48,7 @@ auto show_diags(std::ostream& os, const system_name& name,
         os << "unable to tell where diags end is for " << name << "\n";
         return;
     case 0:
-        os << "Diags are empty for '" << name << "'\n";
+        os << "Diags are empty for " << name << "\n";
         return;
     default:
         break;
@@ -140,7 +140,7 @@ auto write_diags(const system_name& name, instance& object,
 {
     if (const auto p = std::get_if<instance::forked>(&object.info)) {
         if (!p->diags.is_open()) {
-            os << "Diags are closed for '" << name << "'\n";
+            os << "Diags are closed for " << name << "\n";
         }
         else {
             show_diags(os, name, p->diags);

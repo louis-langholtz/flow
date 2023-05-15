@@ -1,10 +1,12 @@
+#include <iomanip> // for std::quoted
+
 #include "flow/system_name.hpp"
 
 namespace flow {
 
 auto operator<<(std::ostream& os, const system_name& name) -> std::ostream&
 {
-    os << name.value;
+    os << std::quoted(name.value);
     return os;
 }
 
