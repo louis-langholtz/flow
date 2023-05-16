@@ -57,7 +57,7 @@ struct checked_value
     }
 
     template<class InputIt, class U = std::enable_if_t<
-        functor_returns<Checker, T, InputIt, InputIt>
+        std::is_invocable_r_v<T, Checker, InputIt, InputIt>
     >>
     checked_value(InputIt first, InputIt last)
         : data{checker_type{}(first, last)}
