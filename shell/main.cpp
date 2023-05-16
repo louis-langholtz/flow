@@ -3,6 +3,7 @@
 #include <iomanip> // for std::quoted
 #include <iostream>
 #include <iterator>
+#include <iomanip> // for std::setw
 #include <memory> // for std::unique_ptr
 #include <ostream> // for std::flush
 #include <span>
@@ -15,9 +16,7 @@
 #include "flow/descriptor_id.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/indenting_ostreambuf.hpp"
-#include "flow/instance.hpp"
-#include "flow/system.hpp"
-#include "flow/system_name.hpp"
+#include "flow/instantiate.hpp"
 #include "flow/utility.hpp"
 
 namespace {
@@ -53,10 +52,21 @@ struct HistoryDeleter
     }
 };
 
+struct TokenizerDeleter
+{
+    void operator()(Tokenizer *p)
+    {
+        tok_end(p);
+    }
+};
+
+auto continuation = false;
+
 char *prompt([[maybe_unused]] EditLine *el)
 {
-    static char buf[] = "\1\033[7m\1flow$\1\033[0m\1 ";
-    return buf;
+    static char nl_buf[] = "\1\033[7m\1flow$\1\033[0m\1 ";
+    static char cl_buf[] = "flow> ";
+    return continuation? cl_buf: nl_buf;
 }
 
 }
@@ -69,26 +79,29 @@ auto main(int argc, const char * argv[]) -> int
     using cmd_table = std::map<std::string, cmd_handler>;
     using edit_line_ptr = std::unique_ptr<EditLine, EditLineDeleter>;
     using history_ptr = std::unique_ptr<History, HistoryDeleter>;
+    using tokenizer_ptr = std::unique_ptr<Tokenizer, TokenizerDeleter>;
 
-    flow::environment_map environment = flow::get_environ();
+    auto instantiate_opts = flow::instantiate_options{
+        flow::std_descriptors, flow::get_environ()};
     std::map<flow::system_name, flow::system> systems;
     std::map<flow::system_name, flow::instance> instances;
     flow::set_signal_handler(flow::signal::interrupt);
     flow::set_signal_handler(flow::signal::terminate);
     auto do_loop = true;
+    auto hist_size = 100;
+    auto sequence = std::size_t{0};
 
     // For example of using libedit, see: https://tinyurl.com/3ez9utzc
     HistEvent ev{};
     auto hist = history_ptr{history_init()};
-    history(hist.get(), &ev, H_SETSIZE, 100);
+    history(hist.get(), &ev, H_SETSIZE, hist_size);
+
+    auto tok = tokenizer_ptr{tok_init(NULL)};
 
     auto el = edit_line_ptr{el_init(argv[0], stdin, stdout, stderr)};
-    // el_parse(el.get(), argc, argv);
-
     el_set(el.get(), EL_SIGNAL, 1); // installs sig handlers for resizing, etc.
     el_set(el.get(), EL_HIST, history, hist.get());
     el_set(el.get(), EL_PROMPT_ESC, prompt, '\1');
-
     el_source(el.get(), NULL);
 
     // TODO: make this into a table of CRUD commands...
@@ -105,11 +118,11 @@ auto main(int argc, const char * argv[]) -> int
         {"help", [&](const string_span& args){
             for (auto&& arg: args) {
                 if (arg == "--help") {
-                    std::cout << "provides help on the available commands\n";
+                    std::cout << "provides help on builtin flow commands\n";
                     return;
                 }
             }
-            std::cout << "Available commands:\n";
+            std::cout << "Builtin flow commands:\n";
             for (auto&& entry: cmds) {
                 std::cout << entry.first << ": ";
                 using strings = std::vector<std::string>;
@@ -128,23 +141,24 @@ auto main(int argc, const char * argv[]) -> int
                     return;
                 }
             }
+            const auto width = static_cast<int>(std::to_string(hist_size).size());
             for (auto rv = history(hist.get(), &ev, H_LAST);
                  rv != -1;
                  rv = history(hist.get(), &ev, H_PREV)) {
-                std::cout << ev.num << " " << ev.str;
+                 std::cout << std::setw(width) << ev.num << " " << ev.str;
             }
         }},
-        {"show-env", [&](const string_span& args){
+        {"env", [&](const string_span& args){
             for (auto&& arg: args) {
                 if (arg == "--help") {
                     std::cout << "prints the current environment variables\n";
                     return;
                 }
             }
-            flow::pretty_print(std::cout, environment, "\n");
+            flow::pretty_print(std::cout, instantiate_opts.environment, "\n");
             std::cout.flush();
         }},
-        {"set-env", [&](const string_span& args){
+        {"setenv", [&](const string_span& args){
             auto usage = [&](std::ostream& os){
                 os << "usage: ";
                 os << args[0];
@@ -166,7 +180,7 @@ auto main(int argc, const char * argv[]) -> int
                     return;
                 }
                 if (arg == "--reset") {
-                    environment = flow::get_environ();
+                    instantiate_opts.environment = flow::get_environ();
                     --argc;
                     continue;
                 }
@@ -175,24 +189,25 @@ auto main(int argc, const char * argv[]) -> int
             case 1:
                 break;
             case 3:
-                environment[args[1]] = (args.size() > 2)? args[2]: "";
+                instantiate_opts.environment[args[1]] = (args.size() > 2)?
+                    args[2]: "";
                 break;
             default:
                 usage(std::cerr);
                 break;
             }
         }},
-        {"unset-env", [&](const string_span& args){
+        {"unsetenv", [&](const string_span& args){
             for (auto&& arg: args.subspan(1u)) {
                 if (arg == "--help") {
                     std::cout << "unsets the named environment variables\n";
                     return;
                 }
                 if (arg == "--all") {
-                    environment.clear();
+                    instantiate_opts.environment.clear();
                     continue;
                 }
-                if (environment.erase(arg) == 0) {
+                if (instantiate_opts.environment.erase(arg) == 0) {
                     std::cerr << "no such environment variable as ";
                     std::cerr << std::quoted(arg);
                     std::cerr << "\n" << std::flush;
@@ -206,14 +221,27 @@ auto main(int argc, const char * argv[]) -> int
                     return;
                 }
             }
-            if (args.size() < 2u) {
-                if (systems.empty()) {
-                    std::cout << "empty.\n";
+            if (systems.empty()) {
+                std::cout << "empty.\n";
+                return;
+            }
+            for (auto&& entry: systems) {
+                std::cout << entry.first << "=" << entry.second << "\n";
+            }
+        }},
+        {"show-instances", [&](const string_span& args){
+            for (auto&& arg: args) {
+                if (arg == "--help") {
+                    std::cout << "shows a listing of instantiations.\n";
                     return;
                 }
-                for (auto&& entry: systems) {
-                    std::cout << entry.first << "=" << entry.second << "\n";
-                }
+            }
+            if (instances.empty()) {
+                std::cout << "empty.\n";
+                return;
+            }
+            for (auto&& entry: instances) {
+                std::cout << entry.first << "=" << entry.second << "\n";
             }
         }},
         {"add-executable", [&](const string_span& args){
@@ -222,8 +250,7 @@ auto main(int argc, const char * argv[]) -> int
             static const auto des_prefix = std::string{"--des-"};
             static const auto in_str = std::string{"in"};
             static const auto out_str = std::string{"out"};
-            auto system = flow::system{};
-            system.info = flow::system::executable{};
+            auto system = flow::system{flow::system::executable{}};
             auto& info = std::get<flow::system::executable>(system.info);
             auto name = flow::system_name{};
             auto index = 1u;
@@ -298,30 +325,97 @@ auto main(int argc, const char * argv[]) -> int
             info.arguments = std::vector(begin(arg_span), end(arg_span));
             systems.emplace(name, system);
         }},
+        {"wait", [&](const string_span& args){
+            for (auto&& arg: args.subspan(1u)) {
+                if (arg == "--help") {
+                    std::cout << "waits for an instance.\n";
+                    return;
+                }
+                const auto name = flow::system_name{arg};
+                const auto it = instances.find(name);
+                if (it == instances.end()) {
+                    std::cerr << "no such instance as ";
+                    std::cerr << name;
+                    std::cerr << "\n";
+                    continue;
+                }
+                const auto results = wait(name, it->second);
+                for (auto&& result: results) {
+                    std::cout << result << "\n";
+                }
+                write_diags(name, it->second, std::cerr);
+                instances.erase(it);
+            }
+        }},
     };
 
     auto count = 0;
     auto buf = static_cast<const char*>(nullptr);
     while (do_loop && ((buf = el_gets(el.get(), &count)) != nullptr)) {
-        history(hist.get(), &ev, H_ENTER, buf);
-        auto line = std::string{buf, buf + count};
-        std::string command;
-        arguments args;
-        std::string word;
-        std::istringstream in{line};
-        while (in >> std::quoted(word)) {
-            if (args.empty()) {
-                command = word;
-            }
-            args.emplace_back(word);
+        if (!continuation && (count == 1)) {
+            continue;
         }
-        if (const auto it = cmds.find(command); it != cmds.end()) {
+        const auto li = el_line(el.get());
+        auto ac = 0; // arg count
+        auto av = static_cast<const char**>(nullptr);
+        auto cc = 0;
+        auto co = 0;
+        const auto tok_line_rv = tok_line(tok.get(), li, &ac, &av, &cc, &co);
+        if (tok_line_rv == -1) {
+            std::cerr << "Internal error\n";
+            continuation = false;
+            continue;
+        }
+        history(hist.get(), &ev, continuation? H_APPEND: H_ENTER, buf);
+        continuation = tok_line_rv > 0;
+        if (continuation) {
+            continue;
+        }
+        if (ac < 1) {
+            std::cerr << "unexpexred argument count of " << ac << "\n";
+            continue;
+        }
+        if (const auto it = cmds.find(av[0]); it != cmds.end()) {
+            arguments args;
+            for (auto i = 0; i < ac; ++i) {
+                args.emplace_back(av[i]);
+            }
             it->second(args);
         }
-        else {
-            std::cerr << "no such command as " << std::quoted(command) << ".\n";
+        else if (const auto it = systems.find(flow::system_name{av[0]});
+                 it != systems.end()) {
+            const auto cmdname = flow::system_name{av[0]};
+            auto tsys = it->second;
+            if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
+                if (ac > 1) {
+                    std::copy(av, av + ac, std::back_inserter(p->arguments));
+                }
+            }
+            const auto name = flow::system_name{
+                std::string{av[0]} + ((ac > 1)? "+": "-") +
+                std::to_string(sequence)
+            };
+            try {
+                auto obj = instantiate(tsys, std::cerr, instantiate_opts);
+                const auto results = wait(name, obj);
+                for (auto&& result: results) {
+                    std::cout << result << "\n";
+                }
+                write_diags(name, obj, std::cerr);
+            }
+            catch (const std::invalid_argument& ex) {
+                std::cerr << "cannot instantiate ";
+                std::cerr << std::quoted(av[0]);
+                std::cerr << ": ";
+                std::cerr << ex.what();
+                std::cerr << "\n";
+            }
+        }
+        else if (el_parse(el.get(), ac, av) == -1) {
+            std::cerr << "unrecognized command " << av[0] << "\n";
             std::cerr << "enter " << std::quoted("help") << " for help.\n";
         }
+        tok_reset(tok.get());
     }
     return 0;
 }

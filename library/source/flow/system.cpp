@@ -41,4 +41,34 @@ auto get_matching_set(const system& sys, io_type io)
     return get_matching_set(sys.descriptors, io);
 }
 
+auto connect_with_user(const system_name& name,
+                       const descriptor_map& descriptors)
+    -> std::vector<connection>
+{
+    auto result = std::vector<connection>{};
+    for (auto&& entry: descriptors) {
+        switch (entry.second.direction) {
+        case io_type::in:
+            result.emplace_back(unidirectional_connection{
+                user_endpoint{},
+                system_endpoint{name, entry.first},
+            });
+            break;
+        case io_type::out:
+            result.emplace_back(unidirectional_connection{
+                system_endpoint{name, entry.first},
+                user_endpoint{},
+            });
+            break;
+        case io_type::bidir:
+            result.emplace_back(bidirectional_connection{
+                system_endpoint{name, entry.first},
+                user_endpoint{},
+            });
+            break;
+        }
+    }
+    return result;
+}
+
 }
