@@ -88,20 +88,6 @@ auto total_descendants(const instance& object) -> std::size_t;
 auto total_channels(const instance& object) -> std::size_t;
 auto get_wait_status(const instance& object) -> wait_status;
 
-struct system;
-
-/// @brief Instantiates the given system.
-/// @param[in] sys System to attempt to instantiate.
-/// @param[out] diags Diagnostic information and warnings that don't by
-///   themselves prevent instantiation.
-/// @param[in] env Base environment over which any settings specified in
-///   <code>sys</code> merges with and overrides.
-/// @throws std::invalid_argument if anything about <code>sys</code> is found
-///   to be invalid for instantiation.
-auto instantiate(const system& sys, std::ostream& diags,
-                 environment_map env = {})
-    -> instance;
-
 }
 
 #endif /* instance_hpp */

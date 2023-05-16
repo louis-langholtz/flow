@@ -101,6 +101,10 @@ auto operator<<(std::ostream& os, const system& value)
 auto get_matching_set(const system& sys, io_type io)
     -> std::set<descriptor_id>;
 
+auto connect_with_user(const system_name& name,
+                       const descriptor_map& descriptors)
+    -> std::vector<connection>;
+
 }
 
 #endif /* system_hpp */

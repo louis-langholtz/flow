@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "flow/descriptor_id.hpp"
-#include "flow/instance.hpp"
-#include "flow/system.hpp"
+#include "flow/instantiate.hpp"
 #include "flow/utility.hpp"
 
 namespace {
@@ -267,7 +266,10 @@ TEST(instantiate, env_system)
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
         auto object = instance{};
-        EXPECT_NO_THROW(object = instantiate(base, diags, get_environ()));
+        const auto opts = instantiate_options{
+            .environment = get_environ()
+        };
+        EXPECT_NO_THROW(object = instantiate(base, diags, opts));
         EXPECT_FALSE(empty(object.environment));
         const auto info = std::get_if<instance::custom>(&object.info);
         EXPECT_NE(info, nullptr);

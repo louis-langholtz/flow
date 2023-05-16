@@ -1,3 +1,4 @@
+#include "flow/instantiate.hpp"
 #include "flow/system_pipeline.hpp"
 #include "flow/wait_result.hpp"
 
