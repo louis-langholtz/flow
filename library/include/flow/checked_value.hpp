@@ -189,11 +189,16 @@ inline auto operator>=(const V& value,
     return V(checked) >= value;
 }
 
-template <class T, class U>
+template <class T>
+concept ostreamable = requires{
+    std::declval<std::ostream&>() << std::declval<T>();
+};
+
+template <ostreamable T, class U>
 auto operator<<(std::ostream& os, const checked_value<T, U>& value)
-    -> decltype((os << T(value)), std::declval<std::ostream&>())
+    -> std::ostream&
 {
-    os << T(value);
+    os << value.get();
     return os;
 }
 
