@@ -7,12 +7,19 @@ auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&
 {
     os << "system{";
-    os << ".descriptors=" << value.descriptors << ",";
-    os << ".environment=" << value.environment << ",";
-    os << ".info=";
+    os << ".descriptors=" << value.descriptors;
+    os << ",.environment=" << value.environment;
+    os << ",.info=";
     if (const auto p = std::get_if<system::executable>(&(value.info))) {
         os << "executable_info{";
-        os << ".path=" << p->file;
+        os << ".file=" << p->file;
+        os << ",.arguments={";
+        auto prefix = "";
+        for (auto&& arg: p->arguments) {
+            os << prefix << arg;
+            prefix = ",";
+        }
+        os << "}";
         os << ",.working_directory=" << p->working_directory;
         os << "}";
     }
