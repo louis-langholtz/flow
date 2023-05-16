@@ -298,8 +298,8 @@ auto confirm_closed(const system_name& name,
 }
 
 [[noreturn]]
-auto throw_no_filename(const std::filesystem::path& path,
-                       const std::string& prefix = {}) -> void
+auto throw_has_no_filename(const std::filesystem::path& path,
+                           const std::string& prefix = {}) -> void
 {
     std::ostringstream os;
     os << prefix << path << " has no filename component";
@@ -321,7 +321,7 @@ auto make_child(instance& parent,
         if (!p->file.has_filename()) {
             std::ostringstream os;
             os << "cannot instantiate " << name << ": executable file path ";
-            throw_no_filename(p->file, os.str());
+            throw_has_no_filename(p->file, os.str());
         }
         instance::forked info;
         info.diags = ext::temporary_fstream();
@@ -611,7 +611,7 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
     os << "instance{";
     os << ".environment=" << value.environment;
     if (const auto p = std::get_if<instance::custom>(&value.info)) {
-        os << ".pgrp=" << p->pgrp;
+        os << ",.pgrp=" << p->pgrp;
         os << ",.children={";
         for (auto&& entry: p->children) {
             if (&entry != &(*p->children.begin())) {
@@ -633,7 +633,7 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
         os << "}";
     }
     else if (const auto p = std::get_if<instance::forked>(&value.info)) {
-        os << ".state=" << p->state;
+        os << ",.state=" << p->state;
     }
     os << "}";
     return os;
@@ -642,6 +642,20 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 auto pretty_print(std::ostream& os, const instance& value) -> void
 {
     os << "{\n";
+    if (value.environment.empty()) {
+        os << "  .environment={},\n";
+    }
+    else {
+        os << "  .environment={\n";
+        {
+            const auto opts = detail::indenting_ostreambuf_options{
+                4, true
+            };
+            const detail::indenting_ostreambuf child_indent{os, opts};
+            pretty_print(os, value.environment);
+        }
+        os << "  },\n";
+    }
     if (const auto p = std::get_if<instance::custom>(&value.info)) {
         os << "  .pgrp=" << p->pgrp << ",\n";
         if (p->children.empty()) {
@@ -762,7 +776,7 @@ auto instantiate(const system& system,
     result.environment = std::move(env);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
         if (!p->file.has_filename()) {
-            throw_no_filename(p->file, "executable file path ");
+            throw_has_no_filename(p->file, "executable file path ");
         }
         confirm_closed({}, system.descriptors, {});
         result.info = instance::forked{};
