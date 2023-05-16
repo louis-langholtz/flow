@@ -12,10 +12,16 @@
 
 namespace flow {
 
-using environment_map = std::map<env_name, env_value>;
+struct environment_map: public std::map<env_name, env_value>
+{
+    using std::map<env_name, env_value>::map;
+};
 
 auto operator<<(std::ostream& os, const environment_map& value)
     -> std::ostream&;
+
+auto pretty_print(std::ostream& os, const environment_map& value,
+                  const std::string& sep = ",\n") -> void;
 
 auto get_environ() -> environment_map;
 
