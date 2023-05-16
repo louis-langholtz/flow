@@ -16,12 +16,22 @@ constexpr auto env_separator = '=';
 auto operator<<(std::ostream& os, const environment_map& value)
     -> std::ostream&
 {
-    os << "environment={\n";
+    os << "{";
+    auto prefix = "";
     for (auto&& entry: value) {
-        os << "  " << entry.first << env_separator << entry.second << "\n";
+        os << prefix << entry.first << env_separator << entry.second;
+        prefix = ",";
     }
-    os << "}\n";
+    os << "}";
     return os;
+}
+
+auto pretty_print(std::ostream& os, const environment_map& value,
+                  const std::string& sep) -> void
+{
+    for (auto&& entry: value) {
+        os << entry.first << env_separator << entry.second << sep;
+    }
 }
 
 auto get_environ() -> environment_map
