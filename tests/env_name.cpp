@@ -34,6 +34,10 @@ TEST(env_name, construction)
                  std::invalid_argument);
     EXPECT_THROW(flow::env_name(std::string{'a', '=', 'b'}),
                  std::invalid_argument);
-    EXPECT_THROW(flow::env_name(std::string{'a', '=', '\0', 'b'}),
+
+    const auto good_string = std::string{'a', 'b', 'c'};
+    const auto bad_string = std::string{'a', '=', '\0', 'b'};
+    EXPECT_NO_THROW(flow::env_name(good_string.begin(), good_string.end()));
+    EXPECT_THROW(flow::env_name(bad_string.begin(), bad_string.end()),
                  std::invalid_argument);
 }
