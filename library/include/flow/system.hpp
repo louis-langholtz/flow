@@ -101,6 +101,11 @@ auto operator<<(std::ostream& os, const system& value)
 auto get_matching_set(const system& sys, io_type io)
     -> std::set<descriptor_id>;
 
+/// @brief Makes connections for each of the specified descriptors with
+///   <code>user_endpoint</code> on the other end.
+/// @throws std::invalid_argument if a descriptor map entry has a direction
+///   other than <code>io_type::in</code>, <code>io_type::out</code> or
+///   <code>io_type::bidir</code>.
 auto connect_with_user(const system_name& name,
                        const descriptor_map& descriptors)
     -> std::vector<connection>;

@@ -165,7 +165,10 @@ auto main(int argc, const char * argv[]) -> int
             if (const auto p = parse_descriptor_map_entry({
                 begin(arg) + size(des_prefix), end(arg)
             })) {
-                if (const auto ret = instantiate_opts.descriptors.emplace(*p);
+                if (p->second.direction == flow::io_type::none) {
+                    instantiate_opts.descriptors.erase(p->first);
+                }
+                else if (const auto ret = instantiate_opts.descriptors.emplace(*p);
                     !ret.second) {
                     ret.first->second = p->second;
                 }
@@ -354,7 +357,10 @@ auto main(int argc, const char * argv[]) -> int
                     if (const auto p = parse_descriptor_map_entry({
                         begin(arg) + size(des_prefix), end(arg)
                     })) {
-                        if (const auto ret = system.descriptors.emplace(*p);
+                        if (p->second.direction == flow::io_type::none) {
+                            system.descriptors.erase(p->first);
+                        }
+                        else if (const auto ret = system.descriptors.emplace(*p);
                             !ret.second) {
                             ret.first->second = p->second;
                         }

@@ -1,3 +1,5 @@
+#include <sstream> // for std::ostringstream
+
 #include "flow/system.hpp"
 #include "flow/utility.hpp"
 
@@ -66,6 +68,16 @@ auto connect_with_user(const system_name& name,
                 user_endpoint{},
             });
             break;
+        case io_type::none:
+        default: {
+            std::ostringstream os;
+            os << "unexpected descriptor map entry direction of ";
+            os << entry.second.direction;
+            os << " (";
+            os << std::underlying_type_t<io_type>(entry.second.direction);
+            os << ")";
+            throw std::invalid_argument{os.str()};
+        }
         }
     }
     return result;
