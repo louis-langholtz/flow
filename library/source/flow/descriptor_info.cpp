@@ -6,8 +6,10 @@ auto operator<<(std::ostream& os, const descriptor_info& value)
     -> std::ostream&
 {
     os << value.direction;
-    os << ":";
-    os << value.comment;
+    if (!empty(value.comment)) {
+        os << ":";
+        os << value.comment;
+    }
     return os;
 }
 
