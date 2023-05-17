@@ -168,7 +168,7 @@ auto setup(const system_name& name,
     }
 }
 
-auto to_open_flags(io_type direction) noexcept
+auto to_open_flags(io_type direction)
     -> expected<int, std::string>
 {
     switch (direction) {
