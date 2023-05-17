@@ -29,39 +29,41 @@ struct unexpected {
     template<class Err = E, class X = std::enable_if_t<
         !std::is_same_v<std::remove_cvref_t<Err>, unexpected> &&
         std::is_constructible_v<E, Err>, E>>
-    constexpr explicit unexpected(Err&& err): val{std::forward<Err>(err)}
+    constexpr explicit unexpected(Err&& err):
+        val{std::forward<Err>(err)} // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     {
         // Intentionally empty.
     }
 
-    constexpr unexpected& operator=(const unexpected&) = default;
+    constexpr auto operator=(const unexpected&) -> unexpected& = default;
 
-    constexpr unexpected& operator=(unexpected&&)
-        noexcept(noexcept(std::is_nothrow_move_constructible_v<E>)) = default;
+    constexpr auto operator=(unexpected&&)
+        noexcept(noexcept(std::is_nothrow_move_constructible_v<E>))
+        -> unexpected& = default;
 
-    constexpr const E& value() const& noexcept
+    [[nodiscard]] constexpr auto value() const& noexcept -> const E&
     {
         return val;
     }
 
-    constexpr E& value() & noexcept
+    [[nodiscard]] constexpr auto value() & noexcept -> E&
     {
         return val;
     }
 
-    constexpr const E&& value() const&& noexcept
+    [[nodiscard]] constexpr auto value() const&& noexcept -> const E&&
     {
         return val;
     }
 
-    constexpr E&& value() && noexcept
+    [[nodiscard]] constexpr auto value() && noexcept -> E&&
     {
         return val;
     }
 
     template<class E2>
-    friend constexpr bool
-    operator==(const unexpected&, const unexpected<E2>&);
+    friend constexpr auto
+    operator==(const unexpected&, const unexpected<E2>&) -> bool;
 
 private:
     E val;
@@ -102,32 +104,32 @@ struct expected {
         // Intentionally empty.
     }
 
-    constexpr const T& operator*() const& noexcept
+    constexpr auto operator*() const& noexcept -> const T&
     {
         return *std::get_if<T>(&m_value);
     }
 
-    constexpr T& operator*() & noexcept
+    constexpr auto operator*() & noexcept -> T&
     {
         return *std::get_if<T>(&m_value);
     }
 
-    constexpr const T&& operator*() const&& noexcept
+    constexpr auto operator*() const&& noexcept -> const T&&
     {
         return *std::get_if<T>(&m_value);
     }
 
-    constexpr T&& operator*() && noexcept
+    constexpr auto operator*() && noexcept -> T&&
     {
         return *std::get_if<T>(&m_value);
     }
 
-    constexpr const T* operator->() const noexcept
+    constexpr auto operator->() const noexcept -> const T*
     {
         return std::get_if<T>(&m_value);
     }
 
-    constexpr T* operator->() noexcept
+    constexpr auto operator->() noexcept -> T*
     {
         return std::get_if<T>(&m_value);
     }
@@ -137,47 +139,47 @@ struct expected {
         return m_value.index() == 0u;
     }
 
-    constexpr bool has_value() const noexcept
+    [[nodiscard]] constexpr auto has_value() const noexcept -> bool
     {
         return m_value.index() == 0u;
     }
 
-    constexpr const T& value() const&
+    constexpr auto value() const& -> const T& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<T>(m_value);
     }
 
-    constexpr T& value() &
+    constexpr auto value() & -> T& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<T>(m_value);
     }
 
-    constexpr const T&& value() const&&
+    constexpr auto value() const&& -> const T&& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<T>(m_value);
     }
 
-    constexpr T&& value() &&
+    constexpr auto value() && -> T&& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<T>(m_value);
     }
 
-    constexpr const E& error() const&
+    constexpr auto error() const& -> const E& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<E>(m_value);
     }
 
-    constexpr E& error() &
+    constexpr auto error() & -> E& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<E>(m_value);
     }
 
-    constexpr const E&& error() const&&
+    constexpr auto error() const&& -> const E&& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<E>(m_value);
     }
 
-    constexpr E&& error() &&
+    constexpr auto error() && -> E&& // NOLINT(modernize-use-nodiscard)
     {
         return std::get<E>(m_value);
     }
