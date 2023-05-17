@@ -12,10 +12,7 @@
 
 namespace flow {
 
-struct environment_map: public std::map<env_name, env_value>
-{
-    using std::map<env_name, env_value>::map;
-};
+using environment_map = std::map<env_name, env_value>;
 
 auto operator<<(std::ostream& os, const environment_map& value)
     -> std::ostream&;
