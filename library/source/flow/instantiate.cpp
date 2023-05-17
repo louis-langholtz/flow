@@ -6,6 +6,8 @@
 #include <unistd.h> // for getpid, setpgid
 #include <fcntl.h> // for ::open
 
+#include "ext/expected.hpp"
+
 #include "flow/instantiate.hpp"
 #include "flow/utility.hpp"
 
@@ -166,14 +168,16 @@ auto setup(const system_name& name,
     }
 }
 
-auto to_open_flags(io_type direction) noexcept -> int
+auto to_open_flags(io_type direction) noexcept
+    -> expected<int, std::string>
 {
     switch (direction) {
-    case io_type::in: return O_RDONLY;
-    case io_type::out: return O_WRONLY;
-    case io_type::bidir: return O_RDWR;
+    case io_type::in: return {O_RDONLY};
+    case io_type::out: return {O_WRONLY};
+    case io_type::bidir: return {O_RDWR};
+    case io_type::none: return unexpected<std::string>{};
     }
-    return 0;
+    return unexpected<std::string>{"unrecognized io_type value"};
 }
 
 auto setup(const system_name& name,
@@ -191,14 +195,28 @@ auto setup(const system_name& name,
             return;
         }
         const auto flags = to_open_flags(p.io);
+        if (!flags) {
+            if (!empty(flags.error())) {
+                diags << name << " " << c;
+                diags << ", can't get needed open flags: ";
+                diags << flags.error();
+                diags << "\n";
+                exit(exit_failure_code);
+            }
+            for (auto&& descriptor: op->descriptors) {
+                ::close(int(descriptor));
+            }
+            return;
+        }
         const auto mode = 0600;
         const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                               file_end->path.c_str(), flags, mode);
+                               file_end->path.c_str(), *flags, mode);
         if (fd == -1) {
             static constexpr auto mode_width = 5;
             diags << name << " " << c;
             diags << ", open file " << file_end->path << " with mode ";
-            diags << std::oct << std::setfill('0') << std::setw(mode_width) << flags;
+            diags << std::oct << std::setfill('0') << std::setw(mode_width);
+            diags << *flags;
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
@@ -230,15 +248,28 @@ auto setup(const system_name& name,
     }();
     if (op) {
         const auto flags = to_open_flags(chan.io);
+        if (!flags) {
+            if (!empty(flags.error())) {
+                diags << name << " " << conn;
+                diags << ", can't get needed open flags: ";
+                diags << flags.error();
+                diags << "\n";
+                exit(exit_failure_code);
+            }
+            for (auto&& descriptor: op->descriptors) {
+                ::close(int(descriptor));
+            }
+            return;
+        }
         const auto mode = 0600;
         const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                               chan.path.c_str(), flags, mode);
+                               chan.path.c_str(), *flags, mode);
         if (fd == -1) {
             static constexpr auto mode_width = 5;
             diags << name << " " << conn;
             diags << ", open file " << chan.path << " with mode ";
             diags << std::oct << std::setfill('0') << std::setw(mode_width);
-            diags << flags;
+            diags << *flags;
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
