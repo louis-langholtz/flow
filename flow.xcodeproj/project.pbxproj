@@ -31,9 +31,7 @@
 		9943E8A82A055E11002F4C26 /* pipe_registry.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8A62A055E11002F4C26 /* pipe_registry.hpp */; };
 		9943E8AB2A059A28002F4C26 /* file_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E8A92A059A28002F4C26 /* file_channel.cpp */; };
 		9943E8AC2A059A28002F4C26 /* file_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8AA2A059A28002F4C26 /* file_channel.hpp */; };
-		9943E8AF2A06F10F002F4C26 /* env_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E8AD2A06F10F002F4C26 /* env_name.cpp */; };
 		9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8AE2A06F10F002F4C26 /* env_name.hpp */; };
-		9943E8B32A06F403002F4C26 /* env_value.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E8B12A06F403002F4C26 /* env_value.cpp */; };
 		9943E8B42A06F403002F4C26 /* env_value.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8B22A06F403002F4C26 /* env_value.hpp */; };
 		9943E8B62A06F6ED002F4C26 /* checked_value.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8B52A06F6ED002F4C26 /* checked_value.hpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
@@ -65,6 +63,8 @@
 		99A88D442A12A69D00AFD76F /* env_value.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D432A12A69D00AFD76F /* env_value.cpp */; };
 		99A88D472A1426CE00AFD76F /* instantiate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D452A1426CE00AFD76F /* instantiate.cpp */; };
 		99A88D482A1426CE00AFD76F /* instantiate.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D462A1426CE00AFD76F /* instantiate.hpp */; };
+		99A88D4B2A15903A00AFD76F /* reserved_chars_checker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D492A15903A00AFD76F /* reserved_chars_checker.cpp */; };
+		99A88D4C2A15903A00AFD76F /* reserved_chars_checker.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D4A2A15903A00AFD76F /* reserved_chars_checker.hpp */; };
 		99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* system_endpoint.cpp */; };
 		99C1937C29F4D70F00C3F53F /* system_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */; };
 		99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938129F506C200C3F53F /* file_endpoint.cpp */; };
@@ -170,9 +170,7 @@
 		9943E8A62A055E11002F4C26 /* pipe_registry.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = pipe_registry.hpp; sourceTree = "<group>"; };
 		9943E8A92A059A28002F4C26 /* file_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_channel.cpp; sourceTree = "<group>"; };
 		9943E8AA2A059A28002F4C26 /* file_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = file_channel.hpp; sourceTree = "<group>"; };
-		9943E8AD2A06F10F002F4C26 /* env_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = env_name.cpp; sourceTree = "<group>"; };
 		9943E8AE2A06F10F002F4C26 /* env_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = env_name.hpp; sourceTree = "<group>"; };
-		9943E8B12A06F403002F4C26 /* env_value.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = env_value.cpp; sourceTree = "<group>"; };
 		9943E8B22A06F403002F4C26 /* env_value.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = env_value.hpp; sourceTree = "<group>"; };
 		9943E8B52A06F6ED002F4C26 /* checked_value.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = checked_value.hpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -203,6 +201,8 @@
 		99A88D432A12A69D00AFD76F /* env_value.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = env_value.cpp; sourceTree = "<group>"; };
 		99A88D452A1426CE00AFD76F /* instantiate.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = instantiate.cpp; sourceTree = "<group>"; };
 		99A88D462A1426CE00AFD76F /* instantiate.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = instantiate.hpp; sourceTree = "<group>"; };
+		99A88D492A15903A00AFD76F /* reserved_chars_checker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = reserved_chars_checker.cpp; sourceTree = "<group>"; };
+		99A88D4A2A15903A00AFD76F /* reserved_chars_checker.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = reserved_chars_checker.hpp; sourceTree = "<group>"; };
 		99C1937929F4D70F00C3F53F /* system_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_endpoint.cpp; sourceTree = "<group>"; };
 		99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
@@ -346,6 +346,7 @@
 				9943E8922A021A46002F4C26 /* pipe_channel.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
 				9943E8A22A04A783002F4C26 /* reference_process_id.hpp */,
+				99A88D4A2A15903A00AFD76F /* reserved_chars_checker.hpp */,
 				99C1939629F5136100C3F53F /* system.hpp */,
 				99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */,
 				99940BFE29F1F73900A77461 /* system_name.hpp */,
@@ -369,8 +370,6 @@
 				99A88D162A0B1BC500AFD76F /* descriptor_info.cpp */,
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
 				99A88D1A2A0B1D8600AFD76F /* descriptor_map.cpp */,
-				9943E8AD2A06F10F002F4C26 /* env_name.cpp */,
-				9943E8B12A06F403002F4C26 /* env_value.cpp */,
 				9943E89B2A0453F3002F4C26 /* environment_map.cpp */,
 				9943E8A92A059A28002F4C26 /* file_channel.cpp */,
 				99C1938129F506C200C3F53F /* file_endpoint.cpp */,
@@ -385,6 +384,7 @@
 				9943E8A62A055E11002F4C26 /* pipe_registry.hpp */,
 				99940BF929F1F49F00A77461 /* process_id.cpp */,
 				9943E8A12A04A783002F4C26 /* reference_process_id.cpp */,
+				99A88D492A15903A00AFD76F /* reserved_chars_checker.cpp */,
 				99C1939529F5136100C3F53F /* system.cpp */,
 				99C1937929F4D70F00C3F53F /* system_endpoint.cpp */,
 				99940BFD29F1F73900A77461 /* system_name.cpp */,
@@ -430,6 +430,7 @@
 				99A88D212A0B431300AFD76F /* system_pipeline.hpp in Headers */,
 				9943E8942A021A46002F4C26 /* pipe_channel.hpp in Headers */,
 				99A88D482A1426CE00AFD76F /* instantiate.hpp in Headers */,
+				99A88D4C2A15903A00AFD76F /* reserved_chars_checker.hpp in Headers */,
 				99940BF829F1DAE800A77461 /* descriptor_id.hpp in Headers */,
 				99C1939829F5136100C3F53F /* system.hpp in Headers */,
 				99A88D252A0C229400AFD76F /* unset_endpoint.hpp in Headers */,
@@ -573,7 +574,6 @@
 				9943E89F2A04A63F002F4C26 /* owning_process_id.cpp in Sources */,
 				9943E87A29FBF418002F4C26 /* wait_status.cpp in Sources */,
 				9943E87629FB444F002F4C26 /* os_error_code.cpp in Sources */,
-				9943E8AF2A06F10F002F4C26 /* env_name.cpp in Sources */,
 				9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */,
 				99C1939329F511B700C3F53F /* connection.cpp in Sources */,
 				99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */,
@@ -588,11 +588,11 @@
 				99C1939729F5136100C3F53F /* system.cpp in Sources */,
 				9943E8932A021A46002F4C26 /* pipe_channel.cpp in Sources */,
 				99C1939B29F5774600C3F53F /* instance.cpp in Sources */,
+				99A88D4B2A15903A00AFD76F /* reserved_chars_checker.cpp in Sources */,
 				99A88D1C2A0B1D8600AFD76F /* descriptor_map.cpp in Sources */,
 				99C1939F29F5819A00C3F53F /* utility.cpp in Sources */,
 				99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */,
 				9943E89C2A0453F3002F4C26 /* environment_map.cpp in Sources */,
-				9943E8B32A06F403002F4C26 /* env_value.cpp in Sources */,
 				99A88D472A1426CE00AFD76F /* instantiate.cpp in Sources */,
 				99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */,
 				99A88D202A0B431300AFD76F /* system_pipeline.cpp in Sources */,

@@ -1,20 +1,15 @@
+#include <stdexcept> // for std::invalid_argument
 #include <sstream> // for std::ostringstream
 
-#include "flow/env_value.hpp"
+#include "flow/reserved_chars_checker.hpp"
 
-namespace flow {
+namespace flow::detail {
 
-namespace {
-
-constexpr auto nul_character = '\0';
-
-const std::string reserved_set{std::initializer_list<char>{nul_character}};
-
-}
-
-auto env_value_checker::operator()(std::string v) const -> std::string
+auto reserved_chars_validator(std::string v,
+                              const std::string& reserved_chars)
+    -> std::string
 {
-    if (const auto found = v.find_first_of(reserved_set);
+    if (const auto found = v.find_first_of(reserved_chars);
         found != std::string::npos) {
         const auto c = v[found];
         std::ostringstream os;
