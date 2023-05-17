@@ -21,6 +21,8 @@
 
 namespace {
 
+const auto des_prefix = std::string{"--des-"};
+
 template <class T, class U>
 auto operator==(const std::span<T>& lhs, const std::span<U>& rhs) ->
 decltype(T{} == U{})
@@ -67,6 +69,59 @@ char *prompt([[maybe_unused]] EditLine *el)
     static char nl_buf[] = "\1\033[7m\1flow$\1\033[0m\1 ";
     static char cl_buf[] = "flow> ";
     return continuation? cl_buf: nl_buf;
+}
+
+auto to_int(const std::string_view& view)
+    -> std::optional<int>
+{
+    char* p_end{};
+    const auto n = std::strtol(data(view), &p_end, 10);
+    if ((p_end == data(view)) || (p_end != (data(view) + size(view)))) {
+        return {};
+    }
+    return {n};
+}
+
+auto parse_descriptor_map_entry(const std::string_view& arg)
+    -> std::optional<flow::descriptor_map_entry>
+{
+    const auto found_eq = arg.find('=');
+    if (found_eq == std::string_view::npos) {
+        std::cerr << "aborting: no '=' found in ";
+        std::cerr << "descriptor map entry argument\n";
+        return {};
+    }
+    const auto key = arg.substr(0u, found_eq);
+    const auto found_int = to_int(key);
+    if (!found_int) {
+        std::cerr << "aborting: invalid key ";
+        std::cerr << std::quoted(key);
+        std::cerr << "\n";
+        return {};
+    }
+    auto dir_comp = std::string_view{};
+    auto des_info = flow::descriptor_info{};
+    const auto value = arg.substr(found_eq + 1u);
+    if (const auto found = value.find(':');
+        found != std::string::npos) {
+        des_info.comment = value.substr(found + 1u);
+        dir_comp = value.substr(0, found);
+    }
+    else {
+        dir_comp = value;
+    }
+    if (const auto found = flow::to_io_type(dir_comp)) {
+        des_info.direction = *found;
+    }
+    else {
+        std::cerr << "aborting: unrecognized direction in ";
+        std::cerr << std::quoted(dir_comp);
+        std::cerr << "\n";
+        return {};
+    }
+    return {flow::descriptor_map_entry{
+        flow::descriptor_id(*found_int), des_info
+    }};
 }
 
 }
@@ -247,9 +302,6 @@ auto main(int argc, const char * argv[]) -> int
         {"add-executable", [&](const string_span& args){
             static const auto name_prefix = std::string{"--name="};
             static const auto file_prefix = std::string{"--file="};
-            static const auto des_prefix = std::string{"--des-"};
-            static const auto in_str = std::string{"in"};
-            static const auto out_str = std::string{"out"};
             auto system = flow::system{flow::system::executable{}};
             auto& info = std::get<flow::system::executable>(system.info);
             auto name = flow::system_name{};
@@ -274,48 +326,14 @@ auto main(int argc, const char * argv[]) -> int
                     continue;
                 }
                 if (arg.starts_with(des_prefix)) {
-                    auto des_id = flow::descriptor_id{};
-                    auto des_info = flow::descriptor_info{};
-                    const auto rem = arg.substr(des_prefix.size());
-                    char* p_end{};
-                    const auto n = std::strtol(rem.c_str(), &p_end, 10);
-                    if ((p_end == rem.c_str()) || (*p_end != '=')) {
-                        std::cerr << "aborting: unrecognized argument ";
-                        std::cerr << std::quoted(arg);
-                        std::cerr << "\n";
-                        return;
+                    if (const auto p = parse_descriptor_map_entry({
+                        begin(arg) + size(des_prefix), end(arg)
+                    })) {
+                        if (const auto ret = system.descriptors.emplace(*p);
+                            !ret.second) {
+                            ret.first->second = p->second;
+                        }
                     }
-                    des_id = flow::descriptor_id(n);
-                    ++p_end; // skip over '='
-                    if (in_str.compare(0, in_str.size(),
-                                       p_end, in_str.size()) == 0) {
-                        des_info.direction = flow::io_type::in;
-                        p_end += in_str.size();
-                    }
-                    else if (out_str.compare(0, out_str.size(),
-                                             p_end, out_str.size()) == 0) {
-                        des_info.direction = flow::io_type::out;
-                        p_end += out_str.size();
-                    }
-                    else {
-                        std::cerr << "aborting: unrecognized direction in ";
-                        std::cerr << std::quoted(arg);
-                        std::cerr << "\n";
-                        return;
-                    }
-                    if ((*p_end != '\0') && (*p_end != ':')) {
-                        std::cerr << "aborting: unrecognized ending of ";
-                        std::cerr << std::quoted(arg);
-                        std::cerr << " seeing '";
-                        std::cerr << *p_end;
-                        std::cerr << "'\n";
-                        return;
-                    }
-                    if (*p_end == ':') {
-                        ++p_end;
-                        des_info.comment = std::string{p_end};
-                    }
-                    system.descriptors[des_id] = des_info;
                     continue;
                 }
                 --index;
