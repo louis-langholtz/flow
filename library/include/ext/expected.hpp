@@ -95,6 +95,26 @@ struct expected {
         // Intentionally empty.
     }
 
+    constexpr const T& operator*() const& noexcept
+    {
+        return *std::get_if<T>(&m_value);
+    }
+
+    constexpr T& operator*() & noexcept
+    {
+        return *std::get_if<T>(&m_value);
+    }
+
+    constexpr const T&& operator*() const&& noexcept
+    {
+        return *std::get_if<T>(&m_value);
+    }
+
+    constexpr T&& operator*() && noexcept
+    {
+        return *std::get_if<T>(&m_value);
+    }
+
     constexpr const T* operator->() const noexcept
     {
         return std::get_if<T>(&m_value);
