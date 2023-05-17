@@ -159,6 +159,21 @@ auto main(int argc, const char * argv[]) -> int
     el_set(el.get(), EL_PROMPT_ESC, prompt, '\1');
     el_source(el.get(), NULL);
 
+    for (auto i = 0; i < argc; ++i) {
+        const auto arg = std::string_view{argv[i]};
+        if (arg.starts_with(des_prefix)) {
+            if (const auto p = parse_descriptor_map_entry({
+                begin(arg) + size(des_prefix), end(arg)
+            })) {
+                if (const auto ret = instantiate_opts.descriptors.emplace(*p);
+                    !ret.second) {
+                    ret.first->second = p->second;
+                }
+            }
+            continue;
+        }
+    }
+
     // TODO: make this into a table of CRUD commands...
     const cmd_table cmds{
         {"exit", [&](const string_span& args){
@@ -202,6 +217,16 @@ auto main(int argc, const char * argv[]) -> int
                  rv = history(hist.get(), &ev, H_PREV)) {
                  std::cout << std::setw(width) << ev.num << " " << ev.str;
             }
+        }},
+        {"descriptors", [&](const string_span& args){
+            for (auto&& arg: args) {
+                if (arg == "--help") {
+                    std::cout << "prints the descriptors table\n";
+                    return;
+                }
+            }
+            std::cout << instantiate_opts.descriptors;
+            std::cout << "\n";
         }},
         {"env", [&](const string_span& args){
             for (auto&& arg: args) {
