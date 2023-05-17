@@ -1,7 +1,14 @@
 #ifndef expected_h
 #define expected_h
 
-#if !defined(__has_include) || !__has_include(<expected>)
+#ifdef __has_include
+# if __has_include(<version>)
+#   include <version>
+# endif
+#endif
+
+#if !defined(__has_include) || !__has_include(<expected>) \
+    || !defined(__cplusplus) || (__cplusplus < 202300L)
 
 #include <initializer_list>
 #include <variant> // for std::get, std::get_if
