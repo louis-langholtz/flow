@@ -4,7 +4,7 @@
 #include <string>
 
 #include "flow/checked_value.hpp"
-#include "flow/reserved_chars_checker.hpp"
+#include "flow/charset_checker.hpp"
 
 namespace flow {
 
@@ -15,7 +15,7 @@ namespace flow {
 ///   with one or more invalid characters.
 using env_name = detail::checked_value<
     std::string,
-    detail::reserved_chars_checker<'\0', '='>
+    detail::denied_chars_checker<'\0', '='>
 >;
 
 static_assert(std::is_nothrow_default_constructible_v<env_name>);
