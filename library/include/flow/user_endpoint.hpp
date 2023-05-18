@@ -12,19 +12,9 @@ namespace flow {
 
 struct user_endpoint
 {
-    /// @brief Characters checker.
-    /// @note Basically <code>detail::name_chars_checker</code> plus
-    ///   colon and period.
-    using chars_checker = detail::allowed_chars_checker<
-        'A','B','C','D','E','F','G','H','I','J','K','L','M',
-        'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-        'a','b','c','d','e','f','g','h','i','j','k','l','m',
-        'n','o','p','q','r','s','t','u','v','w','x','y','z',
-        '0','1','2','3','4','5','6','7','8','9','-','_','+',
-        ':','.'
-    >;
-
-    struct name_checker: chars_checker {};
+    struct name_checker: detail::allowed_chars_checker<
+        detail::name_charset, detail::constexpr_ntsb<'+',':','.'>
+    > {};
 
     detail::checked_value<std::string, name_checker> name;
 
