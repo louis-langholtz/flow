@@ -388,11 +388,11 @@ auto main(int argc, const char * argv[]) -> int
                     std::cerr << "\n";
                     continue;
                 }
-                const auto results = wait(name, it->second);
+                const auto results = wait(it->second);
                 for (auto&& result: results) {
                     std::cout << result << "\n";
                 }
-                write_diags(name, it->second, std::cerr);
+                write_diags(it->second, std::cerr, arg);
                 instances.erase(it);
             }
         }},
@@ -440,17 +440,15 @@ auto main(int argc, const char * argv[]) -> int
                     std::copy(av, av + ac, std::back_inserter(p->arguments));
                 }
             }
-            const auto name = flow::system_name{
-                std::string{av[0]} + ((ac > 1)? "+": "-") +
-                std::to_string(sequence)
-            };
+            const auto name = std::string{av[0]} + ((ac > 1)? "+": "-") +
+                std::to_string(sequence);
             try {
                 auto obj = instantiate(tsys, std::cerr, instantiate_opts);
-                const auto results = wait(name, obj);
+                const auto results = wait(obj);
                 for (auto&& result: results) {
                     std::cout << result << "\n";
                 }
-                write_diags(name, obj, std::cerr);
+                write_diags(obj, std::cerr, name);
             }
             catch (const std::invalid_argument& ex) {
                 std::cerr << "cannot instantiate ";

@@ -12,7 +12,6 @@
 
 namespace flow {
 
-struct system_name;
 struct system;
 
 struct reference_channel

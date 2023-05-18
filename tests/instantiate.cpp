@@ -139,7 +139,7 @@ TEST(instantiate, ls_system)
             EXPECT_NO_THROW(write(*cat_stdin_pipe, "/bin\n/sbin"));
         }
         auto waited = 0;
-        for (auto&& result: wait(system_name{}, object)) {
+        for (auto&& result: wait(object)) {
             EXPECT_TRUE(std::holds_alternative<info_wait_result>(result));
             if (std::holds_alternative<info_wait_result>(result)) {
                 const auto& info = std::get<info_wait_result>(result);
@@ -218,7 +218,7 @@ TEST(instantiate, ls_outerr_system)
         EXPECT_NE(os.str(), std::string());
         EXPECT_TRUE(empty(object.environment));
         const auto pid = get_reference_process_id({ls_exe_name}, object);
-        const auto wait_results = wait(system_name{}, object);
+        const auto wait_results = wait(object);
         EXPECT_EQ(size(wait_results), 1u);
         for (auto&& result: wait_results) {
             EXPECT_TRUE(std::holds_alternative<info_wait_result>(result));
@@ -286,7 +286,7 @@ TEST(instantiate, env_system)
         const auto expected_wait_result = wait_result{
             info_wait_result{pid, wait_exit_status{EXIT_SUCCESS}}
         };
-        for (auto&& result: wait(system_name{}, object)) {
+        for (auto&& result: wait(object)) {
             EXPECT_EQ(result, expected_wait_result);
         }
         EXPECT_NE(pipe, nullptr);
@@ -358,7 +358,7 @@ TEST(instantiate, lsof_system)
             info_wait_result{pid, wait_exit_status{EXIT_SUCCESS}}
         };
         auto waited = 0;
-        for (auto&& result: wait(system_name{}, object)) {
+        for (auto&& result: wait(object)) {
             EXPECT_EQ(result, expected_wait_result);
             ++waited;
         }
@@ -374,7 +374,7 @@ TEST(instantiate, lsof_system)
         const auto pipe_output = os.str();
         EXPECT_NE(pipe_output, std::string());
         os.str(std::string());
-        write_diags(system_name{}, object, os);
+        write_diags(object, os);
         const auto diags_output = os.str();
         EXPECT_NE(diags_output, std::string());
         std::cerr << diags_output;
@@ -487,7 +487,7 @@ TEST(instantiate, nested_system)
         if (in_pipe) {
             EXPECT_NO_THROW(write(*in_pipe, "/bin\n/sbin"));
         }
-        for (auto&& result: wait(system_name{}, object)) {
+        for (auto&& result: wait(object)) {
             std::visit(detail::overloaded{
                 [](auto){
                     FAIL();
@@ -510,6 +510,6 @@ TEST(instantiate, nested_system)
         std::copy(std::istreambuf_iterator<char>(diags),
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(std::cerr));
-        write_diags(system_name{}, object, std::cerr);
+        write_diags(object, std::cerr);
     }
 }

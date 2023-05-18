@@ -30,31 +30,34 @@ namespace flow {
 
 namespace {
 
-auto show_diags(std::ostream& os, const system_name& name,
+auto show_diags(std::ostream& os, const std::string& name,
                 std::iostream& diags) -> void
 {
     if (diags.rdstate()) {
-        os << "diags stream not good for " << name << "\n";
+        os << "diags stream not good for " << std::quoted(name) << "\n";
         return;
     }
     diags.seekg(0, std::ios_base::end);
     if (diags.rdstate()) {
-        os << "diags stream not good for " << name << " after seekg\n";
+        os << "diags stream not good for " << std::quoted(name);
+        os << " after seekg\n";
         return;
     }
     const auto endpos = diags.tellg();
     switch (endpos) {
     case -1:
-        os << "unable to tell where diags end is for " << name << "\n";
+        os << "unable to tell where diags end is for " << std::quoted(name);
+        os << "\n";
         return;
     case 0:
-        os << "Diags are empty for " << name << "\n";
+        os << "Diags are empty for " << std::quoted(name) << "\n";
         return;
     default:
         break;
     }
     diags.seekg(0, std::ios_base::beg);
-    os << "Diagnostics for " << name << " having " << endpos << "b...\n";
+    os << "Diagnostics for " << std::quoted(name);
+    os << " having " << endpos << "b...\n";
     // istream_iterator skips ws, so use istreambuf_iterator...
     std::copy(std::istreambuf_iterator<char>(diags.rdbuf()),
               std::istreambuf_iterator<char>(),
@@ -135,8 +138,8 @@ auto write(std::ostream& os, const std::error_code& ec)
     return os;
 }
 
-auto write_diags(const system_name& name, instance& object,
-                std::ostream& os) -> void
+auto write_diags(instance& object, std::ostream& os, const std::string& name)
+    -> void
 {
     if (const auto p = std::get_if<instance::forked>(&object.info)) {
         if (!p->diags.is_open()) {
@@ -147,9 +150,9 @@ auto write_diags(const system_name& name, instance& object,
         }
     }
     else if (const auto p = std::get_if<instance::custom>(&object.info)) {
-        for (auto&& map_entry: p->children) {
-            const auto full_name = name + map_entry.first;
-            write_diags(system_name{full_name}, map_entry.second, os);
+        for (auto&& entry: p->children) {
+            const auto full_name = name + "." + entry.first.get();
+            write_diags(entry.second, os, full_name);
         }
     }
 }
@@ -246,20 +249,22 @@ auto operator<<(std::ostream& os, signal s) -> std::ostream&
 }
 
 auto send_signal(signal sig,
-                 const system_name& name,
                  const instance& instance,
-                 std::ostream& diags) -> void
+                 std::ostream& diags,
+                 const std::string& name) -> void
 {
     if (const auto p = std::get_if<instance::custom>(&instance.info)) {
         for (auto&& child: p->children) {
-            send_signal(sig, name + child.first, child.second, diags);
+            send_signal(sig, child.second, diags,
+                        name + "." + child.first.get());
         }
     }
     else if (const auto p = std::get_if<instance::forked>(&instance.info)) {
         if (const auto q = std::get_if<owning_process_id>(&(p->state))) {
             if ((reference_process_id(*q) != invalid_process_id) &&
                 (reference_process_id(*q) != no_process_id)) {
-                diags << "sending " << sig << " to " << name << "\n";
+                diags << "sending " << sig << " to ";
+                diags << std::quoted(name) << "\n";
                 if (kill(reference_process_id(*q), sig) == -1) {
                     diags << "kill(" << *q;
                     diags << "," << to_posix_signal(sig);

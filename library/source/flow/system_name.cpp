@@ -6,18 +6,8 @@ namespace flow {
 
 auto operator<<(std::ostream& os, const system_name& name) -> std::ostream&
 {
-    os << std::quoted(name.value);
+    os << std::quoted(name.get());
     return os;
-}
-
-auto operator+(const system_name& lhs, const system_name& rhs)
-    -> system_name
-{
-    auto result = std::string{};
-    result += lhs.value;
-    result += system_name::separator;
-    result += rhs.value;
-    return system_name{result};
 }
 
 auto operator<<(std::ostream& os,
@@ -26,7 +16,7 @@ auto operator<<(std::ostream& os,
     auto prefix = "";
     for (auto&& component: names) {
         os << prefix << component;
-        prefix = system_name::separator;
+        prefix = system_name_checker::separator;
     }
     return os;
 }

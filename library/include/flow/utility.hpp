@@ -14,6 +14,7 @@
 #include "flow/connection.hpp"
 #include "flow/descriptor_map.hpp"
 #include "flow/environment_map.hpp"
+#include "flow/system_name.hpp"
 
 namespace flow {
 
@@ -26,7 +27,6 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 struct file_endpoint;
 struct instance;
-struct system_name;
 
 auto nulldev_fstream() -> ext::fstream;
 
@@ -49,8 +49,9 @@ auto write(std::ostream& os, const std::error_code& ec)
     -> std::ostream&;
 
 /// @brief Outputs diagnostics information to the given output stream.
-auto write_diags(const system_name& name, instance& object,
-                 std::ostream& os) -> void;
+auto write_diags(instance& object,
+                 std::ostream& os,
+                 const std::string& name = {}) -> void;
 
 auto find_index(const std::span<const connection>& connections,
                 const connection& look_for)
@@ -72,9 +73,9 @@ enum class signal {
 auto operator<<(std::ostream& os, signal s) -> std::ostream&;
 
 auto send_signal(signal sig,
-                 const system_name& name,
                  const instance& instance,
-                 std::ostream& diags) -> void;
+                 std::ostream& diags,
+                 const std::string& name = {}) -> void;
 
 auto set_signal_handler(signal sig) -> void;
 

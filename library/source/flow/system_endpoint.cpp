@@ -5,7 +5,7 @@ namespace flow {
 auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
 {
     os << "system_endpoint{";
-    os << value.address;
+    os << value.address.get();
     os << ':';
     auto prefix = "";
     for (auto&& descriptor: value.descriptors) {

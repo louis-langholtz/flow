@@ -9,21 +9,20 @@ namespace flow {
 
 namespace {
 
-auto find(const system_name& name, instance& object,
-          const reference_process_id& pid)
-    -> std::optional<decltype(std::make_pair(name, std::ref(object)))>
+auto find(instance& object, const reference_process_id& pid)
+    -> std::optional<decltype(std::ref(object))>
 {
     if (const auto p = std::get_if<instance::forked>(&object.info)) {
         if (const auto q = std::get_if<owning_process_id>(&p->state)) {
             if (reference_process_id(*q) == pid) {
-                return std::make_pair(name, std::ref(object));
+                return std::ref(object);
             }
         }
         return {};
     }
     if (const auto p = std::get_if<instance::custom>(&object.info)) {
         for (auto&& entry: p->children) {
-            if (auto found = find(name + entry.first, entry.second, pid)) {
+            if (auto found = find(entry.second, pid)) {
                 return found;
             }
         }
@@ -31,22 +30,21 @@ auto find(const system_name& name, instance& object,
     return {};
 }
 
-auto handle(const system_name& name, instance& instance,
-            const info_wait_result& info) -> bool
+auto handle(instance& instance, const info_wait_result& info) -> bool
 {
     static const auto unknown_name = system_name{"unknown"};
-    const auto entry = find(name, instance, info.id);
+    const auto entry = find(instance, info.id);
     std::visit(detail::overloaded{
         [](const wait_unknown_status&) {},
         [&entry](const wait_exit_status& arg) {
             if (entry) {
-                (std::get<instance::forked>(entry->second.info)).state =
+                (std::get<instance::forked>(entry->get().info)).state =
                     wait_status{arg};
             }
         },
         [&entry](const wait_signaled_status& arg) {
             if (entry) {
-                (std::get<instance::forked>(entry->second.info)).state =
+                (std::get<instance::forked>(entry->get().info)).state =
                     wait_status{arg};
             }
         },
@@ -56,8 +54,7 @@ auto handle(const system_name& name, instance& instance,
     return true;
 }
 
-auto handle(const system_name& name, instance& instance,
-            const wait_result& result) -> bool
+auto handle(instance& instance, const wait_result& result) -> bool
 {
     return std::visit(detail::overloaded{
         [](const nokids_wait_result&){
@@ -66,8 +63,8 @@ auto handle(const system_name& name, instance& instance,
         [](const error_wait_result&){
             return true;
         },
-        [&name,&instance](const info_wait_result& arg){
-            return handle(name, instance, arg);
+        [&instance](const info_wait_result& arg){
+            return handle(instance, arg);
         },
     }, result);
 }
@@ -147,13 +144,12 @@ auto wait(reference_process_id id, wait_option flags) noexcept
     return info_wait_result{reference_process_id{pid}};
 }
 
-auto wait(const system_name& name, instance& object)
-    -> std::vector<wait_result>
+auto wait(instance& object) -> std::vector<wait_result>
 {
     auto results = std::vector<wait_result>{};
     auto result = decltype(wait()){};
     while (!std::holds_alternative<nokids_wait_result>(result = wait())) {
-        if (handle(name, object, result)) {
+        if (handle(object, result)) {
             results.push_back(result);
         }
     }

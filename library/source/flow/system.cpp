@@ -49,23 +49,25 @@ auto connect_with_user(const system_name& name,
 {
     auto result = std::vector<connection>{};
     for (auto&& entry: descriptors) {
+        const auto user_ep_name = name.get() + ":" +
+            std::to_string(int(entry.first));
         switch (entry.second.direction) {
         case io_type::in:
             result.emplace_back(unidirectional_connection{
-                user_endpoint{},
+                user_endpoint{user_ep_name},
                 system_endpoint{name, entry.first},
             });
             break;
         case io_type::out:
             result.emplace_back(unidirectional_connection{
                 system_endpoint{name, entry.first},
-                user_endpoint{},
+                user_endpoint{user_ep_name},
             });
             break;
         case io_type::bidir:
             result.emplace_back(bidirectional_connection{
                 system_endpoint{name, entry.first},
-                user_endpoint{},
+                user_endpoint{user_ep_name},
             });
             break;
         case io_type::none:
