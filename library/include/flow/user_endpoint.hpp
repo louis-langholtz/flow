@@ -1,7 +1,6 @@
 #ifndef user_endpoint_hpp
 #define user_endpoint_hpp
 
-#include <compare>
 #include <ostream>
 #include <string>
 
@@ -18,9 +17,6 @@ struct user_endpoint
 
     detail::checked_value<std::string, name_checker> name;
 
-#if defined(__cpp_lib_three_way_comparison)
-    auto operator<=>(const user_endpoint&) const = default;
-#else
     auto operator==(const user_endpoint& other) const noexcept
     {
         return name == other.name;
@@ -30,7 +26,6 @@ struct user_endpoint
     {
         return name < other.name;
     }
-#endif
 };
 
 auto operator<<(std::ostream& os, const user_endpoint& value)
