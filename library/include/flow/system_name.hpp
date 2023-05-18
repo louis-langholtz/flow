@@ -10,7 +10,7 @@
 
 namespace flow {
 
-struct system_name_checker: public detail::name_chars_checker
+struct system_name_checker: detail::allowed_chars_checker<detail::name_charset>
 {
     static constexpr auto separator = ".";
 };
