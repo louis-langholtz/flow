@@ -8,15 +8,14 @@
 
 namespace flow {
 
+struct env_value_checker: public detail::denied_chars_checker<'\0'> {};
+
 /// @brief Environment variable value strong type.
 /// @note Environment variable values may not contain the null-character ('\0').
 ///   This character is invalid.
 /// @throws std::invalid_argument if an attempt is made to construct this type
 ///   with one or more invalid characters.
-using env_value = detail::checked_value<
-    std::string,
-    detail::denied_chars_checker<'\0'>
->;
+using env_value = detail::checked_value<std::string, env_value_checker>;
 
 static_assert(std::is_nothrow_default_constructible_v<env_value>);
 static_assert(std::is_nothrow_move_constructible_v<env_value>);

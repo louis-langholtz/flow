@@ -48,7 +48,6 @@ using wait_result = variant<
     info_wait_result
 >;
 
-struct system_name;
 struct instance;
 
 enum class wait_option: int;
@@ -89,8 +88,7 @@ auto wait(reference_process_id id = invalid_process_id,
           wait_option flags = {}) noexcept
     -> wait_result;
 
-auto wait(const system_name& name, instance& object)
-    -> std::vector<wait_result>;
+auto wait(instance& object) -> std::vector<wait_result>;
 
 }
 

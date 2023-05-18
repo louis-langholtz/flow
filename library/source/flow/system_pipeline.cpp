@@ -132,7 +132,7 @@ auto system_pipeline::wait() -> std::vector<wait_result>
         break;
     }
     current_state = state::waiting;
-    auto wait_results = flow::wait(system_name{}, object);
+    auto wait_results = flow::wait(object);
     current_state = state::done;
     return wait_results;
 }
