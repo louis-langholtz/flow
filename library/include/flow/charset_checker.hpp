@@ -14,7 +14,7 @@ auto charset_validator(std::string v,
     -> std::string;
 
 template <char... chars>
-struct constexpr_ntbs
+struct tcstring
 {
     static constexpr auto data() noexcept
     {
@@ -78,7 +78,7 @@ struct char_template_joiner<Tpl<Args1...>, Tpl<Args2...>, Tail...>
 template <class T>
 concept is_stringable = std::convertible_to<T, std::string>;
 
-static_assert(is_stringable<constexpr_ntbs<>>);
+static_assert(is_stringable<tcstring<>>);
 
 template <is_stringable... Args>
 auto concatenate(Args const&... args) -> std::string
@@ -126,12 +126,12 @@ using denied_chars_checker = charset_checker<char_list::deny, Charsets...>;
 template <is_stringable... Charsets>
 using allowed_chars_checker = charset_checker<char_list::allow, Charsets...>;
 
-using upper_charset = constexpr_ntbs<
+using upper_charset = tcstring<
     'A','B','C','D','E','F','G','H','I','J','K','L','M',
     'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
 >;
 
-using lower_charset = constexpr_ntbs<
+using lower_charset = tcstring<
     'a','b','c','d','e','f','g','h','i','j','k','l','m',
     'n','o','p','q','r','s','t','u','v','w','x','y','z'
 >;
@@ -140,7 +140,7 @@ using alpha_charset = char_template_joiner<
     upper_charset, lower_charset
 >::type;
 
-using digit_charset = constexpr_ntbs<
+using digit_charset = tcstring<
     '0','1','2','3','4','5','6','7','8','9'
 >;
 
@@ -149,7 +149,7 @@ using alphanum_charset = char_template_joiner<
 >::type;
 
 using name_charset = char_template_joiner<
-    alphanum_charset, constexpr_ntbs<'-','_','#'>
+    alphanum_charset, tcstring<'-','_','#'>
 >::type;
 
 }

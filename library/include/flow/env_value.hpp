@@ -9,7 +9,7 @@
 namespace flow {
 
 struct env_value_checker:
-    detail::denied_chars_checker<detail::constexpr_ntbs<'\0'>> {};
+    detail::denied_chars_checker<detail::tcstring<'\0'>> {};
 
 /// @brief Environment variable value strong type.
 /// @note Environment variable values may not contain the null-character ('\0').
