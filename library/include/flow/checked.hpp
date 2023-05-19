@@ -11,13 +11,13 @@ template <class T, class R, class ...Args>
 concept functor_returns = std::is_invocable_r_v<R, T, Args...>;
 
 template <class T, functor_returns<T, T> Checker, class X = void>
-struct checked_value
+struct checked
 {
     using value_type = T;
     using checker_type = Checker;
 
     template <bool B = functor_returns<Checker, T>, std::enable_if_t<B, int> = 0>
-    constexpr checked_value() // NOLINT(bugprone-exception-escape)
+    constexpr checked() // NOLINT(bugprone-exception-escape)
     noexcept(noexcept(Checker{}()) && std::is_nothrow_move_constructible_v<T>):
     data{Checker{}()}
     {
@@ -26,16 +26,16 @@ struct checked_value
 
     template <bool B = functor_returns<Checker, T>,
     std::enable_if_t<!B && std::is_default_constructible_v<T>, int> = 0>
-    constexpr checked_value() // NOLINT(bugprone-exception-escape)
+    constexpr checked() // NOLINT(bugprone-exception-escape)
     noexcept(noexcept(Checker{}(T{})) && std::is_nothrow_move_constructible_v<T>):
     data{Checker{}(T{})}
     {
         // Intentionally empty.
     }
 
-    checked_value(const checked_value& other) = default;
+    checked(const checked& other) = default;
 
-    checked_value(checked_value&& other) // NOLINT(bugprone-exception-escape)
+    checked(checked&& other) // NOLINT(bugprone-exception-escape)
     noexcept(std::is_nothrow_move_constructible_v<value_type> &&
              std::is_nothrow_assignable_v<value_type,
                 decltype(checker_type{}())> &&
@@ -46,10 +46,10 @@ struct checked_value
     }
 
     template <class U, class V = std::enable_if_t<
-        !std::is_same_v<std::decay_t<U>, checked_value> &&
+        !std::is_same_v<std::decay_t<U>, checked> &&
         functor_returns<Checker, T, U>
     >>
-    checked_value(U&& u): data{
+    checked(U&& u): data{
         checker_type{}(std::forward<U>(u)) // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
     }
     {
@@ -59,19 +59,19 @@ struct checked_value
     template<class InputIt, class U = std::enable_if_t<
         std::is_invocable_r_v<T, Checker, InputIt, InputIt>
     >>
-    checked_value(InputIt first, InputIt last)
+    checked(InputIt first, InputIt last)
         : data{checker_type{}(first, last)}
     {
         // Intentionally empty.
     }
 
-    auto operator=(const checked_value& other) -> checked_value& = default;
+    auto operator=(const checked& other) -> checked& = default;
 
-    auto operator=(checked_value&& other) // NOLINT(bugprone-exception-escape)
+    auto operator=(checked&& other) // NOLINT(bugprone-exception-escape)
         noexcept(std::is_nothrow_move_assignable_v<value_type> &&
                  std::is_nothrow_assignable_v<value_type,
                     decltype(checker_type{}())>)
-        -> checked_value&
+        -> checked&
     {
         if (this != &other) {
             data = std::exchange(other.data, checker_type{}());
@@ -95,8 +95,8 @@ private:
 
 template <class LhsV, class LhsC, class LhsX,
           class RhsV, class RhsC, class RhsX>
-inline auto operator==(const checked_value<LhsV, LhsC, LhsX>& lhs,
-                       const checked_value<RhsV, RhsC, RhsX>& rhs)
+inline auto operator==(const checked<LhsV, LhsC, LhsX>& lhs,
+                       const checked<RhsV, RhsC, RhsX>& rhs)
     -> decltype(LhsV(lhs) == RhsV(rhs))
 {
     return LhsV(lhs) == RhsV(rhs);
@@ -104,15 +104,15 @@ inline auto operator==(const checked_value<LhsV, LhsC, LhsX>& lhs,
 
 template <class LhsV, class LhsC, class LhsX,
           class RhsV, class RhsC, class RhsX>
-inline auto operator<(const checked_value<LhsV, LhsC, LhsX>& lhs,
-                      const checked_value<RhsV, RhsC, RhsX>& rhs)
+inline auto operator<(const checked<LhsV, LhsC, LhsX>& lhs,
+                      const checked<RhsV, RhsC, RhsX>& rhs)
     -> decltype(LhsV(lhs) < RhsV(rhs))
 {
     return LhsV(lhs) < RhsV(rhs);
 }
 
 template <class V, class C, class X>
-inline auto operator==(const checked_value<V, C, X>& checked,
+inline auto operator==(const checked<V, C, X>& checked,
                        const V& value)
     -> decltype(V(checked) == value)
 {
@@ -121,14 +121,14 @@ inline auto operator==(const checked_value<V, C, X>& checked,
 
 template <class V, class C, class X>
 inline auto operator==(const V& value,
-                       const checked_value<V, C, X>& checked)
+                       const checked<V, C, X>& checked)
     -> decltype(V(checked) == value)
 {
     return V(checked) == value;
 }
 
 template <class V, class C, class X>
-inline auto operator<(const checked_value<V, C, X>& checked,
+inline auto operator<(const checked<V, C, X>& checked,
                       const V& value)
     -> decltype(V(checked) < value)
 {
@@ -137,14 +137,14 @@ inline auto operator<(const checked_value<V, C, X>& checked,
 
 template <class V, class C, class X>
 inline auto operator<(const V& value,
-                      const checked_value<V, C, X>& checked)
+                      const checked<V, C, X>& checked)
     -> decltype(V(checked) == value)
 {
     return V(checked) == value;
 }
 
 template <class V, class C, class X>
-inline auto operator<=(const checked_value<V, C, X>& checked,
+inline auto operator<=(const checked<V, C, X>& checked,
                        const V& value)
     -> decltype(V(checked) <= value)
 {
@@ -153,14 +153,14 @@ inline auto operator<=(const checked_value<V, C, X>& checked,
 
 template <class V, class C, class X>
 inline auto operator<=(const V& value,
-                       const checked_value<V, C, X>& checked)
+                       const checked<V, C, X>& checked)
     -> decltype(V(checked) <= value)
 {
     return V(checked) == value;
 }
 
 template <class V, class C, class X>
-inline auto operator>(const checked_value<V, C, X>& checked,
+inline auto operator>(const checked<V, C, X>& checked,
                       const V& value)
     -> decltype(V(checked) > value)
 {
@@ -169,14 +169,14 @@ inline auto operator>(const checked_value<V, C, X>& checked,
 
 template <class V, class C, class X>
 inline auto operator>(const V& value,
-                      const checked_value<V, C, X>& checked)
+                      const checked<V, C, X>& checked)
     -> decltype(V(checked) > value)
 {
     return V(checked) > value;
 }
 
 template <class V, class C, class X>
-inline auto operator>=(const checked_value<V, C, X>& checked,
+inline auto operator>=(const checked<V, C, X>& checked,
                        const V& value)
     -> decltype(V(checked) >= value)
 {
@@ -185,7 +185,7 @@ inline auto operator>=(const checked_value<V, C, X>& checked,
 
 template <class V, class C, class X>
 inline auto operator>=(const V& value,
-                       const checked_value<V, C, X>& checked)
+                       const checked<V, C, X>& checked)
     -> decltype(V(checked) >= value)
 {
     return V(checked) >= value;
@@ -197,7 +197,7 @@ concept ostreamable = requires{
 };
 
 template <ostreamable T, class U, class X>
-auto operator<<(std::ostream& os, const checked_value<T, U, X>& value)
+auto operator<<(std::ostream& os, const checked<T, U, X>& value)
     -> std::ostream&
 {
     os << value.get();
