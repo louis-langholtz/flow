@@ -1,5 +1,5 @@
-#ifndef restricted_string_h
-#define restricted_string_h
+#ifndef checked_hpp
+#define checked_hpp
 
 #include <string>
 #include <type_traits>
@@ -206,4 +206,4 @@ auto operator<<(std::ostream& os, const checked<T, U, X>& value)
 
 }
 
-#endif /* restricted_string_h */
+#endif /* checked_hpp */
