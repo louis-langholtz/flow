@@ -11,11 +11,11 @@ namespace flow {
 
 struct user_endpoint
 {
-    struct name_checker: detail::allowed_chars_checker<
-        detail::name_charset, detail::constexpr_ntsb<'+',':','.'>
-    > {};
+    using name_charset_checker = detail::allowed_chars_checker<
+        detail::name_charset, detail::constexpr_ntbs<'+',':','.'>
+    >;
 
-    detail::checked_value<std::string, name_checker> name;
+    detail::checked_value<std::string, name_charset_checker, user_endpoint> name;
 
     auto operator==(const user_endpoint& other) const noexcept
     {
