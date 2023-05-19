@@ -10,7 +10,7 @@ namespace flow::detail {
 template <class T, class R, class ...Args>
 concept functor_returns = std::is_invocable_r_v<R, T, Args...>;
 
-template <class T, functor_returns<T, T> Checker>
+template <class T, functor_returns<T, T> Checker, class X = void>
 struct checked_value
 {
     using value_type = T;
@@ -93,97 +93,99 @@ private:
     value_type data;
 };
 
-template <class LhsV, class LhsC, class RhsV, class RhsC>
-inline auto operator==(const checked_value<LhsV, LhsC>& lhs,
-                       const checked_value<RhsV, RhsC>& rhs)
+template <class LhsV, class LhsC, class LhsX,
+          class RhsV, class RhsC, class RhsX>
+inline auto operator==(const checked_value<LhsV, LhsC, LhsX>& lhs,
+                       const checked_value<RhsV, RhsC, RhsX>& rhs)
     -> decltype(LhsV(lhs) == RhsV(rhs))
 {
     return LhsV(lhs) == RhsV(rhs);
 }
 
-template <class LhsV, class LhsC, class RhsV, class RhsC>
-inline auto operator<(const checked_value<LhsV, LhsC>& lhs,
-                      const checked_value<RhsV, RhsC>& rhs)
+template <class LhsV, class LhsC, class LhsX,
+          class RhsV, class RhsC, class RhsX>
+inline auto operator<(const checked_value<LhsV, LhsC, LhsX>& lhs,
+                      const checked_value<RhsV, RhsC, RhsX>& rhs)
     -> decltype(LhsV(lhs) < RhsV(rhs))
 {
     return LhsV(lhs) < RhsV(rhs);
 }
 
-template <class V, class C>
-inline auto operator==(const checked_value<V, C>& checked,
+template <class V, class C, class X>
+inline auto operator==(const checked_value<V, C, X>& checked,
                        const V& value)
     -> decltype(V(checked) == value)
 {
     return V(checked) == value;
 }
 
-template <class V, class C>
+template <class V, class C, class X>
 inline auto operator==(const V& value,
-                       const checked_value<V, C>& checked)
+                       const checked_value<V, C, X>& checked)
     -> decltype(V(checked) == value)
 {
     return V(checked) == value;
 }
 
-template <class V, class C>
-inline auto operator<(const checked_value<V, C>& checked,
+template <class V, class C, class X>
+inline auto operator<(const checked_value<V, C, X>& checked,
                       const V& value)
     -> decltype(V(checked) < value)
 {
     return V(checked) < value;
 }
 
-template <class V, class C>
+template <class V, class C, class X>
 inline auto operator<(const V& value,
-                      const checked_value<V, C>& checked)
+                      const checked_value<V, C, X>& checked)
     -> decltype(V(checked) == value)
 {
     return V(checked) == value;
 }
 
-template <class V, class C>
-inline auto operator<=(const checked_value<V, C>& checked,
+template <class V, class C, class X>
+inline auto operator<=(const checked_value<V, C, X>& checked,
                        const V& value)
     -> decltype(V(checked) <= value)
 {
     return V(checked) <= value;
 }
 
-template <class V, class C>
+template <class V, class C, class X>
 inline auto operator<=(const V& value,
-                       const checked_value<V, C>& checked)
+                       const checked_value<V, C, X>& checked)
     -> decltype(V(checked) <= value)
 {
     return V(checked) == value;
 }
 
-template <class V, class C>
-inline auto operator>(const checked_value<V, C>& checked,
+template <class V, class C, class X>
+inline auto operator>(const checked_value<V, C, X>& checked,
                       const V& value)
     -> decltype(V(checked) > value)
 {
     return V(checked) > value;
 }
 
-template <class V, class C>
+template <class V, class C, class X>
 inline auto operator>(const V& value,
-                      const checked_value<V, C>& checked)
+                      const checked_value<V, C, X>& checked)
     -> decltype(V(checked) > value)
 {
     return V(checked) > value;
 }
 
-template <class V, class C>
-inline auto operator>=(const checked_value<V, C>& checked,
+template <class V, class C, class X>
+inline auto operator>=(const checked_value<V, C, X>& checked,
                        const V& value)
     -> decltype(V(checked) >= value)
 {
     return V(checked) >= value;
 }
 
-template <class V, class C>
+template <class V, class C, class X>
 inline auto operator>=(const V& value,
-                       const checked_value<V, C>& checked)
+                       const checked_value<V, C, X>& checked)
     -> decltype(V(checked) >= value)
 {
     return V(checked) >= value;
@@ -194,8 +196,8 @@ concept ostreamable = requires{
     std::declval<std::ostream&>() << std::declval<T>();
 };
 
-template <ostreamable T, class U>
-auto operator<<(std::ostream& os, const checked_value<T, U>& value)
+template <ostreamable T, class U, class X>
+auto operator<<(std::ostream& os, const checked_value<T, U, X>& value)
     -> std::ostream&
 {
     os << value.get();
