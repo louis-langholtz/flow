@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 
-#include "flow/checked_value.hpp"
+#include "flow/checked.hpp"
 #include "flow/charset_checker.hpp"
 
 namespace flow {
@@ -15,7 +15,7 @@ struct user_endpoint
         detail::name_charset, detail::constexpr_ntbs<'+',':','.'>
     >;
 
-    detail::checked_value<std::string, name_charset_checker, user_endpoint> name;
+    detail::checked<std::string, name_charset_checker, user_endpoint> name;
 
     auto operator==(const user_endpoint& other) const noexcept
     {

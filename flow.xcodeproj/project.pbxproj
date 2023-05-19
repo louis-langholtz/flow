@@ -33,7 +33,7 @@
 		9943E8AC2A059A28002F4C26 /* file_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8AA2A059A28002F4C26 /* file_channel.hpp */; };
 		9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8AE2A06F10F002F4C26 /* env_name.hpp */; };
 		9943E8B42A06F403002F4C26 /* env_value.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8B22A06F403002F4C26 /* env_value.hpp */; };
-		9943E8B62A06F6ED002F4C26 /* checked_value.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8B52A06F6ED002F4C26 /* checked_value.hpp */; };
+		9943E8B62A06F6ED002F4C26 /* checked.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8B52A06F6ED002F4C26 /* checked.hpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
@@ -173,7 +173,7 @@
 		9943E8AA2A059A28002F4C26 /* file_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = file_channel.hpp; sourceTree = "<group>"; };
 		9943E8AE2A06F10F002F4C26 /* env_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = env_name.hpp; sourceTree = "<group>"; };
 		9943E8B22A06F403002F4C26 /* env_value.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = env_value.hpp; sourceTree = "<group>"; };
-		9943E8B52A06F6ED002F4C26 /* checked_value.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = checked_value.hpp; sourceTree = "<group>"; };
+		9943E8B52A06F6ED002F4C26 /* checked.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = checked.hpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -328,7 +328,7 @@
 			children = (
 				99C1938E29F50EFD00C3F53F /* channel.hpp */,
 				99A88D4A2A15903A00AFD76F /* charset_checker.hpp */,
-				9943E8B52A06F6ED002F4C26 /* checked_value.hpp */,
+				9943E8B52A06F6ED002F4C26 /* checked.hpp */,
 				99C1939229F511B700C3F53F /* connection.hpp */,
 				99940BF629F1DAE800A77461 /* descriptor_id.hpp */,
 				99A88D172A0B1BC500AFD76F /* descriptor_info.hpp */,
@@ -421,7 +421,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9943E8B62A06F6ED002F4C26 /* checked_value.hpp in Headers */,
+				9943E8B62A06F6ED002F4C26 /* checked.hpp in Headers */,
 				9943E8982A021E98002F4C26 /* user_endpoint.hpp in Headers */,
 				99940BEF29F1C9A500A77461 /* io_type.hpp in Headers */,
 				9943E89A2A044697002F4C26 /* environment_map.hpp in Headers */,
