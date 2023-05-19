@@ -12,7 +12,7 @@ namespace flow {
 struct user_endpoint
 {
     using name_charset_checker = detail::allowed_chars_checker<
-        detail::name_charset, detail::constexpr_ntbs<'+',':','.'>
+        detail::name_charset, detail::tcstring<'+',':','.'>
     >;
 
     detail::checked<std::string, name_charset_checker, user_endpoint> name;
