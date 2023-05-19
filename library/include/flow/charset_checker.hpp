@@ -4,6 +4,8 @@
 #include <array>
 #include <string>
 
+#include "flow/tcstring.hpp"
+
 namespace flow::detail {
 
 enum class char_list { deny, allow };
@@ -12,40 +14,6 @@ auto charset_validator(std::string v,
                        char_list access,
                        const std::string& chars)
     -> std::string;
-
-template <char... chars>
-struct tcstring
-{
-    static constexpr auto data() noexcept
-    {
-        return std::data(ntbs);
-    }
-
-    static constexpr auto size() noexcept
-    {
-        return std::size(ntbs) - 1u;
-    }
-
-    static constexpr auto begin() noexcept
-    {
-        return std::begin(ntbs);
-    }
-
-    static constexpr auto end() noexcept
-    {
-        return std::end(ntbs) - 1u;
-    }
-
-    operator std::string() const
-    {
-        return std::string{data(), size()};
-    }
-
-private: // prevent direct access to underlying implementation...
-    static constexpr auto ntbs = std::array<char, sizeof...(chars) + 1u>{
-        chars..., '\0'
-    };
-};
 
 template <typename...> struct char_template_joiner;
 
