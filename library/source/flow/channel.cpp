@@ -66,30 +66,6 @@ auto validate(const system_endpoint& end,
 
 }
 
-auto make_not_closed_msg(const system_name& name,
-                         const connection& conn,
-                         const endpoint& look_for,
-                         const std::span<const connection>& connections)
-    -> std::string
-{
-    std::ostringstream os;
-    static const auto not_closed_error = "system must be closed";
-    os << not_closed_error;
-    os << ":\n  for system " << name;
-    os << "\n  for connection " << conn;
-    os << "\n  looking-for " << look_for;
-    if (connections.empty()) {
-        os << "\n  parent-connections empty";
-    }
-    else {
-        os << "\n  parent-connections:";
-        for (auto&& c: connections) {
-            os << "\n    " << c;
-        }
-    }
-    return os.str();
-}
-
 auto make_channel(const unidirectional_connection& conn,
                   const system_name& name,
                   const system& system,
@@ -153,9 +129,12 @@ auto make_channel(const unidirectional_connection& conn,
             if (const auto found = find_index(parent_connections, look_for)) {
                 return {reference_channel{&parent_channels[*found]}};
             }
-            throw std::invalid_argument{make_not_closed_msg(name, conn,
-                                                            look_for,
-                                                            parent_connections)};
+            std::ostringstream os;
+            os << "can't find parent connection with ";
+            os << look_for;
+            os << " endpoint for ";
+            os << conn;
+            throw invalid_connection{os.str()};
         }
     }
     return {pipe_channel{}};
