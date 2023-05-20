@@ -70,6 +70,11 @@ auto pipe_channel::close(io side, std::ostream& diags) noexcept -> bool
     return true;
 }
 
+auto pipe_channel::get(io side) const noexcept -> reference_descriptor
+{
+    return reference_descriptor{descriptors[int(side)]};
+}
+
 auto pipe_channel::dup(io side, reference_descriptor newfd,
                        std::ostream& diags) noexcept -> bool
 {

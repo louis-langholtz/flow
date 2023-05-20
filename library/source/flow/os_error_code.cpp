@@ -19,4 +19,10 @@ auto to_string(os_error_code err) -> std::string
     return os.str();
 }
 
+[[noreturn]]
+auto throw_error(os_error_code ec, const std::string& msg) -> void
+{
+    throw std::system_error{int(ec), std::system_category(), msg};
+}
+
 }

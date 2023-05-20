@@ -4,6 +4,7 @@
 #include <array>
 #include <concepts> // for std::convertible_to
 #include <ostream>
+#include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/endpoint.hpp"
 #include "flow/variant.hpp"
@@ -43,6 +44,9 @@ using connection = variant<
     unidirectional_connection,
     bidirectional_connection
 >;
+
+static_assert(std::is_default_constructible_v<connection>);
+static_assert(std::equality_comparable<connection>);
 
 template <std::convertible_to<endpoint> T>
 auto make_endpoints(const unidirectional_connection& c)

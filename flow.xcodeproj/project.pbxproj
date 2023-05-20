@@ -39,6 +39,8 @@
 		9986C7A72A19105A006B2095 /* owning_descriptor.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9986C7A52A19105A006B2095 /* owning_descriptor.hpp */; };
 		9986C7A92A19139A006B2095 /* owning_descriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7A82A19139A006B2095 /* owning_descriptor.cpp */; };
 		9986C7AB2A191570006B2095 /* descriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7AA2A191570006B2095 /* descriptor.cpp */; };
+		9986C7AE2A19220A006B2095 /* forwarding_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7AC2A19220A006B2095 /* forwarding_channel.cpp */; };
+		9986C7AF2A19220A006B2095 /* forwarding_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9986C7AD2A19220A006B2095 /* forwarding_channel.hpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
@@ -185,6 +187,8 @@
 		9986C7A52A19105A006B2095 /* owning_descriptor.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = owning_descriptor.hpp; sourceTree = "<group>"; };
 		9986C7A82A19139A006B2095 /* owning_descriptor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = owning_descriptor.cpp; sourceTree = "<group>"; };
 		9986C7AA2A191570006B2095 /* descriptor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor.cpp; sourceTree = "<group>"; };
+		9986C7AC2A19220A006B2095 /* forwarding_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = forwarding_channel.cpp; sourceTree = "<group>"; };
+		9986C7AD2A19220A006B2095 /* forwarding_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = forwarding_channel.hpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -352,6 +356,7 @@
 				9943E8992A044697002F4C26 /* environment_map.hpp */,
 				9943E8AA2A059A28002F4C26 /* file_channel.hpp */,
 				99C1938229F506C200C3F53F /* file_endpoint.hpp */,
+				9986C7AD2A19220A006B2095 /* forwarding_channel.hpp */,
 				9943E88E2A0068C6002F4C26 /* indenting_ostreambuf.hpp */,
 				99C1939A29F5774600C3F53F /* instance.hpp */,
 				99A88D462A1426CE00AFD76F /* instantiate.hpp */,
@@ -390,6 +395,7 @@
 				9943E89B2A0453F3002F4C26 /* environment_map.cpp */,
 				9943E8A92A059A28002F4C26 /* file_channel.cpp */,
 				99C1938129F506C200C3F53F /* file_endpoint.cpp */,
+				9986C7AC2A19220A006B2095 /* forwarding_channel.cpp */,
 				9943E88D2A0068C6002F4C26 /* indenting_ostreambuf.cpp */,
 				99C1939929F5774600C3F53F /* instance.cpp */,
 				99A88D452A1426CE00AFD76F /* instantiate.cpp */,
@@ -462,6 +468,7 @@
 				9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */,
 				99940C0029F1F73900A77461 /* system_name.hpp in Headers */,
 				99C193A029F5819A00C3F53F /* utility.hpp in Headers */,
+				9986C7AF2A19220A006B2095 /* forwarding_channel.hpp in Headers */,
 				99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */,
 				99A88D192A0B1BC500AFD76F /* descriptor_info.hpp in Headers */,
 				99C1939029F50EFD00C3F53F /* channel.hpp in Headers */,
@@ -600,6 +607,7 @@
 				9943E87A29FBF418002F4C26 /* wait_status.cpp in Sources */,
 				9943E87629FB444F002F4C26 /* os_error_code.cpp in Sources */,
 				9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */,
+				9986C7AE2A19220A006B2095 /* forwarding_channel.cpp in Sources */,
 				99C1939329F511B700C3F53F /* connection.cpp in Sources */,
 				99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */,
 				9943E8A32A04A783002F4C26 /* reference_process_id.cpp in Sources */,

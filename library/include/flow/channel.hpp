@@ -4,23 +4,26 @@
 #include <ostream>
 #include <span>
 #include <stdexcept> // for std::invalid_argument
-#include <type_traits>
+#include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/connection.hpp"
 #include "flow/file_channel.hpp"
+#include "flow/forwarding_channel.hpp"
 #include "flow/pipe_channel.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
 
 struct system;
+struct instance;
 
 struct reference_channel
 {
     using channel = std::variant<
+        reference_channel,
         file_channel,
         pipe_channel,
-        reference_channel
+        forwarding_channel
     >;
 
     /// @brief Non-owning pointer to referenced channel.
@@ -55,6 +58,7 @@ struct invalid_connection: std::invalid_argument
 auto make_channel(const connection& conn,
                   const system_name& name,
                   const system& system,
+                  const std::span<channel>& channels,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> channel;
