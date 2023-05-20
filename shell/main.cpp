@@ -13,7 +13,7 @@
 
 #include "flow/channel.hpp"
 #include "flow/connection.hpp"
-#include "flow/descriptor_id.hpp"
+#include "flow/reference_descriptor.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/indenting_ostreambuf.hpp"
 #include "flow/instantiate.hpp"
@@ -120,7 +120,7 @@ auto parse_descriptor_map_entry(const std::string_view& arg)
         return {};
     }
     return {flow::descriptor_map_entry{
-        flow::descriptor_id(*found_int), des_info
+        flow::reference_descriptor(*found_int), des_info
     }};
 }
 

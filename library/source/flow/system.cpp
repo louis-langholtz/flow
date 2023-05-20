@@ -38,7 +38,7 @@ auto operator<<(std::ostream& os, const system& value)
 }
 
 auto get_matching_set(const system& sys, io_type io)
-    -> std::set<descriptor_id>
+    -> std::set<reference_descriptor>
 {
     return get_matching_set(sys.descriptors, io);
 }

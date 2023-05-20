@@ -80,7 +80,7 @@ auto send_signal(signal sig,
 auto set_signal_handler(signal sig) -> void;
 
 auto get_matching_set(const descriptor_map& descriptors, io_type io)
-    -> std::set<descriptor_id>;
+    -> std::set<reference_descriptor>;
 
 }
 

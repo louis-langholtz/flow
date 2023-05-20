@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string> // fpr std::char_traits
 
-#include "flow/descriptor_id.hpp"
+#include "flow/reference_descriptor.hpp"
 
 namespace flow {
 
@@ -24,7 +24,7 @@ public:
     using off_type = typename traits_type::off_type;
     using state_type = typename traits_type::state_type;
 
-    descriptor_streambuf(descriptor_id d): id(d)
+    descriptor_streambuf(reference_descriptor d): id(d)
     {
         // Intentionally empty.
     }
@@ -39,12 +39,12 @@ protected:
 private:
     static constexpr auto buffer_size = 1024u;
     static constexpr auto putback_size = std::ptrdiff_t{8};
-    descriptor_id id{descriptors::invalid_id};
+    reference_descriptor id{descriptors::invalid_id};
     std::array<char, buffer_size> buffer{};
 };
 
 struct descriptor_istream: public std::istream {
-    descriptor_istream(descriptor_id fd)
+    descriptor_istream(reference_descriptor fd)
         : std::istream(nullptr), streambuf(fd)
     {
         rdbuf(&streambuf);
@@ -54,7 +54,7 @@ private:
 };
 
 struct descriptor_ostream: public std::ostream {
-    descriptor_ostream(descriptor_id fd)
+    descriptor_ostream(reference_descriptor fd)
         : std::ostream(nullptr), streambuf(fd)
     {
         rdbuf(&streambuf);
@@ -64,7 +64,7 @@ private:
 };
 
 struct descriptor_iostream: public std::iostream {
-    descriptor_iostream(descriptor_id fd)
+    descriptor_iostream(reference_descriptor fd)
         : std::iostream(nullptr), streambuf(fd)
     {
         rdbuf(&streambuf);

@@ -16,7 +16,7 @@ auto validate(const system_endpoint& end,
               io_type expected_io) -> void
 {
     const auto at = [](const descriptor_map& descriptors,
-                       const descriptor_id& key,
+                       const reference_descriptor& key,
                        const system_name& name) -> const descriptor_info&
     {
         try {
@@ -110,7 +110,7 @@ auto make_channel(const unidirectional_connection& conn,
         throw invalid_connection{same_endpoints_error};
     }
 
-    auto enclosure_descriptors = std::array<std::set<descriptor_id>, 2u>{};
+    auto enclosure_descriptors = std::array<std::set<reference_descriptor>, 2u>{};
     const auto src_file = std::get_if<file_endpoint>(&conn.src);
     const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
     if (src_file && dst_file) {
