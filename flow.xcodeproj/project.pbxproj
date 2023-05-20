@@ -34,6 +34,11 @@
 		9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8AE2A06F10F002F4C26 /* env_name.hpp */; };
 		9943E8B42A06F403002F4C26 /* env_value.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8B22A06F403002F4C26 /* env_value.hpp */; };
 		9943E8B62A06F6ED002F4C26 /* checked.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E8B52A06F6ED002F4C26 /* checked.hpp */; };
+		9986C7A32A19102E006B2095 /* descriptor.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9986C7A12A19102E006B2095 /* descriptor.hpp */; };
+		9986C7A62A19105A006B2095 /* owning_descriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7A42A19105A006B2095 /* owning_descriptor.cpp */; };
+		9986C7A72A19105A006B2095 /* owning_descriptor.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9986C7A52A19105A006B2095 /* owning_descriptor.hpp */; };
+		9986C7A92A19139A006B2095 /* owning_descriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7A82A19139A006B2095 /* owning_descriptor.cpp */; };
+		9986C7AB2A191570006B2095 /* descriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7AA2A191570006B2095 /* descriptor.cpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
@@ -41,7 +46,6 @@
 		99940BF429F1D01400A77461 /* libflow.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; };
 		99940BF729F1DAE800A77461 /* reference_descriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BF529F1DAE800A77461 /* reference_descriptor.cpp */; };
 		99940BF829F1DAE800A77461 /* reference_descriptor.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BF629F1DAE800A77461 /* reference_descriptor.hpp */; };
-		99940BFB29F1F49F00A77461 /* process_id.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BF929F1F49F00A77461 /* process_id.cpp */; };
 		99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BFA29F1F49F00A77461 /* process_id.hpp */; };
 		99940BFF29F1F73900A77461 /* system_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BFD29F1F73900A77461 /* system_name.cpp */; };
 		99940C0029F1F73900A77461 /* system_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BFE29F1F73900A77461 /* system_name.hpp */; };
@@ -176,6 +180,11 @@
 		9943E8AE2A06F10F002F4C26 /* env_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = env_name.hpp; sourceTree = "<group>"; };
 		9943E8B22A06F403002F4C26 /* env_value.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = env_value.hpp; sourceTree = "<group>"; };
 		9943E8B52A06F6ED002F4C26 /* checked.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = checked.hpp; sourceTree = "<group>"; };
+		9986C7A12A19102E006B2095 /* descriptor.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor.hpp; sourceTree = "<group>"; };
+		9986C7A42A19105A006B2095 /* owning_descriptor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = owning_descriptor.cpp; sourceTree = "<group>"; };
+		9986C7A52A19105A006B2095 /* owning_descriptor.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = owning_descriptor.hpp; sourceTree = "<group>"; };
+		9986C7A82A19139A006B2095 /* owning_descriptor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = owning_descriptor.cpp; sourceTree = "<group>"; };
+		9986C7AA2A191570006B2095 /* descriptor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor.cpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -183,7 +192,6 @@
 		99940BED29F1C9A500A77461 /* io_type.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = io_type.hpp; sourceTree = "<group>"; };
 		99940BF529F1DAE800A77461 /* reference_descriptor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = reference_descriptor.cpp; sourceTree = "<group>"; };
 		99940BF629F1DAE800A77461 /* reference_descriptor.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = reference_descriptor.hpp; sourceTree = "<group>"; };
-		99940BF929F1F49F00A77461 /* process_id.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = process_id.cpp; sourceTree = "<group>"; };
 		99940BFA29F1F49F00A77461 /* process_id.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = process_id.hpp; sourceTree = "<group>"; };
 		99940BFD29F1F73900A77461 /* system_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_name.cpp; sourceTree = "<group>"; };
 		99940BFE29F1F73900A77461 /* system_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_name.hpp; sourceTree = "<group>"; };
@@ -334,6 +342,7 @@
 				99A88D4A2A15903A00AFD76F /* charset_checker.hpp */,
 				9943E8B52A06F6ED002F4C26 /* checked.hpp */,
 				99C1939229F511B700C3F53F /* connection.hpp */,
+				9986C7A12A19102E006B2095 /* descriptor.hpp */,
 				99A88D172A0B1BC500AFD76F /* descriptor_info.hpp */,
 				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
 				99A88D1B2A0B1D8600AFD76F /* descriptor_map.hpp */,
@@ -348,6 +357,7 @@
 				99A88D462A1426CE00AFD76F /* instantiate.hpp */,
 				99940BED29F1C9A500A77461 /* io_type.hpp */,
 				9943E87529FB444F002F4C26 /* os_error_code.hpp */,
+				9986C7A52A19105A006B2095 /* owning_descriptor.hpp */,
 				9943E89E2A04A63F002F4C26 /* owning_process_id.hpp */,
 				9943E8922A021A46002F4C26 /* pipe_channel.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
@@ -385,11 +395,11 @@
 				99A88D452A1426CE00AFD76F /* instantiate.cpp */,
 				99940BEC29F1C9A500A77461 /* io_type.cpp */,
 				9943E87429FB444F002F4C26 /* os_error_code.cpp */,
+				9986C7A42A19105A006B2095 /* owning_descriptor.cpp */,
 				9943E89D2A04A63F002F4C26 /* owning_process_id.cpp */,
 				9943E8912A021A46002F4C26 /* pipe_channel.cpp */,
 				9943E8A52A055E11002F4C26 /* pipe_registry.cpp */,
 				9943E8A62A055E11002F4C26 /* pipe_registry.hpp */,
-				99940BF929F1F49F00A77461 /* process_id.cpp */,
 				99940BF529F1DAE800A77461 /* reference_descriptor.cpp */,
 				9943E8A12A04A783002F4C26 /* reference_process_id.cpp */,
 				99C1939529F5136100C3F53F /* system.cpp */,
@@ -409,11 +419,13 @@
 			isa = PBXGroup;
 			children = (
 				99A88D532A17F93A00AFD76F /* channel.cpp */,
+				9986C7AA2A191570006B2095 /* descriptor.cpp */,
 				99A88D412A128CCB00AFD76F /* env_name.cpp */,
 				99A88D432A12A69D00AFD76F /* env_value.cpp */,
 				99A88D3D2A1003DC00AFD76F /* fstream.cpp */,
 				99A88D3B2A0FB2B100AFD76F /* instance.cpp */,
 				99A88D3F2A115E5D00AFD76F /* instantiate.cpp */,
+				9986C7A82A19139A006B2095 /* owning_descriptor.cpp */,
 				99A88D292A0EF52400AFD76F /* system.cpp */,
 				99A88D4D2A16BB3600AFD76F /* system_name.cpp */,
 			);
@@ -439,6 +451,7 @@
 				99A88D212A0B431300AFD76F /* system_pipeline.hpp in Headers */,
 				9943E8942A021A46002F4C26 /* pipe_channel.hpp in Headers */,
 				99A88D482A1426CE00AFD76F /* instantiate.hpp in Headers */,
+				9986C7A72A19105A006B2095 /* owning_descriptor.hpp in Headers */,
 				99A88D4C2A15903A00AFD76F /* charset_checker.hpp in Headers */,
 				99940BF829F1DAE800A77461 /* reference_descriptor.hpp in Headers */,
 				99C1939829F5136100C3F53F /* system.hpp in Headers */,
@@ -464,6 +477,7 @@
 				9943E88C2A005069002F4C26 /* endpoint.hpp in Headers */,
 				99C193A629F76AB800C3F53F /* descriptor_iostream.hpp in Headers */,
 				99C1938429F506C200C3F53F /* file_endpoint.hpp in Headers */,
+				9986C7A32A19102E006B2095 /* descriptor.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -582,6 +596,7 @@
 				9943E88F2A0068C6002F4C26 /* indenting_ostreambuf.cpp in Sources */,
 				99940BF729F1DAE800A77461 /* reference_descriptor.cpp in Sources */,
 				9943E89F2A04A63F002F4C26 /* owning_process_id.cpp in Sources */,
+				9986C7A62A19105A006B2095 /* owning_descriptor.cpp in Sources */,
 				9943E87A29FBF418002F4C26 /* wait_status.cpp in Sources */,
 				9943E87629FB444F002F4C26 /* os_error_code.cpp in Sources */,
 				9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */,
@@ -594,7 +609,6 @@
 				99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */,
 				99A88D242A0C229400AFD76F /* unset_endpoint.cpp in Sources */,
 				9943E8972A021E98002F4C26 /* user_endpoint.cpp in Sources */,
-				99940BFB29F1F49F00A77461 /* process_id.cpp in Sources */,
 				99C1939729F5136100C3F53F /* system.cpp in Sources */,
 				9943E8932A021A46002F4C26 /* pipe_channel.cpp in Sources */,
 				99C1939B29F5774600C3F53F /* instance.cpp in Sources */,
@@ -617,10 +631,12 @@
 				99A88D422A128CCB00AFD76F /* env_name.cpp in Sources */,
 				99A88D442A12A69D00AFD76F /* env_value.cpp in Sources */,
 				99A88D402A115E5D00AFD76F /* instantiate.cpp in Sources */,
+				9986C7A92A19139A006B2095 /* owning_descriptor.cpp in Sources */,
 				99A88D4E2A16BB3600AFD76F /* system_name.cpp in Sources */,
 				99A88D3C2A0FB2B100AFD76F /* instance.cpp in Sources */,
 				99A88D542A17F93A00AFD76F /* channel.cpp in Sources */,
 				99A88D3A2A0EF73800AFD76F /* system.cpp in Sources */,
+				9986C7AB2A191570006B2095 /* descriptor.cpp in Sources */,
 				99A88D3E2A1003DC00AFD76F /* fstream.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

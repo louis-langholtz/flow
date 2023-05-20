@@ -1,7 +1,7 @@
 #ifndef owning_process_id_hpp
 #define owning_process_id_hpp
 
-#include <type_traits> // for std::underlying_type_t
+#include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/reference_process_id.hpp"
 #include "flow/wait_result.hpp"
