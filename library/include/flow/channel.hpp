@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include <span>
+#include <stdexcept> // for std::invalid_argument
 #include <type_traits>
 
 #include "flow/connection.hpp"
@@ -39,9 +40,21 @@ using channel = reference_channel::channel;
 // This fails unless all of channel's types are complete.
 static_assert(std::is_default_constructible_v<channel>);
 
-auto make_channel(const system_name& name,
+struct invalid_connection: std::invalid_argument
+{
+    using std::invalid_argument::invalid_argument;
+};
+
+/// @brief Makes a <code>channel</code> for a <code>connection</code>.
+/// @throws invalid_connection if something is invalid about
+///   @connection for the given context that prevents making the
+///   <code>channel</code>.
+/// @throws std::logic_error if size of @parent_connections doesn't match
+///   size of @parent_channels.
+/// @see channel.
+auto make_channel(const connection& conn,
+                  const system_name& name,
                   const system& system,
-                  const connection& conn,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> channel;

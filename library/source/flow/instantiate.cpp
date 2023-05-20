@@ -367,7 +367,7 @@ auto make_child(instance& parent,
         auto& parent_info = std::get<instance::custom>(parent.info);
         auto& info = std::get<instance::custom>(result.info);
         for (auto&& connection: p->connections) {
-            info.channels.push_back(make_channel(name, system, connection,
+            info.channels.push_back(make_channel(connection, name, system,
                                                  connections,
                                                  parent_info.channels));
         }
@@ -691,7 +691,7 @@ auto instantiate(const system& system,
         }
         info.channels.reserve(size(p->connections));
         for (auto&& connection: p->connections) {
-            info.channels.push_back(make_channel({}, system, connection,
+            info.channels.push_back(make_channel(connection, {}, system,
                                                  {}, {}));
         }
         // Create all the subsystem instances before forking any!
