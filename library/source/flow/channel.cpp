@@ -1,6 +1,7 @@
 #include <cerrno> // for errno
 #include <cstring> // for std::streror
 #include <iostream>
+#include <optional>
 #include <sstream> // for std::ostringstream
 
 #include "flow/channel.hpp"
@@ -86,7 +87,6 @@ auto make_channel(const unidirectional_connection& conn,
         throw invalid_connection{same_endpoints_error};
     }
 
-    auto enclosure_descriptors = std::array<std::set<reference_descriptor>, 2u>{};
     const auto src_file = std::get_if<file_endpoint>(&conn.src);
     const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
     if (src_file && dst_file) {
@@ -102,6 +102,8 @@ auto make_channel(const unidirectional_connection& conn,
     if (!src_system && !dst_system) {
         throw invalid_connection{no_system_end_error};
     }
+    auto enclosure_descriptors =
+        std::array<std::optional<std::set<reference_descriptor>>, 2u>{};
     if (src_system) {
         validate(*src_system, system, io_type::out);
         if (src_system->address == system_name{}) {
@@ -124,8 +126,8 @@ auto make_channel(const unidirectional_connection& conn,
         return {pipe_channel{}};
     }
     for (auto&& descriptor_set: enclosure_descriptors) {
-        if (!empty(descriptor_set)) {
-            const auto look_for = system_endpoint{name, descriptor_set};
+        if (descriptor_set) {
+            const auto look_for = system_endpoint{name, *descriptor_set};
             if (const auto found = find_index(parent_connections, look_for)) {
                 return {reference_channel{&parent_channels[*found]}};
             }
