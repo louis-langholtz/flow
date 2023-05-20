@@ -118,7 +118,7 @@ auto close(pipe_channel& p, pipe_channel::io side,
     }
 }
 
-auto dup2(pipe_channel& p, pipe_channel::io side, descriptor_id id,
+auto dup2(pipe_channel& p, pipe_channel::io side, reference_descriptor id,
           const system_name& name, const connection& c,
           std::ostream& diags)
     -> void
@@ -428,13 +428,13 @@ auto close_unused_descriptors(const system_name& name,
     }
     for (auto&& entry: descriptors) {
         switch (entry.first) {
-        case descriptor_id{0}:
+        case reference_descriptor{0}:
             using_stdin = true;
             break;
-        case descriptor_id{1}:
+        case reference_descriptor{1}:
             using_stdout = true;
             break;
-        case descriptor_id{2}:
+        case reference_descriptor{2}:
             using_stderr = true;
             break;
         }
@@ -582,8 +582,8 @@ auto fork_child(const system_name& name,
         make_substitutions(argv);
         // Deal with:
         // unidirectional_connection{
-        //   system_endpoint{ls_process_name, flow::descriptor_id{1}},
-        //   system_endpoint{cat_process_name, flow::descriptor_id{0}}
+        //   system_endpoint{ls_process_name, flow::reference_descriptor{1}},
+        //   system_endpoint{cat_process_name, flow::reference_descriptor{0}}
         // }
         //
         // Also:

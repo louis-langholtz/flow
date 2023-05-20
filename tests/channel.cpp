@@ -31,7 +31,7 @@ TEST(make_channel, with_diff_sizes)
 {
     const auto pconns = std::vector<connection>{
         unidirectional_connection{user_endpoint{}, system_endpoint{
-            {}, {descriptor_id{1}}
+            {}, {reference_descriptor{1}}
         }}
     };
     EXPECT_THROW(make_channel(connection{}, system_name{}, flow::system{},
@@ -110,11 +110,11 @@ TEST(make_channel, for_exe_subsys_to_sys)
     ASSERT_FALSE(empty(sys.descriptors));
     const auto conn = unidirectional_connection{
         system_endpoint{"subsys-a"},
-        system_endpoint{{}, {descriptor_id{1}}},
+        system_endpoint{{}, {reference_descriptor{1}}},
     };
     const auto pconns = std::vector<connection>{
         unidirectional_connection{user_endpoint{}, system_endpoint{
-            {}, {descriptor_id{1}}
+            {}, {reference_descriptor{1}}
         }}
     };
     auto pchans = std::vector<channel>{};

@@ -70,7 +70,7 @@ auto pipe_channel::close(io side, std::ostream& diags) noexcept -> bool
     return true;
 }
 
-auto pipe_channel::dup(io side, descriptor_id newfd,
+auto pipe_channel::dup(io side, reference_descriptor newfd,
                        std::ostream& diags) noexcept -> bool
 {
     const auto new_d = int(newfd);

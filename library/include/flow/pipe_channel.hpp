@@ -7,7 +7,7 @@
 #include <sstream> // for std::ostringstream
 #include <type_traits> // for std::is_nothrow_move_*
 
-#include "flow/descriptor_id.hpp"
+#include "flow/reference_descriptor.hpp"
 
 namespace flow {
 
@@ -46,7 +46,7 @@ struct pipe_channel
     auto close(io side, std::ostream& diags) noexcept -> bool;
 
     /// @note This function is NOT thread safe in error cases.
-    auto dup(io side, descriptor_id newfd,
+    auto dup(io side, reference_descriptor newfd,
              std::ostream& diags) noexcept -> bool;
 
     auto read(const std::span<char>& buffer, std::ostream& diags) const

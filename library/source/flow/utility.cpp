@@ -17,7 +17,7 @@
 #include <unistd.h> // for ::close
 
 #include "flow/connection.hpp"
-#include "flow/descriptor_id.hpp"
+#include "flow/reference_descriptor.hpp"
 #include "flow/instance.hpp"
 #include "flow/os_error_code.hpp"
 #include "flow/system.hpp"
@@ -287,9 +287,9 @@ auto set_signal_handler(signal sig) -> void
 }
 
 auto get_matching_set(const descriptor_map& descriptors, io_type io)
-    -> std::set<descriptor_id>
+    -> std::set<reference_descriptor>
 {
-    auto result = std::set<descriptor_id>{};
+    auto result = std::set<reference_descriptor>{};
     for (auto&& entry: descriptors) {
         if (entry.second.direction == io) {
             result.insert(entry.first);
