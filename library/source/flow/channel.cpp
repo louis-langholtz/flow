@@ -93,8 +93,8 @@ auto make_not_closed_msg(const system_name& name,
 auto make_channel(const unidirectional_connection& conn,
                   const system_name& name,
                   const system& system,
-                  const std::span<const connection>& connections,
-                  const std::span<channel>& channels)
+                  const std::span<const connection>& parent_connections,
+                  const std::span<channel>& parent_channels)
     -> channel
 {
     static constexpr auto no_file_file_error =
@@ -150,12 +150,12 @@ auto make_channel(const unidirectional_connection& conn,
     for (auto&& descriptor_set: enclosure_descriptors) {
         if (!empty(descriptor_set)) {
             const auto look_for = system_endpoint{name, descriptor_set};
-            if (const auto found = find_index(connections, look_for)) {
-                return {reference_channel{&channels[*found]}};
+            if (const auto found = find_index(parent_connections, look_for)) {
+                return {reference_channel{&parent_channels[*found]}};
             }
             throw std::invalid_argument{make_not_closed_msg(name, conn,
                                                             look_for,
-                                                            connections)};
+                                                            parent_connections)};
         }
     }
     return {pipe_channel{}};
