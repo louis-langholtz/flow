@@ -32,7 +32,7 @@ TEST(instantiate, default_executable)
 {
     std::ostringstream os;
     EXPECT_THROW(instantiate(system::executable{}, os),
-                 std::invalid_argument);
+                 invalid_executable);
     EXPECT_TRUE(empty(os.str()));
 }
 
@@ -41,7 +41,7 @@ TEST(instantiate, empty_executable)
     const auto sys = flow::system{system::executable{}, {}, {}};
     std::ostringstream os;
     auto obj = instance{};
-    EXPECT_THROW(obj = instantiate(sys, os), std::invalid_argument);
+    EXPECT_THROW(obj = instantiate(sys, os), invalid_executable);
     EXPECT_TRUE(empty(os.str()));
 }
 
