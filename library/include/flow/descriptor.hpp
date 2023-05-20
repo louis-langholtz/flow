@@ -1,6 +1,7 @@
 #ifndef descriptor_hpp
 #define descriptor_hpp
 
+#include <concepts> // for std::equality_comparable
 #include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/owning_descriptor.hpp"
@@ -21,6 +22,19 @@ using descriptor = variant<
 >;
 
 static_assert(std::is_default_constructible_v<descriptor>);
+static_assert(std::equality_comparable<descriptor>);
+
+constexpr auto to_reference_descriptor(const descriptor& d) noexcept
+    -> reference_descriptor
+{
+    if (const auto p = std::get_if<owning_descriptor>(&d)) {
+        return reference_descriptor(*p);
+    }
+    if (const auto p = std::get_if<reference_descriptor>(&d)) {
+        return *p;
+    }
+    return descriptors::invalid_id;
+}
 
 }
 

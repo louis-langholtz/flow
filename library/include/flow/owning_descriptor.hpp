@@ -25,6 +25,8 @@ struct owning_descriptor
     operator reference_descriptor() const noexcept { return d; }
     explicit operator int() const noexcept { return int(d); }
 
+    explicit operator bool() const noexcept { return d != default_descriptor; }
+
     auto close() noexcept -> os_error_code;
 
 private:

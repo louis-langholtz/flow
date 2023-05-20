@@ -45,6 +45,8 @@ struct pipe_channel
     /// @note This function is NOT thread safe in error cases.
     auto close(io side, std::ostream& diags) noexcept -> bool;
 
+    [[nodiscard]] auto get(io side) const noexcept -> reference_descriptor;
+
     /// @note This function is NOT thread safe in error cases.
     auto dup(io side, reference_descriptor newfd,
              std::ostream& diags) noexcept -> bool;

@@ -2,6 +2,7 @@
 #define process_id_hpp
 
 #include <ostream>
+#include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/owning_process_id.hpp"
 #include "flow/reference_process_id.hpp"
@@ -10,6 +11,9 @@
 namespace flow {
 
 using process_id = variant<reference_process_id, owning_process_id>;
+
+static_assert(std::is_default_constructible_v<process_id>);
+static_assert(std::equality_comparable<process_id>);
 
 inline auto to_reference_process_id(const process_id& pid)
     -> reference_process_id

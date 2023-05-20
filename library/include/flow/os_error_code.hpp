@@ -15,6 +15,9 @@ auto operator<<(std::ostream& os, os_error_code err)
 
 auto to_string(os_error_code err) -> std::string;
 
+[[noreturn]]
+auto throw_error(os_error_code ec, const std::string& msg = {}) -> void;
+
 }
 
 #endif /* os_error_code_hpp */
