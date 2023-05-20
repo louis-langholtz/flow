@@ -327,7 +327,7 @@ auto confirm_closed(const system_name& name,
         if (!find_index(connections, look_for)) {
             std::ostringstream os;
             os << "missing connection for " << look_for;
-            throw std::invalid_argument{os.str()};
+            throw invalid_descriptor_map{os.str()};
         }
     }
 }
@@ -338,7 +338,7 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 {
     std::ostringstream os;
     os << prefix << path << " has no filename component";
-    throw std::invalid_argument{os.str()};
+    throw invalid_executable{os.str()};
 }
 
 auto make_child(instance& parent,
@@ -686,7 +686,7 @@ auto instantiate(const system& system,
         for (auto&& entry: system.descriptors) {
             const auto look_for = system_endpoint{{}, entry.first};
             if (!find_index(p->connections, look_for)) {
-                throw std::invalid_argument{"enclosing endpoint not connected"};
+                throw invalid_descriptor_map{"enclosing endpoint not connected"};
             }
         }
         info.channels.reserve(size(p->connections));

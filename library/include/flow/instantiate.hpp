@@ -2,6 +2,7 @@
 #define instantiate_hpp
 
 #include <ostream>
+#include <stdexcept> // for std::invalid_argument
 
 #include "flow/system.hpp"
 #include "flow/instance.hpp"
@@ -20,12 +21,30 @@ struct instantiate_options
     environment_map environment;
 };
 
+struct invalid_executable: std::invalid_argument
+{
+    using std::invalid_argument::invalid_argument;
+};
+
+struct invalid_descriptor_map: std::invalid_argument
+{
+    using std::invalid_argument::invalid_argument;
+};
+
 /// @brief Instantiates the given system.
 /// @param[in] sys System to attempt to instantiate.
 /// @param[out] diags Diagnostic information and warnings that don't by
 ///   themselves prevent instantiation.
-/// @throws std::invalid_argument if anything about <code>sys</code> is found
-///   to be invalid for instantiation.
+/// @throws invalid_connection if a <code>connection</code> specified by @sys
+///   (or any of its sub-systems) is invalid such that a <code>channel</code>
+///   cannot be made for it.
+/// @throws invalid_executable if a <code>system::executable</code> specified
+///   by @sys (or any of its sub-systems) is invalid such that an
+///   <code>instance</code> cannot be made for it.
+/// @throws invalid_descriptor_map if a <code>descriptor_map</code> specified
+///   by @sys (or any of its sub-systems) is invalid such that an
+///   <code>instance</code> cannot be made for it.
+/// @see instance.
 auto instantiate(const system& sys, std::ostream& diags,
                  const instantiate_options& opts = {})
     -> instance;
