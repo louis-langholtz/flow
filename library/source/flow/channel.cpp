@@ -33,24 +33,32 @@ auto validate(const system_endpoint& end,
             }
             os << " descriptor mapping: ";
             os << ex.what();
-            throw std::invalid_argument{os.str()};
+            throw invalid_connection{os.str()};
         }
     };
     if (end.address == system_name{}) {
         for (auto&& d: end.descriptors) {
             const auto& d_info = at(system.descriptors, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
-                throw std::invalid_argument{"bad custom system endpoint io"};
+                throw invalid_connection{"bad custom system endpoint io"};
             }
         }
         return;
     }
     if (const auto p = std::get_if<system::custom>(&(system.info))) {
+        const auto found = p->subsystems.find(end.address);
+        if (found == p->subsystems.end()) {
+            std::ostringstream os;
+            os << "endpoint address system ";
+            os << end.address;
+            os << " not found";
+            throw invalid_connection{os.str()};
+        }
         const auto& subsys = p->subsystems.at(end.address);
         for (auto&& d: end.descriptors) {
             const auto& d_info = at(subsys.descriptors, d, end.address);
             if (d_info.direction != expected_io) {
-                throw std::invalid_argument{"bad subsys endpoint io"};
+                throw invalid_connection{"bad subsys endpoint io"};
             }
         }
         return;
@@ -82,15 +90,13 @@ auto make_not_closed_msg(const system_name& name,
     return os.str();
 }
 
-auto make_channel(const system_name& name,
+auto make_channel(const unidirectional_connection& conn,
+                  const system_name& name,
                   const system& system,
-                  const unidirectional_connection& conn,
                   const std::span<const connection>& connections,
                   const std::span<channel>& channels)
     -> channel
 {
-    static constexpr auto unequal_sizes_error =
-        "size of parent connections not equal size of parent channels";
     static constexpr auto no_file_file_error =
         "can't connect file to file";
     static constexpr auto no_user_user_error =
@@ -101,27 +107,24 @@ auto make_channel(const system_name& name,
         "at least one end must be a system";
 
     if (conn.src == conn.dst) {
-        throw std::invalid_argument{same_endpoints_error};
-    }
-    if (std::size(connections) != std::size(channels)) {
-        throw std::invalid_argument{unequal_sizes_error};
+        throw invalid_connection{same_endpoints_error};
     }
 
     auto enclosure_descriptors = std::array<std::set<descriptor_id>, 2u>{};
     const auto src_file = std::get_if<file_endpoint>(&conn.src);
     const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
     if (src_file && dst_file) {
-        throw std::invalid_argument{no_file_file_error};
+        throw invalid_connection{no_file_file_error};
     }
     const auto src_user = std::get_if<user_endpoint>(&conn.src);
     const auto dst_user = std::get_if<user_endpoint>(&conn.dst);
     if (src_user && dst_user) {
-        throw std::invalid_argument{no_user_user_error};
+        throw invalid_connection{no_user_user_error};
     }
     const auto src_system = std::get_if<system_endpoint>(&conn.src);
     const auto dst_system = std::get_if<system_endpoint>(&conn.dst);
     if (!src_system && !dst_system) {
-        throw std::invalid_argument{no_system_end_error};
+        throw invalid_connection{no_system_end_error};
     }
     if (src_system) {
         validate(*src_system, system, io_type::out);
@@ -160,18 +163,27 @@ auto make_channel(const system_name& name,
 
 }
 
-auto make_channel(const system_name& name,
+auto make_channel(const connection& conn,
+                  const system_name& name,
                   const system& system,
-                  const connection& conn,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> channel
 {
+    if (size(parent_connections) != size(parent_channels)) {
+        std::ostringstream os;
+        os << "size of parent connections (";
+        os << size(parent_connections);
+        os << "), not equal size of parent channels (";
+        os << size(parent_channels);
+        os << ")";
+        throw std::logic_error{os.str()};
+    }
     if (const auto p = std::get_if<unidirectional_connection>(&conn)) {
-        return make_channel(name, system, *p,
+        return make_channel(*p, name, system,
                             parent_connections, parent_channels);
     }
-    throw std::invalid_argument{"only unidirectional_connection supported"};
+    throw invalid_connection{"only unidirectional_connection supported"};
 }
 
 auto operator<<(std::ostream& os, const reference_channel& value)

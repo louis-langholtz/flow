@@ -13,8 +13,8 @@ TEST(channel, default_construction)
 
 TEST(make_channel, with_defaulted_args)
 {
-    EXPECT_THROW(make_channel(system_name{}, flow::system{}, connection{},
-                              {}, {}), std::invalid_argument);
+    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::system{},
+                              {}, {}), invalid_connection);
 }
 
 TEST(make_channel, with_diff_system_endpoints)
@@ -23,8 +23,19 @@ TEST(make_channel, with_diff_system_endpoints)
         system_endpoint{"a"},
         system_endpoint{"b"},
     };
-    EXPECT_THROW(make_channel(system_name{}, flow::system{}, conn,
-                              {}, {}), std::out_of_range);
+    EXPECT_THROW(make_channel(conn, system_name{}, flow::system{},
+                              {}, {}), invalid_connection);
+}
+
+TEST(make_channel, with_diff_sizes)
+{
+    const auto pconns = std::vector<connection>{
+        unidirectional_connection{user_endpoint{}, system_endpoint{
+            {}, {descriptor_id{1}}
+        }}
+    };
+    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::system{},
+                              pconns, {}), std::logic_error);
 }
 
 TEST(make_channel, for_subsys_to_file)
@@ -42,7 +53,7 @@ TEST(make_channel, for_subsys_to_file)
     };
     const auto pconns = std::vector<connection>{};
     auto pchans = std::vector<channel>{};
-    EXPECT_NO_THROW(chan = make_channel(name, sys, conn, pconns, pchans));
+    EXPECT_NO_THROW(chan = make_channel(conn, name, sys, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<file_channel>(chan));
 }
 
@@ -61,7 +72,7 @@ TEST(make_channel, for_file_to_subsys)
     };
     const auto pconns = std::vector<connection>{};
     auto pchans = std::vector<channel>{};
-    EXPECT_NO_THROW(chan = make_channel(name, sys, conn, pconns, pchans));
+    EXPECT_NO_THROW(chan = make_channel(conn, name, sys, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<file_channel>(chan));
 }
 
@@ -81,7 +92,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
     };
     const auto pconns = std::vector<connection>{};
     auto pchans = std::vector<channel>{};
-    EXPECT_NO_THROW(chan = make_channel(name, sys, conn, pconns, pchans));
+    EXPECT_NO_THROW(chan = make_channel(conn, name, sys, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<pipe_channel>(chan));
 }
 
@@ -108,6 +119,6 @@ TEST(make_channel, for_exe_subsys_to_sys)
     };
     auto pchans = std::vector<channel>{};
     pchans.emplace_back(channel{pipe_channel{}});
-    EXPECT_NO_THROW(chan = make_channel(name, sys, conn, pconns, pchans));
+    EXPECT_NO_THROW(chan = make_channel(conn, name, sys, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<reference_channel>(chan));
 }
