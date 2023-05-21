@@ -22,10 +22,21 @@
 
 namespace {
 
+using arguments = std::vector<std::string>;
+
 const auto des_prefix = std::string{"--des-"};
 const auto name_prefix = std::string{"--name="};
 const auto parent_prefix = std::string{"--parent="};
 const auto help_argument = std::string{"--help"};
+
+auto make_arguments(int ac, const char*av[]) -> arguments
+{
+    auto args = arguments{};
+    for (auto i = 0; i < ac; ++i) {
+        args.emplace_back(av[i]);
+    }
+    return args;
+}
 
 template <class T, class U>
 auto operator==(const std::span<T>& lhs, const std::span<U>& rhs) ->
@@ -143,9 +154,9 @@ struct system_basis
     auto operator==(const system_basis& other) const noexcept -> bool = default;
 };
 
-auto parse(system_basis from) -> system_basis
+auto parse(system_basis from, std::size_t n_remain = 0u) -> system_basis
 {
-    while (!empty(from.remaining)) {
+    while (size(from.remaining) > n_remain) {
         const auto p = std::get_if<flow::system::custom>(&from.psystem->info);
         if (!p) {
             break;
@@ -165,7 +176,6 @@ auto parse(system_basis from) -> system_basis
 
 auto main(int argc, const char * argv[]) -> int
 {
-    using arguments = std::vector<std::string>;
     using string_span = std::span<const std::string>;
     using cmd_handler = std::function<void(const string_span& args)>;
     using cmd_table = std::map<std::string, cmd_handler>;
@@ -368,6 +378,40 @@ auto main(int argc, const char * argv[]) -> int
                 std::cout << entry.first << "=" << entry.second << "\n";
             }
         }},
+        {"remove-system", [&](const string_span& args){
+            for (auto&& arg: args.subspan(1u)) {
+                if (arg == help_argument) {
+                    std::cout << "removes system definitions.\n";
+                    return;
+                }
+                auto sys_names = std::deque<flow::system_name>{};
+                try {
+                    sys_names = flow::to_system_names(arg);
+                }
+                catch (const std::invalid_argument& ex) {
+                    std::cerr << "invalid name ";
+                    std::cerr << arg;
+                    std::cerr << ": ";
+                    std::cerr << ex.what();
+                    std::cerr << "\n";
+                    continue;
+                }
+                const auto arg_basis = parse({{}, sys_names, &system}, 1u);
+                const auto p =
+                    std::get_if<flow::system::custom>(&arg_basis.psystem->info);
+                if (!p) {
+                    std::cerr << "system not custom?!\n";
+                    continue;
+                }
+                if (size(arg_basis.remaining) > 1u) {
+                    std::cerr << "no such system as " << arg << "\n";
+                    continue;
+                }
+                if (p->subsystems.erase(arg_basis.remaining.front()) == 0) {
+                    std::cerr << arg << " not found\n";
+                }
+            }
+        }},
         {"add-executable", [&](const string_span& args){
             static const auto file_prefix = std::string{"--file="};
             auto system = flow::system{flow::system::executable{}};
@@ -559,11 +603,7 @@ auto main(int argc, const char * argv[]) -> int
             continue;
         }
         if (const auto it = cmds.find(av[0]); it != cmds.end()) {
-            arguments args;
-            for (auto i = 0; i < ac; ++i) {
-                args.emplace_back(av[i]);
-            }
-            it->second(args);
+            it->second(make_arguments(ac, av));
         }
         else if (const auto it = custom.subsystems.find(flow::system_name{av[0]});
                  it != custom.subsystems.end()) {
