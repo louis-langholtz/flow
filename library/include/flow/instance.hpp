@@ -35,8 +35,8 @@ struct instance
         static constexpr auto default_pgrp = no_process_id;
 
         /// @brief Default constructor.
-        /// @note This ensures C++ sees this class as default constructable.
-        custom() noexcept {}; // NOLINT(modernize-use-equals-default)
+        /// @note This ensures compilers see class as default constructable.
+        custom() noexcept = default;
 
         /// @brief Sub-instances - or children - of this instance.
         std::map<system_name, instance> children;
@@ -60,6 +60,20 @@ struct instance
 
         variant<owning_process_id, wait_status> state;
     };
+
+    instance() = default;
+
+    instance(custom type_info, environment_map env_map = {})
+        : environment(std::move(env_map)), info(std::move(type_info))
+    {
+        // Intentionally empty.
+    }
+
+    instance(forked type_info, environment_map env_map = {})
+        : environment(std::move(env_map)), info(std::move(type_info))
+    {
+        // Intentionally empty.
+    }
 
     environment_map environment;
     variant<custom, forked> info;
