@@ -10,6 +10,12 @@ namespace flow::detail {
 
 enum class char_list { deny, allow };
 
+/// @brief Character set validator function.
+/// @param[in] v Value to validate.
+/// @param[in] access Whether validation is to deny or allow finding of a
+///   charactaer from @chars.
+/// @param[in] chars Characters which @v should be assessed for having or not.
+/// @throws std::invalid_argument if @v is invalid.
 auto charset_validator(std::string v,
                        char_list access,
                        const std::string& chars)
