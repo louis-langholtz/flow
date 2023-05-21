@@ -3,6 +3,7 @@
 
 #include <compare> // for std::strong_ordering
 #include <ostream>
+#include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
@@ -54,6 +55,8 @@ using wait_status = variant<
     wait_stopped_status,
     wait_continued_status
 >;
+
+static_assert(std::is_default_constructible_v<wait_status>);
 
 }
 
