@@ -9,9 +9,16 @@ auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&
 {
     os << "system{";
-    os << ".descriptors=" << value.descriptors;
-    os << ",.environment=" << value.environment;
-    os << ",.info=";
+    auto top_prefix = "";
+    if (!empty(value.descriptors)) {
+        os << top_prefix << ".descriptors=" << value.descriptors;
+        top_prefix = ",";
+    }
+    if (!empty(value.environment)) {
+        os << top_prefix << ".environment=" << value.environment;
+        top_prefix = ",";
+    }
+    os << top_prefix << ".info=";
     if (const auto p = std::get_if<system::executable>(&(value.info))) {
         os << "executable_info{";
         os << ".file=" << p->file;
@@ -27,10 +34,25 @@ auto operator<<(std::ostream& os, const system& value)
     }
     else if (const auto p = std::get_if<system::custom>(&(value.info))) {
         os << "custom_info{";
-        os << ".subsystems={";
-        os << "},";
-        os << ".connections={";
-        os << "}";
+        auto sub_prefix = "";
+        if (!empty(p->subsystems)) {
+            os << ".subsystems={";
+            auto prefix = "";
+            for (auto&& entry: p->subsystems) {
+                os << prefix << "{";
+                os << entry.first;
+                os << "=";
+                os << entry.second;
+                os << "}";
+                prefix = ",";
+            }
+            os << "}";
+            sub_prefix = ",";
+        }
+        if (!empty(p->connections)) {
+            os << sub_prefix << ".connections={";
+            os << "}";
+        }
         os << "}";
     }
     os << "}";
