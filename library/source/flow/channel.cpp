@@ -115,14 +115,15 @@ auto make_channel(const std::set<reference_descriptor>& dset,
     -> reference_channel
 {
     const auto look_for = system_endpoint{name, dset};
-    if (const auto found = find_index(parent_connections, look_for)) {
-        return {reference_channel{&parent_channels[*found]}};
+    const auto found = find_index(parent_connections, look_for);
+    if (!found) {
+        std::ostringstream os;
+        os << "can't find parent connection with ";
+        os << look_for;
+        os << " endpoint for making reference channel";
+        throw invalid_connection{os.str()};
     }
-    std::ostringstream os;
-    os << "can't find parent connection with ";
-    os << look_for;
-    os << " endpoint for making reference channel";
-    throw invalid_connection{os.str()};
+    return {&parent_channels[*found]};
 }
 
 auto make_channel(const user_endpoint& src, const user_endpoint& dst,
