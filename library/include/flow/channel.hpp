@@ -19,7 +19,7 @@ struct instance;
 
 struct reference_channel
 {
-    using channel = std::variant<
+    using channel = variant<
         reference_channel,
         file_channel,
         pipe_channel,
