@@ -8,6 +8,7 @@
 #include <ostream> // for std::flush
 #include <span>
 #include <string> // for std::getline
+#include <queue>
 
 #include <histedit.h>
 
@@ -22,6 +23,9 @@
 namespace {
 
 const auto des_prefix = std::string{"--des-"};
+const auto name_prefix = std::string{"--name="};
+const auto parent_prefix = std::string{"--parent="};
+const auto help_argument = std::string{"--help"};
 
 template <class T, class U>
 auto operator==(const std::span<T>& lhs, const std::span<U>& rhs) ->
@@ -124,6 +128,39 @@ auto parse_descriptor_map_entry(const std::string_view& arg)
     }};
 }
 
+struct system_basis
+{
+    /// @brief Names from which the map of systems is arrived at.
+    std::deque<flow::system_name> names;
+
+    /// @brief Remaining system names that have yet to be parsed through
+    ///   possibly because no matches for them have been found yet.
+    std::deque<flow::system_name> remaining;
+
+    /// @brief Pointer to map of systems arrived at from @root.
+    flow::system *psystem;
+
+    auto operator==(const system_basis& other) const noexcept -> bool = default;
+};
+
+auto parse(system_basis from) -> system_basis
+{
+    while (!empty(from.remaining)) {
+        const auto p = std::get_if<flow::system::custom>(&from.psystem->info);
+        if (!p) {
+            break;
+        }
+        const auto found = p->subsystems.find(from.remaining.front());
+        if (found == p->subsystems.end()) {
+            break;
+        }
+        from.psystem = &found->second;
+        from.names.emplace_back(from.remaining.front());
+        from.remaining.pop_front();
+    }
+    return from;
+}
+
 }
 
 auto main(int argc, const char * argv[]) -> int
@@ -138,8 +175,10 @@ auto main(int argc, const char * argv[]) -> int
 
     auto instantiate_opts = flow::instantiate_options{
         flow::std_descriptors, flow::get_environ()};
-    std::map<flow::system_name, flow::system> systems;
-    std::map<flow::system_name, flow::instance> instances;
+    auto system = flow::system{flow::system::custom{}};
+    auto& custom = std::get<flow::system::custom>(system.info);
+    auto instance = flow::instance{flow::instance::custom{}};
+    auto& instances = std::get<flow::instance::custom>(instance.info).children;
     flow::set_signal_handler(flow::signal::interrupt);
     flow::set_signal_handler(flow::signal::terminate);
     auto do_loop = true;
@@ -181,7 +220,7 @@ auto main(int argc, const char * argv[]) -> int
     const cmd_table cmds{
         {"exit", [&](const string_span& args){
             for (auto&& arg: args) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "exits the shell\n";
                     return;
                 }
@@ -190,7 +229,7 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"help", [&](const string_span& args){
             for (auto&& arg: args) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "provides help on builtin flow commands\n";
                     return;
                 }
@@ -199,13 +238,13 @@ auto main(int argc, const char * argv[]) -> int
             for (auto&& entry: cmds) {
                 std::cout << entry.first << ": ";
                 using strings = std::vector<std::string>;
-                const auto cargs = strings{entry.first, "--help"};
+                const auto cargs = strings{entry.first, help_argument};
                 (cmds.at(entry.first))(cargs);
             }
         }},
         {"history", [&](const string_span& args){
             for (auto&& arg: args) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "shows the history of commands entered\n";
                     return;
                 }
@@ -223,7 +262,7 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"descriptors", [&](const string_span& args){
             for (auto&& arg: args) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "prints the descriptors table\n";
                     return;
                 }
@@ -233,7 +272,7 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"env", [&](const string_span& args){
             for (auto&& arg: args) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "prints the current environment variables\n";
                     return;
                 }
@@ -248,7 +287,9 @@ auto main(int argc, const char * argv[]) -> int
                 os << " [--<flag>] [<env-name> <env-value>]\n";
                 os << "  where <floag> may be:\n";
                 os << "  --usage: shows this usage.\n";
-                os << "  --help: shows help on this command.\n";
+                os << "  ";
+                os << help_argument;
+                os << ": shows help on this command.\n";
                 os << "  --reset: resets the flow environment to given.\n";
             };
             auto argc = 0;
@@ -257,7 +298,7 @@ auto main(int argc, const char * argv[]) -> int
                     usage(std::cout);
                     return;
                 }
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "sets the named environment variable ";
                     std::cout << "to the given value\n";
                     return;
@@ -282,7 +323,7 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"unsetenv", [&](const string_span& args){
             for (auto&& arg: args.subspan(1u)) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "unsets the named environment variables\n";
                     return;
                 }
@@ -299,22 +340,22 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"show-systems", [&](const string_span& args){
             for (auto&& arg: args) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "shows a listing of system definitions.\n";
                     return;
                 }
             }
-            if (systems.empty()) {
+            if (custom.subsystems.empty()) {
                 std::cout << "empty.\n";
                 return;
             }
-            for (auto&& entry: systems) {
+            for (auto&& entry: custom.subsystems) {
                 std::cout << entry.first << "=" << entry.second << "\n";
             }
         }},
         {"show-instances", [&](const string_span& args){
             for (auto&& arg: args) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "shows a listing of instantiations.\n";
                     return;
                 }
@@ -328,25 +369,33 @@ auto main(int argc, const char * argv[]) -> int
             }
         }},
         {"add-executable", [&](const string_span& args){
-            static const auto name_prefix = std::string{"--name="};
             static const auto file_prefix = std::string{"--file="};
             auto system = flow::system{flow::system::executable{}};
             auto& info = std::get<flow::system::executable>(system.info);
-            auto name = flow::system_name{};
+            auto name = std::string{};
             auto index = 1u;
+            auto usage = [&](std::ostream& os){
+                os << "  usage: ";
+                os << args[0];
+                os << " ";
+                os << help_argument;
+                os << " | " << name_prefix << "<name> --file=<file>";
+                os << " [--des-<n>=<in|out>[:<comment>]]";
+                os << " arg...\n";
+            };
             for (auto&& arg: args.subspan(1u)) {
                 ++index;
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "adds a new executable system definition.\n";
-                    std::cout << "  usage: ";
-                    std::cout << args[0];
-                    std::cout << " --name=<name> --file=<file>";
-                    std::cout << " [--des-<n>=<in|out>[:<comment>]]";
-                    std::cout << " arg...\n";
+                    usage(std::cout);
+                    return;
+                }
+                if (arg == "--usage") {
+                    usage(std::cout);
                     return;
                 }
                 if (arg.starts_with(name_prefix)) {
-                    name = {arg.substr(name_prefix.length())};
+                    name = arg.substr(name_prefix.length());
                     continue;
                 }
                 if (arg.starts_with(file_prefix)) {
@@ -370,13 +419,98 @@ auto main(int argc, const char * argv[]) -> int
                 --index;
                 break;
             }
+            if (empty(name)) {
+                std::cerr << "aborting: name must be specified\n";
+                return;
+            }
             const auto arg_span = args.subspan(index);
             info.arguments = std::vector(begin(arg_span), end(arg_span));
-            systems.emplace(name, system);
+            if (!custom.subsystems.emplace(name, system).second) {
+                std::cerr << "aborting: named system already exists\n";
+            }
+        }},
+        {"add-custom", [&](const string_span& args){
+            auto name = std::string{};
+            auto parent = std::string{};
+            auto usage = [&](std::ostream& os){
+                os << "  usage: ";
+                os << args[0];
+                os << " ";
+                os << help_argument;
+                os << " | ";
+                os << name_prefix << "<name>";
+                os << " [" << parent_prefix << "<name>]";
+                os << " [--des-<n>=<in|out>[:<comment>]]";
+                os << " arg...\n";
+            };
+            for (auto&& arg: args.subspan(1u)) {
+                if (arg == help_argument) {
+                    std::cout << "adds a new custom system definition.\n";
+                    usage(std::cout);
+                    return;
+                }
+                if (arg.starts_with(name_prefix)) {
+                    name = arg.substr(name_prefix.size());
+                    continue;
+                }
+                if (arg.starts_with(parent_prefix)) {
+                    parent = arg.substr(parent_prefix.size());
+                    continue;
+                }
+            }
+            if (empty(name)) {
+                std::cerr << "aborting: name must be specified\n";
+                return;
+            }
+            auto abort = [](std::ostream& os,
+                            const std::string& key,
+                            const std::string& within,
+                            const std::string& msg){
+                os << "aborting: unable to add system named ";
+                os << std::quoted(key);
+                os << " within ";
+                os << std::quoted(within);
+                os << ": " << msg;
+                os << "\n";
+            };
+            const auto parent_basis = parse({
+                {},
+                flow::to_system_names(parent),
+                &system
+            });
+            if (!empty(parent) && !empty(parent_basis.remaining)) {
+                abort(std::cerr, name, parent, "no such parent");
+                return;
+            }
+            const auto name_basis = parse({
+                parent_basis.names,
+                flow::to_system_names(name),
+                parent_basis.psystem});
+            switch (name_basis.remaining.size()) {
+            case 0u:
+                abort(std::cerr, name, parent, "already exists");
+                return;
+            case 1u:
+                break;
+            default:
+                abort(std::cerr, name, parent, "no such parent");
+                return;
+            }
+            const auto psys =
+                std::get_if<flow::system::custom>(&(name_basis.psystem->info));
+            if (!psys) {
+                abort(std::cerr, name, parent, "parent not custom");
+                return;
+            }
+            if (!psys->subsystems.emplace(name_basis.remaining.front(),
+                                          flow::system{flow::system::custom{}}).second) {
+                abort(std::cerr, name, parent, "reason unknown");
+                return;
+            }
         }},
         {"wait", [&](const string_span& args){
             for (auto&& arg: args.subspan(1u)) {
-                if (arg == "--help") {
+                if (arg == help_argument) {
                     std::cout << "waits for an instance.\n";
                     return;
                 }
@@ -431,8 +565,8 @@ auto main(int argc, const char * argv[]) -> int
             }
             it->second(args);
         }
-        else if (const auto it = systems.find(flow::system_name{av[0]});
-                 it != systems.end()) {
+        else if (const auto it = custom.subsystems.find(flow::system_name{av[0]});
+                 it != custom.subsystems.end()) {
             const auto cmdname = flow::system_name{av[0]};
             auto tsys = it->second;
             if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
