@@ -97,6 +97,7 @@ inline auto operator==(const system& lhs,
 
 auto operator<<(std::ostream& os, const system& value)
     -> std::ostream&;
+auto pretty_print(std::ostream& os, const system& value) -> void;
 
 auto get_matching_set(const system& sys, io_type io)
     -> std::set<reference_descriptor>;

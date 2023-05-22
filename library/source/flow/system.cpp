@@ -1,5 +1,6 @@
 #include <sstream> // for std::ostringstream
 
+#include "flow/indenting_ostreambuf.hpp"
 #include "flow/system.hpp"
 #include "flow/utility.hpp"
 
@@ -57,6 +58,97 @@ auto operator<<(std::ostream& os, const system& value)
     }
     os << "}";
     return os;
+}
+
+auto pretty_print(std::ostream& os, const system& value) -> void
+{
+    os << "{\n";
+    auto top_prefix = "";
+    if (!empty(value.descriptors)) {
+        os << top_prefix;
+        os << "  .descriptors={";
+        os << value.descriptors;
+        os << "}";
+        top_prefix = ",\n";
+    }
+    if (!empty(value.environment)) {
+        os << top_prefix;
+        os << "  .environment={\n";
+        {
+            const auto opts = detail::indenting_ostreambuf_options{
+                4, true
+            };
+            const detail::indenting_ostreambuf child_indent{os, opts};
+            pretty_print(os, value.environment);
+        }
+        os << "  }";
+        top_prefix = ",\n";
+    }
+    if (const auto p = std::get_if<system::custom>(&value.info)) {
+        os << top_prefix;
+        os << "  .info=custom{";
+        auto info_prefix = "";
+        if (!empty(p->subsystems)) {
+            os << info_prefix;
+            os << "\n";
+            os << "    .subsystems={\n";
+            for (auto&& entry: p->subsystems) {
+                os << "      {\n";
+                os << "        .first=" << entry.first << ",\n";
+                os << "        .second=";
+                {
+                    const auto opts = detail::indenting_ostreambuf_options{
+                        8, false
+                    };
+                    const detail::indenting_ostreambuf child_indent{os, opts};
+                    pretty_print(os, entry.second);
+                }
+                os << "      },\n";
+            }
+            os << "    }";
+            info_prefix = ",";
+        }
+        if (!empty(p->connections)) {
+            os << info_prefix;
+            os << "\n";
+            os << "    .connections={\n";
+            for (auto&& connection: p->connections) {
+                os << "      " << connection << ",\n";
+            }
+            os << "    }";
+            info_prefix = ",";
+        }
+        if (*info_prefix) {
+            os << "\n  ";
+        }
+        os << "}\n";
+    }
+    else if (const auto p = std::get_if<system::executable>(&value.info)) {
+        os << top_prefix;
+        os << "  .info=executable{";
+        auto exe_prefix = "\n";
+        if (!p->file.empty()) {
+            os << exe_prefix;
+            os << "    .file=";
+            os << p->file;
+            exe_prefix = ",\n";
+        }
+        if (!empty(p->arguments)) {
+            os << exe_prefix;
+            os << "    .args={";
+            auto arg_prefix = "";
+            for (auto&& arg: p->arguments) {
+                os << arg_prefix << arg;
+                arg_prefix = ",";
+            }
+            os << "}\n";
+        }
+        else {
+            os << "\n";
+        }
+        os << "  }\n";
+    }
+    os << "}\n";
 }
 
 auto get_matching_set(const system& sys, io_type io)
