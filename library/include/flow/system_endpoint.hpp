@@ -4,6 +4,7 @@
 #include <concepts> // for std::convertible_to
 #include <ostream>
 #include <set>
+#include <string_view>
 #include <utility> // for std::move
 #include <type_traits> // for std::is_default_constructible_v
 
@@ -14,8 +15,11 @@ namespace flow {
 
 struct system_endpoint
 {
-    explicit system_endpoint(system_name a = {},
-                             std::set<reference_descriptor> d = {}):
+    static constexpr auto separator = ':';
+
+    explicit system_endpoint(system_name a = {}): address{std::move(a)} {}
+
+    system_endpoint(system_name a, std::set<reference_descriptor> d):
         address{std::move(a)}, descriptors{std::move(d)} {}
 
     system_endpoint(system_name a,
@@ -56,6 +60,11 @@ inline auto operator==(const system_endpoint& lhs,
 
 auto operator<<(std::ostream& os, const system_endpoint& value)
     -> std::ostream&;
+
+auto to_descriptors(std::string_view string) -> std::set<reference_descriptor>;
+auto to_system_endpoint(std::string_view string,
+                        char separator = system_endpoint::separator)
+    -> system_endpoint;
 
 }
 
