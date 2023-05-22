@@ -15,7 +15,7 @@ auto to_system_names(std::string_view string,
     -> std::deque<system_name>
 {
     auto result = std::deque<system_name>{};
-    auto pos = decltype(string.find('.')){};
+    auto pos = decltype(string.find(separator)){};
     while ((pos = string.find(separator)) != std::string_view::npos) {
         result.emplace_back(std::string{string.substr(0, pos)});
         string.remove_prefix(pos + 1);
