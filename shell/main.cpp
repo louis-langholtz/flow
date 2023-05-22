@@ -23,10 +23,12 @@
 namespace {
 
 using arguments = std::vector<std::string>;
+using string_span = std::span<const std::string>;
 
 const auto des_prefix = std::string{"--des-"};
 const auto name_prefix = std::string{"--name="};
 const auto parent_prefix = std::string{"--parent="};
+const auto file_prefix = std::string{"--file="};
 const auto help_argument = std::string{"--help"};
 
 auto make_arguments(int ac, const char*av[]) -> arguments
@@ -172,11 +174,510 @@ auto parse(system_basis from, std::size_t n_remain = 0u) -> system_basis
     return from;
 }
 
+auto do_remove_system(flow::system& sys, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "removes system definitions.\n";
+            return;
+        }
+        auto sys_names = std::deque<flow::system_name>{};
+        try {
+            sys_names = flow::to_system_names(arg);
+        }
+        catch (const std::invalid_argument& ex) {
+            std::cerr << "invalid name ";
+            std::cerr << arg;
+            std::cerr << ": ";
+            std::cerr << ex.what();
+            std::cerr << "\n";
+            continue;
+        }
+        const auto arg_basis = parse({{}, sys_names, &sys}, 1u);
+        const auto p =
+            std::get_if<flow::system::custom>(&arg_basis.psystem->info);
+        if (!p) {
+            std::cerr << "system not custom?!\n";
+            continue;
+        }
+        if (size(arg_basis.remaining) > 1u) {
+            std::cerr << "no such system as " << arg << "\n";
+            continue;
+        }
+        if (p->subsystems.erase(arg_basis.remaining.front()) == 0) {
+            std::cerr << arg << " not found\n";
+        }
+    }
+}
+
+auto do_add_executable(flow::system& sys, const string_span& args) -> void
+{
+    auto system = flow::system{flow::system::executable{}};
+    auto& info = std::get<flow::system::executable>(system.info);
+    auto parent = std::string{};
+    auto name = std::string{};
+    auto index = 1u;
+    auto usage = [&](std::ostream& os){
+        os << "  usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument;
+        os << " | " << name_prefix << "<name> --file=<file>";
+        os << " [--des-<n>=<in|out>[:<comment>]]";
+        os << " arg...\n";
+    };
+    for (auto&& arg: args.subspan(1u)) {
+        ++index;
+        if (arg == help_argument) {
+            std::cout << "adds a new executable system definition.\n";
+            usage(std::cout);
+            return;
+        }
+        if (arg == "--usage") {
+            usage(std::cout);
+            return;
+        }
+        if (arg.starts_with(name_prefix)) {
+            name = arg.substr(name_prefix.length());
+            continue;
+        }
+        if (arg.starts_with(file_prefix)) {
+            info.file = {arg.substr(file_prefix.length())};
+            continue;
+        }
+        if (arg.starts_with(des_prefix)) {
+            if (const auto p = parse_descriptor_map_entry({
+                begin(arg) + size(des_prefix), end(arg)
+            })) {
+                if (p->second.direction == flow::io_type::none) {
+                    system.descriptors.erase(p->first);
+                }
+                else if (const auto ret = system.descriptors.emplace(*p);
+                    !ret.second) {
+                    ret.first->second = p->second;
+                }
+            }
+            continue;
+        }
+        --index;
+        break;
+    }
+    if (empty(name)) {
+        std::cerr << "aborting: name must be specified\n";
+        return;
+    }
+    auto sys_names = std::deque<flow::system_name>{};
+    try {
+        sys_names = flow::to_system_names(name);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::cerr << "invalid name ";
+        std::cerr << name;
+        std::cerr << ": ";
+        std::cerr << ex.what();
+        std::cerr << "\n";
+        return;
+    }
+    auto abort = [](std::ostream& os,
+                    const std::string& key,
+                    const std::string& within,
+                    const std::string& msg){
+        os << "aborting: unable to add system named ";
+        os << std::quoted(key);
+        os << " within ";
+        os << std::quoted(within);
+        os << ": " << msg;
+        os << "\n";
+    };
+    const auto name_basis = parse({{}, sys_names, &sys});
+    switch (name_basis.remaining.size()) {
+    case 0u:
+        abort(std::cerr, name, parent, "already exists");
+        return;
+    case 1u:
+        break;
+    default:
+        abort(std::cerr, name, parent, "no such parent");
+        return;
+    }
+    const auto psys =
+        std::get_if<flow::system::custom>(&(name_basis.psystem->info));
+    if (!psys) {
+        abort(std::cerr, name, parent, "parent not custom");
+        return;
+    }
+    const auto arg_span = args.subspan(index);
+    info.arguments = std::vector(begin(arg_span), end(arg_span));
+    if (!psys->subsystems.emplace(name_basis.remaining.front(),
+                                  system).second) {
+        abort(std::cerr, name, parent, "reason unknown");
+        return;
+    }
+}
+
+auto do_add_custom(flow::system& system, const string_span& args) -> void
+{
+    auto name = std::string{};
+    auto parent = std::string{};
+    auto usage = [&](std::ostream& os){
+        os << "  usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument;
+        os << " | ";
+        os << name_prefix << "<name>";
+        os << " [" << parent_prefix << "<name>]";
+        os << " [--des-<n>=<in|out>[:<comment>]]";
+        os << " arg...\n";
+    };
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "adds a new custom system definition.\n";
+            usage(std::cout);
+            return;
+        }
+        if (arg.starts_with(name_prefix)) {
+            name = arg.substr(name_prefix.size());
+            continue;
+        }
+        if (arg.starts_with(parent_prefix)) {
+            parent = arg.substr(parent_prefix.size());
+            continue;
+        }
+    }
+    if (empty(name)) {
+        std::cerr << "aborting: name must be specified\n";
+        return;
+    }
+    auto abort = [](std::ostream& os,
+                    const std::string& key,
+                    const std::string& within,
+                    const std::string& msg){
+        os << "aborting: unable to add system named ";
+        os << std::quoted(key);
+        os << " within ";
+        os << std::quoted(within);
+        os << ": " << msg;
+        os << "\n";
+    };
+    auto parent_names = std::deque<flow::system_name>{};
+    try {
+        parent_names = flow::to_system_names(parent);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::ostringstream os;
+        os << ex.what() << "\n";
+        abort(std::cerr, name, parent, os.str());
+        return;
+    }
+    const auto parent_basis = parse({{}, parent_names, &system});
+    if (!empty(parent) && !empty(parent_basis.remaining)) {
+        abort(std::cerr, name, parent, "no such parent");
+        return;
+    }
+    auto names = std::deque<flow::system_name>();
+    try {
+        names = flow::to_system_names(name);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::ostringstream os;
+        os << ex.what() << "\n";
+        abort(std::cerr, name, parent, os.str());
+        return;
+    }
+    const auto name_basis = parse({
+        parent_basis.names, names, parent_basis.psystem
+    });
+    switch (name_basis.remaining.size()) {
+    case 0u:
+        abort(std::cerr, name, parent, "already exists");
+        return;
+    case 1u:
+        break;
+    default:
+        abort(std::cerr, name, parent, "no such parent");
+        return;
+    }
+    const auto psys =
+        std::get_if<flow::system::custom>(&(name_basis.psystem->info));
+    if (!psys) {
+        abort(std::cerr, name, parent, "parent not custom");
+        return;
+    }
+    if (!psys->subsystems.emplace(name_basis.remaining.front(),
+                                  flow::system{flow::system::custom{}}).second) {
+        abort(std::cerr, name, parent, "reason unknown");
+        return;
+    }
+}
+
+auto do_add_connection(flow::system& system, const string_span& args) -> void
+{
+    static const auto src_prefix = std::string{"--src="};
+    static const auto dst_prefix = std::string{"--dst="};
+    auto src_str = std::string{};
+    auto dst_str = std::string{};
+    auto name = std::string{};
+    auto parent = std::string{};
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "adds connection between endpoints within a system.\n";
+            return;
+        }
+        if (arg.starts_with(src_prefix)) {
+            src_str = arg.substr(src_prefix.size());
+            continue;
+        }
+        if (arg.starts_with(dst_prefix)) {
+            dst_str = arg.substr(dst_prefix.size());
+            continue;
+        }
+        if (arg.starts_with(name_prefix)) {
+            name = arg.substr(name_prefix.size());
+            continue;
+        }
+        if (arg.starts_with(parent_prefix)) {
+            parent = arg.substr(parent_prefix.size());
+            continue;
+        }
+    }
+    auto abort = [](std::ostream& os,
+                    const std::string& src,
+                    const std::string& dst,
+                    const std::string& msg = {}){
+        os << "aborting: unable to add connection from ";
+        os << std::quoted(src);
+        os << " to ";
+        os << std::quoted(dst);
+        os << ": " << msg;
+        os << "\n";
+    };
+    auto parent_names = std::deque<flow::system_name>{};
+    try {
+        parent_names = flow::to_system_names(parent);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::ostringstream os;
+        os << "can't parse parent name " << parent;
+        os << " - " << ex.what() << "\n";
+        abort(std::cerr, src_str, dst_str, os.str());
+        return;
+    }
+    const auto parent_basis = parse({{}, parent_names, &system});
+    if (!empty(parent) && !empty(parent_basis.remaining)) {
+        abort(std::cerr, src_str, dst_str, "no such parent");
+        return;
+    }
+    auto names = std::deque<flow::system_name>();
+    try {
+        names = flow::to_system_names(name);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::ostringstream os;
+        os << ex.what() << "\n";
+        abort(std::cerr, name, parent, os.str());
+        return;
+    }
+    const auto name_basis = parse({
+        parent_basis.names, names, parent_basis.psystem
+    });
+    switch (name_basis.remaining.size()) {
+    case 0u:
+        break;
+    default:
+        abort(std::cerr, src_str, dst_str, "no such system");
+        return;
+    }
+    const auto p = std::get_if<flow::system::custom>(&name_basis.psystem->info);
+    if (!p) {
+        abort(std::cerr, src_str, dst_str, "containing system not custom");
+        return;
+    }
+    if (empty(src_str)) {
+        abort(std::cerr, src_str, dst_str, "source must be specified");
+        return;
+    }
+    if (empty(dst_str)) {
+        abort(std::cerr, src_str, dst_str, "destination must be specified");
+        return;
+    }
+    // TODO: generalize handling so more than system_endpoint handled
+    const auto src_pos = src_str.find(flow::system_endpoint::separator);
+    const auto src_address = src_str.substr(0, src_pos);
+    auto src_descriptors = std::string{};
+    if (src_pos != std::string::npos) {
+        src_descriptors = src_str.substr(src_pos + 1);
+    }
+    const auto src_names = flow::to_system_names(src_address);
+    const auto src_basis = parse({
+        name_basis.names, src_names, name_basis.psystem
+    });
+    if (!empty(src_basis.remaining)) {
+        abort(std::cerr, src_str, dst_str, "no such source system");
+        return;
+    }
+    const auto dst_pos = dst_str.find(flow::system_endpoint::separator);
+    const auto dst_address = dst_str.substr(0, dst_pos);
+    auto dst_descriptors = std::string{};
+    if (dst_pos != std::string::npos) {
+        dst_descriptors = dst_str.substr(dst_pos + 1);
+    }
+    const auto dst_names = flow::to_system_names(dst_address);
+    const auto dst_basis = parse({
+        name_basis.names, dst_names, name_basis.psystem
+    });
+    if (!empty(dst_basis.remaining)) {
+        abort(std::cerr, src_str, dst_str, "no such destination system");
+        return;
+    }
+    p->connections.emplace_back(flow::unidirectional_connection{
+        flow::system_endpoint{
+            empty(src_names)
+            ? flow::system_name{}
+            : flow::system_name{src_names.back()},
+            flow::to_descriptors(src_descriptors)
+        },
+        flow::system_endpoint{
+            empty(dst_names)
+            ? flow::system_name{}
+            : flow::system_name{dst_names.back()},
+            flow::to_descriptors(dst_descriptors)
+        }
+    });
+}
+
+auto do_show_system(flow::system& system, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "shows the system definitions.\n";
+            return;
+        }
+    }
+    pretty_print(std::cout, system);
+}
+
+auto do_wait(flow::instance& instance, const string_span& args) -> void
+{
+    auto& instances = std::get<flow::instance::custom>(instance.info).children;
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "waits for an instance.\n";
+            return;
+        }
+        const auto name = flow::system_name{arg};
+        const auto it = instances.find(name);
+        if (it == instances.end()) {
+            std::cerr << "no such instance as ";
+            std::cerr << name;
+            std::cerr << "\n";
+            continue;
+        }
+        const auto results = wait(it->second);
+        for (auto&& result: results) {
+            std::cout << result << "\n";
+        }
+        write_diags(it->second, std::cerr, arg);
+        instances.erase(it);
+    }
+}
+
+auto do_show_instances(flow::instance& instance, const string_span& args)
+    -> void
+{
+    auto& instances = std::get<flow::instance::custom>(instance.info).children;
+    for (auto&& arg: args) {
+        if (arg == help_argument) {
+            std::cout << "shows a listing of instantiations.\n";
+            return;
+        }
+    }
+    if (instances.empty()) {
+        std::cout << "empty.\n";
+        return;
+    }
+    for (auto&& entry: instances) {
+        std::cout << entry.first << "=" << entry.second << "\n";
+    }
+}
+
+auto do_env(const flow::environment_map& map, const string_span& args) -> void
+{
+    for (auto&& arg: args) {
+        if (arg == help_argument) {
+            std::cout << "prints the current environment variables\n";
+            return;
+        }
+    }
+    flow::pretty_print(std::cout, map, "\n");
+    std::cout.flush();
+}
+
+auto do_setenv(flow::environment_map& map, const string_span& args) -> void
+{
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " [--<flag>] [<env-name> <env-value>]\n";
+        os << "  where <floag> may be:\n";
+        os << "  --usage: shows this usage.\n";
+        os << "  ";
+        os << help_argument;
+        os << ": shows help on this command.\n";
+        os << "  --reset: resets the flow environment to given.\n";
+    };
+    auto argc = 0;
+    for (auto&& arg: args) {
+        if (arg == "--usage") {
+            usage(std::cout);
+            return;
+        }
+        if (arg == help_argument) {
+            std::cout << "sets the named environment variable ";
+            std::cout << "to the given value\n";
+            return;
+        }
+        if (arg == "--reset") {
+            map = flow::get_environ();
+            --argc;
+            continue;
+        }
+    }
+    switch (argc) {
+    case 1:
+        break;
+    case 3:
+        map[args[1]] = (args.size() > 2)? args[2]: "";
+        break;
+    default:
+        usage(std::cerr);
+        break;
+    }
+}
+
+auto do_unsetenv(flow::environment_map& map, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "unsets the named environment variables\n";
+            return;
+        }
+        if (arg == "--all") {
+            map.clear();
+            continue;
+        }
+        if (map.erase(arg) == 0) {
+            std::cerr << "no such environment variable as ";
+            std::cerr << std::quoted(arg);
+            std::cerr << "\n" << std::flush;
+        }
+    }
+}
+
 }
 
 auto main(int argc, const char * argv[]) -> int
 {
-    using string_span = std::span<const std::string>;
     using cmd_handler = std::function<void(const string_span& args)>;
     using cmd_table = std::map<std::string, cmd_handler>;
     using edit_line_ptr = std::unique_ptr<EditLine, EditLineDeleter>;
@@ -186,9 +687,7 @@ auto main(int argc, const char * argv[]) -> int
     auto instantiate_opts = flow::instantiate_options{
         flow::std_descriptors, flow::get_environ()};
     auto system = flow::system{flow::system::custom{}};
-    auto& custom = std::get<flow::system::custom>(system.info);
     auto instance = flow::instance{flow::instance::custom{}};
-    auto& instances = std::get<flow::instance::custom>(instance.info).children;
     flow::set_signal_handler(flow::signal::interrupt);
     flow::set_signal_handler(flow::signal::terminate);
     auto do_loop = true;
@@ -281,301 +780,38 @@ auto main(int argc, const char * argv[]) -> int
             std::cout << "\n";
         }},
         {"env", [&](const string_span& args){
-            for (auto&& arg: args) {
-                if (arg == help_argument) {
-                    std::cout << "prints the current environment variables\n";
-                    return;
-                }
-            }
-            flow::pretty_print(std::cout, instantiate_opts.environment, "\n");
-            std::cout.flush();
+            do_env(instantiate_opts.environment, args);
         }},
         {"setenv", [&](const string_span& args){
-            auto usage = [&](std::ostream& os){
-                os << "usage: ";
-                os << args[0];
-                os << " [--<flag>] [<env-name> <env-value>]\n";
-                os << "  where <floag> may be:\n";
-                os << "  --usage: shows this usage.\n";
-                os << "  ";
-                os << help_argument;
-                os << ": shows help on this command.\n";
-                os << "  --reset: resets the flow environment to given.\n";
-            };
-            auto argc = 0;
-            for (auto&& arg: args) {
-                if (arg == "--usage") {
-                    usage(std::cout);
-                    return;
-                }
-                if (arg == help_argument) {
-                    std::cout << "sets the named environment variable ";
-                    std::cout << "to the given value\n";
-                    return;
-                }
-                if (arg == "--reset") {
-                    instantiate_opts.environment = flow::get_environ();
-                    --argc;
-                    continue;
-                }
-            }
-            switch (argc) {
-            case 1:
-                break;
-            case 3:
-                instantiate_opts.environment[args[1]] = (args.size() > 2)?
-                    args[2]: "";
-                break;
-            default:
-                usage(std::cerr);
-                break;
-            }
+            do_setenv(instantiate_opts.environment, args);
         }},
         {"unsetenv", [&](const string_span& args){
-            for (auto&& arg: args.subspan(1u)) {
-                if (arg == help_argument) {
-                    std::cout << "unsets the named environment variables\n";
-                    return;
-                }
-                if (arg == "--all") {
-                    instantiate_opts.environment.clear();
-                    continue;
-                }
-                if (instantiate_opts.environment.erase(arg) == 0) {
-                    std::cerr << "no such environment variable as ";
-                    std::cerr << std::quoted(arg);
-                    std::cerr << "\n" << std::flush;
-                }
-            }
+            do_unsetenv(instantiate_opts.environment, args);
         }},
-        {"show-systems", [&](const string_span& args){
-            for (auto&& arg: args) {
-                if (arg == help_argument) {
-                    std::cout << "shows a listing of system definitions.\n";
-                    return;
-                }
-            }
-            if (custom.subsystems.empty()) {
-                std::cout << "empty.\n";
-                return;
-            }
-            for (auto&& entry: custom.subsystems) {
-                std::cout << entry.first << "=" << entry.second << "\n";
-            }
+        {"show-system", [&](const string_span& args){
+            do_show_system(system, args);
         }},
         {"show-instances", [&](const string_span& args){
-            for (auto&& arg: args) {
-                if (arg == help_argument) {
-                    std::cout << "shows a listing of instantiations.\n";
-                    return;
-                }
-            }
-            if (instances.empty()) {
-                std::cout << "empty.\n";
-                return;
-            }
-            for (auto&& entry: instances) {
-                std::cout << entry.first << "=" << entry.second << "\n";
-            }
+            do_show_instances(instance, args);
         }},
         {"remove-system", [&](const string_span& args){
-            for (auto&& arg: args.subspan(1u)) {
-                if (arg == help_argument) {
-                    std::cout << "removes system definitions.\n";
-                    return;
-                }
-                auto sys_names = std::deque<flow::system_name>{};
-                try {
-                    sys_names = flow::to_system_names(arg);
-                }
-                catch (const std::invalid_argument& ex) {
-                    std::cerr << "invalid name ";
-                    std::cerr << arg;
-                    std::cerr << ": ";
-                    std::cerr << ex.what();
-                    std::cerr << "\n";
-                    continue;
-                }
-                const auto arg_basis = parse({{}, sys_names, &system}, 1u);
-                const auto p =
-                    std::get_if<flow::system::custom>(&arg_basis.psystem->info);
-                if (!p) {
-                    std::cerr << "system not custom?!\n";
-                    continue;
-                }
-                if (size(arg_basis.remaining) > 1u) {
-                    std::cerr << "no such system as " << arg << "\n";
-                    continue;
-                }
-                if (p->subsystems.erase(arg_basis.remaining.front()) == 0) {
-                    std::cerr << arg << " not found\n";
-                }
-            }
+            do_remove_system(system, args);
         }},
         {"add-executable", [&](const string_span& args){
-            static const auto file_prefix = std::string{"--file="};
-            auto system = flow::system{flow::system::executable{}};
-            auto& info = std::get<flow::system::executable>(system.info);
-            auto name = std::string{};
-            auto index = 1u;
-            auto usage = [&](std::ostream& os){
-                os << "  usage: ";
-                os << args[0];
-                os << " ";
-                os << help_argument;
-                os << " | " << name_prefix << "<name> --file=<file>";
-                os << " [--des-<n>=<in|out>[:<comment>]]";
-                os << " arg...\n";
-            };
-            for (auto&& arg: args.subspan(1u)) {
-                ++index;
-                if (arg == help_argument) {
-                    std::cout << "adds a new executable system definition.\n";
-                    usage(std::cout);
-                    return;
-                }
-                if (arg == "--usage") {
-                    usage(std::cout);
-                    return;
-                }
-                if (arg.starts_with(name_prefix)) {
-                    name = arg.substr(name_prefix.length());
-                    continue;
-                }
-                if (arg.starts_with(file_prefix)) {
-                    info.file = {arg.substr(file_prefix.length())};
-                    continue;
-                }
-                if (arg.starts_with(des_prefix)) {
-                    if (const auto p = parse_descriptor_map_entry({
-                        begin(arg) + size(des_prefix), end(arg)
-                    })) {
-                        if (p->second.direction == flow::io_type::none) {
-                            system.descriptors.erase(p->first);
-                        }
-                        else if (const auto ret = system.descriptors.emplace(*p);
-                            !ret.second) {
-                            ret.first->second = p->second;
-                        }
-                    }
-                    continue;
-                }
-                --index;
-                break;
-            }
-            if (empty(name)) {
-                std::cerr << "aborting: name must be specified\n";
-                return;
-            }
-            const auto arg_span = args.subspan(index);
-            info.arguments = std::vector(begin(arg_span), end(arg_span));
-            if (!custom.subsystems.emplace(name, system).second) {
-                std::cerr << "aborting: named system already exists\n";
-            }
+            do_add_executable(system, args);
         }},
         {"add-custom", [&](const string_span& args){
-            auto name = std::string{};
-            auto parent = std::string{};
-            auto usage = [&](std::ostream& os){
-                os << "  usage: ";
-                os << args[0];
-                os << " ";
-                os << help_argument;
-                os << " | ";
-                os << name_prefix << "<name>";
-                os << " [" << parent_prefix << "<name>]";
-                os << " [--des-<n>=<in|out>[:<comment>]]";
-                os << " arg...\n";
-            };
-            for (auto&& arg: args.subspan(1u)) {
-                if (arg == help_argument) {
-                    std::cout << "adds a new custom system definition.\n";
-                    usage(std::cout);
-                    return;
-                }
-                if (arg.starts_with(name_prefix)) {
-                    name = arg.substr(name_prefix.size());
-                    continue;
-                }
-                if (arg.starts_with(parent_prefix)) {
-                    parent = arg.substr(parent_prefix.size());
-                    continue;
-                }
-            }
-            if (empty(name)) {
-                std::cerr << "aborting: name must be specified\n";
-                return;
-            }
-            auto abort = [](std::ostream& os,
-                            const std::string& key,
-                            const std::string& within,
-                            const std::string& msg){
-                os << "aborting: unable to add system named ";
-                os << std::quoted(key);
-                os << " within ";
-                os << std::quoted(within);
-                os << ": " << msg;
-                os << "\n";
-            };
-            const auto parent_basis = parse({
-                {},
-                flow::to_system_names(parent),
-                &system
-            });
-            if (!empty(parent) && !empty(parent_basis.remaining)) {
-                abort(std::cerr, name, parent, "no such parent");
-                return;
-            }
-            const auto name_basis = parse({
-                parent_basis.names,
-                flow::to_system_names(name),
-                parent_basis.psystem});
-            switch (name_basis.remaining.size()) {
-            case 0u:
-                abort(std::cerr, name, parent, "already exists");
-                return;
-            case 1u:
-                break;
-            default:
-                abort(std::cerr, name, parent, "no such parent");
-                return;
-            }
-            const auto psys =
-                std::get_if<flow::system::custom>(&(name_basis.psystem->info));
-            if (!psys) {
-                abort(std::cerr, name, parent, "parent not custom");
-                return;
-            }
-            if (!psys->subsystems.emplace(name_basis.remaining.front(),
-                                          flow::system{flow::system::custom{}}).second) {
-                abort(std::cerr, name, parent, "reason unknown");
-                return;
-            }
+            do_add_custom(system, args);
+        }},
+        {"add-connection", [&](const string_span& args){
+            do_add_connection(system, args);
         }},
         {"wait", [&](const string_span& args){
-            for (auto&& arg: args.subspan(1u)) {
-                if (arg == help_argument) {
-                    std::cout << "waits for an instance.\n";
-                    return;
-                }
-                const auto name = flow::system_name{arg};
-                const auto it = instances.find(name);
-                if (it == instances.end()) {
-                    std::cerr << "no such instance as ";
-                    std::cerr << name;
-                    std::cerr << "\n";
-                    continue;
-                }
-                const auto results = wait(it->second);
-                for (auto&& result: results) {
-                    std::cout << result << "\n";
-                }
-                write_diags(it->second, std::cerr, arg);
-                instances.erase(it);
-            }
+            do_wait(instance, args);
         }},
     };
 
+    auto& custom = std::get<flow::system::custom>(system.info);
     auto count = 0;
     auto buf = static_cast<const char*>(nullptr);
     while (do_loop && ((buf = el_gets(el.get(), &count)) != nullptr)) {
@@ -603,7 +839,14 @@ auto main(int argc, const char * argv[]) -> int
             continue;
         }
         if (const auto it = cmds.find(av[0]); it != cmds.end()) {
-            it->second(make_arguments(ac, av));
+            try {
+                it->second(make_arguments(ac, av));
+            }
+            catch (...) {
+                std::cerr << "exception caught from running ";
+                std::cerr << it->first;
+                std::cerr << " command\n";
+            }
         }
         else if (const auto it = custom.subsystems.find(flow::system_name{av[0]});
                  it != custom.subsystems.end()) {
