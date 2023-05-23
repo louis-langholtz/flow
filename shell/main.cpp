@@ -187,6 +187,14 @@ auto parse(system_basis from, std::size_t n_remain = 0u) -> system_basis
     return from;
 }
 
+auto parse(flow::endpoint& value, const std::string& string) -> bool
+{
+    std::stringstream ss;
+    ss << string;
+    ss >> value;
+    return !ss.fail();
+}
+
 auto do_remove_system(flow::system& context, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
@@ -442,24 +450,14 @@ auto do_add_connection(flow::system& context, const string_span& args) -> void
         return;
     }
     auto src_endpoint = flow::endpoint{};
-    auto dst_endpoint = flow::endpoint{};
-    {
-        std::stringstream ss;
-        ss << src_str;
-        ss >> src_endpoint;
-        if (ss.fail()) {
-            abort(std::cerr, src_str, dst_str, "can't parse source");
-            return;
-        }
+    if (!parse(src_endpoint, src_str)) {
+        abort(std::cerr, src_str, dst_str, "can't parse source");
+        return;
     }
-    {
-        std::stringstream ss;
-        ss << dst_str;
-        ss >> dst_endpoint;
-        if (ss.fail()) {
-            abort(std::cerr, src_str, dst_str, "can't parse destination");
-            return;
-        }
+    auto dst_endpoint = flow::endpoint{};
+    if (!parse(dst_endpoint, dst_str)) {
+        abort(std::cerr, src_str, dst_str, "can't parse destination");
+        return;
     }
     p->connections.emplace_back(flow::unidirectional_connection{
         src_endpoint, dst_endpoint
