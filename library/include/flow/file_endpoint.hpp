@@ -2,6 +2,7 @@
 #define file_endpoint_hpp
 
 #include <filesystem>
+#include <istream>
 #include <ostream>
 
 namespace flow {
@@ -14,6 +15,7 @@ struct file_endpoint {
 };
 
 auto operator<<(std::ostream& os, const file_endpoint& value) -> std::ostream&;
+auto operator>>(std::istream& is, file_endpoint& value) -> std::istream&;
 
 }
 
