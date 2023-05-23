@@ -1,6 +1,7 @@
 #ifndef user_endpoint_hpp
 #define user_endpoint_hpp
 
+#include <istream>
 #include <ostream>
 #include <string>
 
@@ -33,6 +34,8 @@ struct user_endpoint
 
 auto operator<<(std::ostream& os, const user_endpoint& value)
     -> std::ostream&;
+
+auto operator>>(std::istream& is, user_endpoint& value) -> std::istream&;
 
 }
 

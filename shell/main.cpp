@@ -501,48 +501,28 @@ auto do_add_connection(flow::system& system, const string_span& args) -> void
         abort(std::cerr, src_str, dst_str, "destination must be specified");
         return;
     }
-    // TODO: generalize handling so more than system_endpoint handled
-    const auto src_pos = src_str.find(flow::system_endpoint::separator);
-    const auto src_address = src_str.substr(0, src_pos);
-    auto src_descriptors = std::string{};
-    if (src_pos != std::string::npos) {
-        src_descriptors = src_str.substr(src_pos + 1);
+    auto src_endpoint = flow::endpoint{};
+    auto dst_endpoint = flow::endpoint{};
+    {
+        std::stringstream ss;
+        ss << src_str;
+        ss >> src_endpoint;
+        if (ss.fail()) {
+            abort(std::cerr, src_str, dst_str, "can't parse source");
+            return;
+        }
     }
-    const auto src_names = flow::to_system_names(src_address);
-    const auto src_basis = parse({
-        name_basis.names, src_names, name_basis.psystem
-    });
-    if (!empty(src_basis.remaining)) {
-        abort(std::cerr, src_str, dst_str, "no such source system");
-        return;
-    }
-    const auto dst_pos = dst_str.find(flow::system_endpoint::separator);
-    const auto dst_address = dst_str.substr(0, dst_pos);
-    auto dst_descriptors = std::string{};
-    if (dst_pos != std::string::npos) {
-        dst_descriptors = dst_str.substr(dst_pos + 1);
-    }
-    const auto dst_names = flow::to_system_names(dst_address);
-    const auto dst_basis = parse({
-        name_basis.names, dst_names, name_basis.psystem
-    });
-    if (!empty(dst_basis.remaining)) {
-        abort(std::cerr, src_str, dst_str, "no such destination system");
-        return;
+    {
+        std::stringstream ss;
+        ss << dst_str;
+        ss >> dst_endpoint;
+        if (ss.fail()) {
+            abort(std::cerr, src_str, dst_str, "can't parse destination");
+            return;
+        }
     }
     p->connections.emplace_back(flow::unidirectional_connection{
-        flow::system_endpoint{
-            empty(src_names)
-            ? flow::system_name{}
-            : flow::system_name{src_names.back()},
-            flow::to_descriptors(src_descriptors)
-        },
-        flow::system_endpoint{
-            empty(dst_names)
-            ? flow::system_name{}
-            : flow::system_name{dst_names.back()},
-            flow::to_descriptors(dst_descriptors)
-        }
+        src_endpoint, dst_endpoint
     });
 }
 
@@ -841,6 +821,13 @@ auto main(int argc, const char * argv[]) -> int
         if (const auto it = cmds.find(av[0]); it != cmds.end()) {
             try {
                 it->second(make_arguments(ac, av));
+            }
+            catch (const std::invalid_argument& ex) {
+                std::cerr << "exception caught from running ";
+                std::cerr << it->first;
+                std::cerr << " command: ";
+                std::cerr << ex.what();
+                std::cerr << "\n";
             }
             catch (...) {
                 std::cerr << "exception caught from running ";

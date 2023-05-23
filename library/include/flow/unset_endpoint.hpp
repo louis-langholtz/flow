@@ -1,6 +1,7 @@
 #ifndef unset_endpoint_hpp
 #define unset_endpoint_hpp
 
+#include <istream>
 #include <ostream>
 
 namespace flow {
@@ -12,6 +13,7 @@ struct unset_endpoint {
 };
 
 auto operator<<(std::ostream& os, const unset_endpoint&) -> std::ostream&;
+auto operator>>(std::istream& is, unset_endpoint& value) -> std::istream&;
 
 }
 

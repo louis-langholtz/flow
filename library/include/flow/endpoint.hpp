@@ -1,6 +1,8 @@
 #ifndef endpoint_hpp
 #define endpoint_hpp
 
+#include <istream>
+
 #include "flow/file_endpoint.hpp"
 #include "flow/system_endpoint.hpp"
 #include "flow/unset_endpoint.hpp"
@@ -20,6 +22,8 @@ using endpoint = variant<
     system_endpoint,
     file_endpoint
 >;
+
+auto operator>>(std::istream& is, endpoint& value) -> std::istream&;
 
 }
 
