@@ -42,6 +42,7 @@
 		9986C7AE2A19220A006B2095 /* forwarding_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7AC2A19220A006B2095 /* forwarding_channel.cpp */; };
 		9986C7AF2A19220A006B2095 /* forwarding_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9986C7AD2A19220A006B2095 /* forwarding_channel.hpp */; };
 		9986C7B12A1C455C006B2095 /* endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7B02A1C455C006B2095 /* endpoint.cpp */; };
+		9986C7B32A1D3D9E006B2095 /* endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9986C7B22A1D3D9E006B2095 /* endpoint.cpp */; };
 		99940BD129F1644400A77461 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BD029F1644400A77461 /* main.cpp */; };
 		99940BE429F1BF4400A77461 /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BEC29F1C9A500A77461 /* io_type.cpp */; };
@@ -191,6 +192,7 @@
 		9986C7AC2A19220A006B2095 /* forwarding_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = forwarding_channel.cpp; sourceTree = "<group>"; };
 		9986C7AD2A19220A006B2095 /* forwarding_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = forwarding_channel.hpp; sourceTree = "<group>"; };
 		9986C7B02A1C455C006B2095 /* endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = endpoint.cpp; sourceTree = "<group>"; };
+		9986C7B22A1D3D9E006B2095 /* endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = endpoint.cpp; sourceTree = "<group>"; };
 		99940BCD29F1644400A77461 /* shell */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shell; sourceTree = BUILT_PRODUCTS_DIR; };
 		99940BD029F1644400A77461 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		99940BDE29F1BD4000A77461 /* libflow.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libflow.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -429,6 +431,7 @@
 			children = (
 				99A88D532A17F93A00AFD76F /* channel.cpp */,
 				9986C7AA2A191570006B2095 /* descriptor.cpp */,
+				9986C7B22A1D3D9E006B2095 /* endpoint.cpp */,
 				99A88D412A128CCB00AFD76F /* env_name.cpp */,
 				99A88D432A12A69D00AFD76F /* env_value.cpp */,
 				99A88D3D2A1003DC00AFD76F /* fstream.cpp */,
@@ -649,6 +652,7 @@
 				99A88D542A17F93A00AFD76F /* channel.cpp in Sources */,
 				99A88D3A2A0EF73800AFD76F /* system.cpp in Sources */,
 				9986C7AB2A191570006B2095 /* descriptor.cpp in Sources */,
+				9986C7B32A1D3D9E006B2095 /* endpoint.cpp in Sources */,
 				99A88D3E2A1003DC00AFD76F /* fstream.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
