@@ -38,10 +38,6 @@ auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
                              descriptors_prefix) == 0);
     const auto empty_address = empty(value.address.get());
     const auto empty_descriptors = empty(value.descriptors);
-    if (!empty_address) {
-        os << address_prefix;
-        os << value.address.get();
-    }
     if (!empty_descriptors) {
         os << descriptors_prefix;
         auto need_separator = false;
@@ -53,9 +49,13 @@ auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
             os << descriptor;
         }
     }
+    if (!empty_address) {
+        os << address_prefix;
+        os << value.address.get();
+    }
     if (empty_address && empty_descriptors) {
         // output something so identifiable still as system_endpoint
-        os << address_prefix;
+        os << descriptors_prefix;
     }
     return os;
 }
