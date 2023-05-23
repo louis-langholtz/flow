@@ -30,6 +30,7 @@ const auto name_prefix = std::string{"--name="};
 const auto parent_prefix = std::string{"--parent="};
 const auto file_prefix = std::string{"--file="};
 const auto help_argument = std::string{"--help"};
+const auto usage_argument = std::string{"--usage"};
 
 auto make_arguments(int ac, const char*av[]) -> arguments
 {
@@ -141,6 +142,18 @@ auto parse_descriptor_map_entry(const std::string_view& arg)
     }};
 }
 
+auto update(flow::descriptor_map& map, const flow::descriptor_map_entry& entry)
+    -> void
+{
+    if (entry.second.direction == flow::io_type::none) {
+        map.erase(entry.first);
+        return;
+    }
+    if (const auto ret = map.emplace(entry); !ret.second) {
+        ret.first->second = entry.second;
+    }
+}
+
 struct system_basis
 {
     /// @brief Names from which the map of systems is arrived at.
@@ -174,7 +187,7 @@ auto parse(system_basis from, std::size_t n_remain = 0u) -> system_basis
     return from;
 }
 
-auto do_remove_system(flow::system& sys, const string_span& args) -> void
+auto do_remove_system(flow::system& context, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
@@ -193,7 +206,7 @@ auto do_remove_system(flow::system& sys, const string_span& args) -> void
             std::cerr << "\n";
             continue;
         }
-        const auto arg_basis = parse({{}, sys_names, &sys}, 1u);
+        const auto arg_basis = parse({{}, sys_names, &context}, 1u);
         const auto p =
             std::get_if<flow::system::custom>(&arg_basis.psystem->info);
         if (!p) {
@@ -210,22 +223,34 @@ auto do_remove_system(flow::system& sys, const string_span& args) -> void
     }
 }
 
-auto do_add_executable(flow::system& sys, const string_span& args) -> void
+auto do_add_system(flow::system& context, const string_span& args) -> void
 {
-    auto system = flow::system{flow::system::executable{}};
-    auto& info = std::get<flow::system::executable>(system.info);
+    auto system = flow::system{};
     auto parent = std::string{};
     auto name = std::string{};
-    auto index = 1u;
+    auto file = std::string{};
     auto usage = [&](std::ostream& os){
         os << "  usage: ";
         os << args[0];
         os << " ";
         os << help_argument;
-        os << " | " << name_prefix << "<name> --file=<file>";
+        os << " | [" << parent_prefix << "<name>] ";
+        os << name_prefix << "<name>";
         os << " [--des-<n>=<in|out>[:<comment>]]";
-        os << " arg...\n";
+        os << " [" << file_prefix << "<file>" << " -- arg...]\n";
     };
+    auto abort = [](std::ostream& os,
+                    const std::string& key,
+                    const std::string& within,
+                    const std::string& msg){
+        os << "aborting: unable to add system named ";
+        os << std::quoted(key);
+        os << " within ";
+        os << std::quoted(within);
+        os << ": " << msg;
+        os << "\n";
+    };
+    auto index = 1u;
     for (auto&& arg: args.subspan(1u)) {
         ++index;
         if (arg == help_argument) {
@@ -233,133 +258,41 @@ auto do_add_executable(flow::system& sys, const string_span& args) -> void
             usage(std::cout);
             return;
         }
-        if (arg == "--usage") {
+        if (arg == usage_argument) {
             usage(std::cout);
             return;
-        }
-        if (arg.starts_with(name_prefix)) {
-            name = arg.substr(name_prefix.length());
-            continue;
-        }
-        if (arg.starts_with(file_prefix)) {
-            info.file = {arg.substr(file_prefix.length())};
-            continue;
-        }
-        if (arg.starts_with(des_prefix)) {
-            if (const auto p = parse_descriptor_map_entry({
-                begin(arg) + size(des_prefix), end(arg)
-            })) {
-                if (p->second.direction == flow::io_type::none) {
-                    system.descriptors.erase(p->first);
-                }
-                else if (const auto ret = system.descriptors.emplace(*p);
-                    !ret.second) {
-                    ret.first->second = p->second;
-                }
-            }
-            continue;
-        }
-        --index;
-        break;
-    }
-    if (empty(name)) {
-        std::cerr << "aborting: name must be specified\n";
-        return;
-    }
-    auto sys_names = std::deque<flow::system_name>{};
-    try {
-        sys_names = flow::to_system_names(name);
-    }
-    catch (const std::invalid_argument& ex) {
-        std::cerr << "invalid name ";
-        std::cerr << name;
-        std::cerr << ": ";
-        std::cerr << ex.what();
-        std::cerr << "\n";
-        return;
-    }
-    auto abort = [](std::ostream& os,
-                    const std::string& key,
-                    const std::string& within,
-                    const std::string& msg){
-        os << "aborting: unable to add system named ";
-        os << std::quoted(key);
-        os << " within ";
-        os << std::quoted(within);
-        os << ": " << msg;
-        os << "\n";
-    };
-    const auto name_basis = parse({{}, sys_names, &sys});
-    switch (name_basis.remaining.size()) {
-    case 0u:
-        abort(std::cerr, name, parent, "already exists");
-        return;
-    case 1u:
-        break;
-    default:
-        abort(std::cerr, name, parent, "no such parent");
-        return;
-    }
-    const auto psys =
-        std::get_if<flow::system::custom>(&(name_basis.psystem->info));
-    if (!psys) {
-        abort(std::cerr, name, parent, "parent not custom");
-        return;
-    }
-    const auto arg_span = args.subspan(index);
-    info.arguments = std::vector(begin(arg_span), end(arg_span));
-    if (!psys->subsystems.emplace(name_basis.remaining.front(),
-                                  system).second) {
-        abort(std::cerr, name, parent, "reason unknown");
-        return;
-    }
-}
-
-auto do_add_custom(flow::system& system, const string_span& args) -> void
-{
-    auto name = std::string{};
-    auto parent = std::string{};
-    auto usage = [&](std::ostream& os){
-        os << "  usage: ";
-        os << args[0];
-        os << " ";
-        os << help_argument;
-        os << " | ";
-        os << name_prefix << "<name>";
-        os << " [" << parent_prefix << "<name>]";
-        os << " [--des-<n>=<in|out>[:<comment>]]";
-        os << " arg...\n";
-    };
-    for (auto&& arg: args.subspan(1u)) {
-        if (arg == help_argument) {
-            std::cout << "adds a new custom system definition.\n";
-            usage(std::cout);
-            return;
-        }
-        if (arg.starts_with(name_prefix)) {
-            name = arg.substr(name_prefix.size());
-            continue;
         }
         if (arg.starts_with(parent_prefix)) {
             parent = arg.substr(parent_prefix.size());
             continue;
         }
+        if (arg.starts_with(name_prefix)) {
+            name = arg.substr(name_prefix.length());
+            continue;
+        }
+        if (arg.starts_with(des_prefix)) {
+            if (const auto p =
+                parse_descriptor_map_entry(arg.substr(size(des_prefix)))) {
+                update(system.descriptors, *p);
+            }
+            continue;
+        }
+        if (arg.starts_with(file_prefix)) {
+            file = arg.substr(file_prefix.length());
+            continue;
+        }
+        if (arg == "--") {
+            break;
+        }
+        std::ostringstream os;
+        os << "unrecognized argument " << std::quoted(arg);
+        abort(std::cerr, name, parent, os.str());
+        return;
     }
     if (empty(name)) {
         std::cerr << "aborting: name must be specified\n";
         return;
     }
-    auto abort = [](std::ostream& os,
-                    const std::string& key,
-                    const std::string& within,
-                    const std::string& msg){
-        os << "aborting: unable to add system named ";
-        os << std::quoted(key);
-        os << " within ";
-        os << std::quoted(within);
-        os << ": " << msg;
-        os << "\n";
-    };
     auto parent_names = std::deque<flow::system_name>{};
     try {
         parent_names = flow::to_system_names(parent);
@@ -370,12 +303,12 @@ auto do_add_custom(flow::system& system, const string_span& args) -> void
         abort(std::cerr, name, parent, os.str());
         return;
     }
-    const auto parent_basis = parse({{}, parent_names, &system});
+    const auto parent_basis = parse({{}, parent_names, &context});
     if (!empty(parent) && !empty(parent_basis.remaining)) {
         abort(std::cerr, name, parent, "no such parent");
         return;
     }
-    auto names = std::deque<flow::system_name>();
+    auto names = std::deque<flow::system_name>{};
     try {
         names = flow::to_system_names(name);
     }
@@ -404,14 +337,21 @@ auto do_add_custom(flow::system& system, const string_span& args) -> void
         abort(std::cerr, name, parent, "parent not custom");
         return;
     }
-    if (!psys->subsystems.emplace(name_basis.remaining.front(),
-                                  flow::system{flow::system::custom{}}).second) {
+    const auto arg_span = args.subspan(index);
+    const auto arguments = std::vector(begin(arg_span), end(arg_span));
+    if (!empty(file) || !empty(arguments)) {
+        system.info = flow::system::executable{
+            .file = file,
+            .arguments = arguments
+        };
+    }
+    if (!psys->subsystems.emplace(name_basis.remaining.front(), system).second) {
         abort(std::cerr, name, parent, "reason unknown");
         return;
     }
 }
 
-auto do_add_connection(flow::system& system, const string_span& args) -> void
+auto do_add_connection(flow::system& context, const string_span& args) -> void
 {
     static const auto src_prefix = std::string{"--src="};
     static const auto dst_prefix = std::string{"--dst="};
@@ -463,7 +403,7 @@ auto do_add_connection(flow::system& system, const string_span& args) -> void
         abort(std::cerr, src_str, dst_str, os.str());
         return;
     }
-    const auto parent_basis = parse({{}, parent_names, &system});
+    const auto parent_basis = parse({{}, parent_names, &context});
     if (!empty(parent) && !empty(parent_basis.remaining)) {
         abort(std::cerr, src_str, dst_str, "no such parent");
         return;
@@ -526,7 +466,7 @@ auto do_add_connection(flow::system& system, const string_span& args) -> void
     });
 }
 
-auto do_show_system(flow::system& system, const string_span& args) -> void
+auto do_show_system(flow::system& context, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
@@ -534,7 +474,7 @@ auto do_show_system(flow::system& system, const string_span& args) -> void
             return;
         }
     }
-    pretty_print(std::cout, system);
+    pretty_print(std::cout, context);
 }
 
 auto do_wait(flow::instance& instance, const string_span& args) -> void
@@ -600,7 +540,9 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
         os << args[0];
         os << " [--<flag>] [<env-name> <env-value>]\n";
         os << "  where <floag> may be:\n";
-        os << "  --usage: shows this usage.\n";
+        os << "  ";
+        os << usage_argument;
+        os << ": shows this usage.\n";
         os << "  ";
         os << help_argument;
         os << ": shows help on this command.\n";
@@ -608,7 +550,7 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
     };
     auto argc = 0;
     for (auto&& arg: args) {
-        if (arg == "--usage") {
+        if (arg == usage_argument) {
             usage(std::cout);
             return;
         }
@@ -777,11 +719,8 @@ auto main(int argc, const char * argv[]) -> int
         {"remove-system", [&](const string_span& args){
             do_remove_system(system, args);
         }},
-        {"add-executable", [&](const string_span& args){
-            do_add_executable(system, args);
-        }},
-        {"add-custom", [&](const string_span& args){
-            do_add_custom(system, args);
+        {"add-system", [&](const string_span& args){
+            do_add_system(system, args);
         }},
         {"add-connection", [&](const string_span& args){
             do_add_connection(system, args);
