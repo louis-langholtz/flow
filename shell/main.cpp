@@ -237,6 +237,7 @@ auto do_add_system(flow::system& context, const string_span& args) -> void
     auto parent = std::string{};
     auto name = std::string{};
     auto file = std::string{};
+    auto descriptor_map_entries = std::vector<flow::descriptor_map_entry>{};
     auto usage = [&](std::ostream& os){
         os << "  usage: ";
         os << args[0];
@@ -279,10 +280,16 @@ auto do_add_system(flow::system& context, const string_span& args) -> void
             continue;
         }
         if (arg.starts_with(des_prefix)) {
-            if (const auto p =
-                parse_descriptor_map_entry(arg.substr(size(des_prefix)))) {
-                update(system.descriptors, *p);
+            const auto value = arg.substr(size(des_prefix));
+            const auto entry = parse_descriptor_map_entry(value);
+            if (!entry) {
+                std::ostringstream os;
+                os << "bad descriptor map entry: ";
+                os << std::quoted(value);
+                abort(std::cerr, name, parent, os.str());
+                return;
             }
+            descriptor_map_entries.emplace_back(*entry);
             continue;
         }
         if (arg.starts_with(file_prefix)) {
@@ -352,6 +359,10 @@ auto do_add_system(flow::system& context, const string_span& args) -> void
             .file = file,
             .arguments = arguments
         };
+        system.descriptors = flow::std_descriptors;
+        for (auto&& entry: descriptor_map_entries) {
+            update(system.descriptors, entry);
+        }
     }
     if (!psys->subsystems.emplace(name_basis.remaining.front(), system).second) {
         abort(std::cerr, name, parent, "reason unknown");
@@ -630,16 +641,9 @@ auto main(int argc, const char * argv[]) -> int
     for (auto i = 0; i < argc; ++i) {
         const auto arg = std::string_view{argv[i]};
         if (arg.starts_with(des_prefix)) {
-            if (const auto p = parse_descriptor_map_entry({
-                begin(arg) + size(des_prefix), end(arg)
-            })) {
-                if (p->second.direction == flow::io_type::none) {
-                    instantiate_opts.descriptors.erase(p->first);
-                }
-                else if (const auto ret = instantiate_opts.descriptors.emplace(*p);
-                    !ret.second) {
-                    ret.first->second = p->second;
-                }
+            if (const auto p =
+                parse_descriptor_map_entry(arg.substr(size(des_prefix)))) {
+                update(instantiate_opts.descriptors, *p);
             }
             continue;
         }
@@ -774,7 +778,6 @@ auto main(int argc, const char * argv[]) -> int
         }
         else if (const auto it = custom.subsystems.find(flow::system_name{av[0]});
                  it != custom.subsystems.end()) {
-            const auto cmdname = flow::system_name{av[0]};
             auto tsys = it->second;
             if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
                 if (ac > 1) {
