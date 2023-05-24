@@ -1,10 +1,18 @@
 # shell
 
 A terminal-based shell application interface for this project.
+This is just a work in progress at the moment.
 
-## Status
+## Goals
 
-Just a work in progress at the moment.
+- [x] Having this application itself model an executable system from the outside, and model
+      a custom system from the inside.
+- [x] Providing a command line oriented language interfacing the underlying functionality.
+- [ ] Having a well defined grammar.
+- [ ] Having the grammar be semantically consistent. I.e. if there is a rule for adding
+      something, there would be a rule for removing that something as well.
+- [ ] Being approachable, as in being preferable and easier to use over other shells.
+      And not just for recursive systems design, but even for every day use.
 
 ## Requirements
 
