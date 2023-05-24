@@ -36,6 +36,8 @@ const auto des_prefix = std::string{"--des-"};
 const auto name_prefix = std::string{"--name="};
 const auto parent_prefix = std::string{"--parent="};
 const auto file_prefix = std::string{"--file="};
+const auto src_prefix = std::string{"--src="};
+const auto dst_prefix = std::string{"--dst="};
 const auto help_argument = std::string{"--help"};
 const auto usage_argument = std::string{"--usage"};
 
@@ -260,7 +262,7 @@ auto do_add_system(flow::system& context, const string_span& args) -> void
         os << help_argument << "|" << usage_argument;
         os << "| [" << parent_prefix << "<name>] ";
         os << name_prefix << "<name>";
-        os << " [--des-<n>=<in|out>[:<comment>]]";
+        os << " [" << des_prefix << "<n>=<in|out>[:<comment>]]";
         os << " [" << file_prefix << "<file>" << " -- arg...]\n";
     };
     auto abort = [](std::ostream& os,
@@ -278,8 +280,7 @@ auto do_add_system(flow::system& context, const string_span& args) -> void
     for (auto&& arg: args.subspan(1u)) {
         ++index;
         if (arg == help_argument) {
-            std::cout << "adds a new executable system definition.\n";
-            usage(std::cout);
+            std::cout << "adds a new custom or executable system definition.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -385,10 +386,86 @@ auto do_add_system(flow::system& context, const string_span& args) -> void
     }
 }
 
+auto do_show_connections(const flow::system& context, const string_span& args)
+    -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "shows connections within the system.\n";
+            return;
+        }
+    }
+    const auto& custom = std::get<flow::system::custom>(context.info);
+    for (auto&& c: custom.connections) {
+        if (const auto p = std::get_if<flow::unidirectional_connection>(&c)) {
+            std::cout << src_prefix;
+            std::cout << p->src;
+            std::cout << ' ';
+            std::cout << dst_prefix;
+            std::cout << p->dst;
+            std::cout << '\n';
+        }
+    }
+}
+
+auto do_remove_connection(flow::system& context, const string_span& args) -> void
+{
+    auto src_str = std::string{};
+    auto dst_str = std::string{};
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "removes connection between endpoints within a system.\n";
+            return;
+        }
+        if (arg.starts_with(src_prefix)) {
+            src_str = arg.substr(src_prefix.size());
+            continue;
+        }
+        if (arg.starts_with(dst_prefix)) {
+            dst_str = arg.substr(dst_prefix.size());
+            continue;
+        }
+    }
+    auto abort = [](std::ostream& os,
+                    const std::string& src,
+                    const std::string& dst,
+                    const std::string& msg = {}){
+        os << "aborting: unable to remove connection from ";
+        os << std::quoted(src);
+        os << " to ";
+        os << std::quoted(dst);
+        os << ": " << msg;
+        os << "\n";
+    };
+    if (empty(src_str)) {
+        abort(std::cerr, src_str, dst_str, "source must be specified");
+        return;
+    }
+    if (empty(dst_str)) {
+        abort(std::cerr, src_str, dst_str, "destination must be specified");
+        return;
+    }
+    auto src_endpoint = flow::endpoint{};
+    if (!parse(src_endpoint, src_str)) {
+        abort(std::cerr, src_str, dst_str, "can't parse source");
+        return;
+    }
+    auto dst_endpoint = flow::endpoint{};
+    if (!parse(dst_endpoint, dst_str)) {
+        abort(std::cerr, src_str, dst_str, "can't parse destination");
+        return;
+    }
+    auto& custom = std::get<flow::system::custom>(context.info);
+    const auto key = flow::connection{
+        flow::unidirectional_connection{src_endpoint, dst_endpoint}
+    };
+    std::cout << "found and removed ";
+    std::cout << erase(custom.connections, key);
+    std::cout << " matching connection(s)\n";
+}
+
 auto do_add_connection(flow::system& context, const string_span& args) -> void
 {
-    static const auto src_prefix = std::string{"--src="};
-    static const auto dst_prefix = std::string{"--dst="};
     auto src_str = std::string{};
     auto dst_str = std::string{};
     auto name = std::string{};
@@ -490,15 +567,31 @@ auto do_add_connection(flow::system& context, const string_span& args) -> void
     });
 }
 
-auto do_show_system(flow::system& context, const string_span& args) -> void
+auto do_show_systems(flow::system& context, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "shows the system definitions.\n";
+            std::cout << "shows information about systems that have been added.\n";
             return;
         }
     }
-    pretty_print(std::cout, context);
+    const auto& custom = std::get<flow::system::custom>(context.info);
+    for (auto&& entry: custom.subsystems) {
+        std::cout << name_prefix;
+        std::cout << entry.first;
+        for (auto&& dentry: entry.second.descriptors) {
+            std::cout << ' ';
+            std::cout << des_prefix;
+            std::cout << dentry.first;
+            std::cout << "=";
+            std::cout << dentry.second.direction;
+            if (!empty(dentry.second.comment)) {
+                std::cout << ':';
+                std::cout << std::quoted(dentry.second.comment);
+            }
+        }
+        std::cout << '\n';
+    }
 }
 
 auto do_wait(flow::instance& instance, const string_span& args) -> void
@@ -681,15 +774,25 @@ auto do_editor(edit_line_ptr& el, const string_span& args) -> void
 
 auto do_help(const cmd_table& cmds, const string_span& args) -> void
 {
-    for (auto&& arg: args.subspan(1u)) {
-        if (arg == help_argument) {
-            std::cout << "provides help on builtin flow commands\n";
-            return;
+    if (!empty(args)) {
+        for (auto&& arg: args.subspan(1u)) {
+            if (arg == help_argument) {
+                std::cout << "provides help on builtin flow commands\n";
+                return;
+            }
         }
     }
-    std::cout << "Builtin flow commands:\n";
+    auto default_hash_code = std::size_t{};
     for (auto&& entry: cmds) {
-        std::cout << entry.first << ": ";
+        if (empty(entry.first)) {
+            default_hash_code = entry.second.target_type().hash_code();
+            continue;
+        }
+        std::cout << entry.first;
+        if (entry.second.target_type().hash_code() == default_hash_code) {
+            std::cout << " (default)";
+        }
+        std::cout << ": ";
         using strings = std::vector<std::string>;
         const auto cargs = strings{entry.first, help_argument};
         (cmds.at(entry.first))(cargs);
@@ -815,6 +918,28 @@ auto run(const cmd_handler& cmd, const string_span& args) -> void
     }
 }
 
+auto do_cmds(const cmd_table& cmds, const string_span& args) -> void
+{
+    if (!empty(args) && args[0] == help_argument) {
+        std::cout << "\n";
+        auto opts = flow::detail::indenting_ostreambuf_options{
+            .indent = 2
+        };
+        const flow::detail::indenting_ostreambuf indent{std::cout, opts};
+        do_help(cmds, args.subspan(1u));
+        return;
+    }
+    const auto cmd = empty(args)? std::string{}: args[0];
+    if (const auto it = cmds.find(cmd); it != cmds.end()) {
+        const auto default_args = std::vector<std::string>{it->first};
+        run(it->second, empty(args)? default_args: args);
+    }
+    else {
+        std::cerr << std::quoted(cmd);
+        std::cerr << ": no such command\n";
+    }
+}
+
 }
 
 auto main(int argc, const char * argv[]) -> int
@@ -856,6 +981,34 @@ auto main(int argc, const char * argv[]) -> int
         }
     }
 
+    const auto show_sys_lambda = [&](const string_span& args){
+        do_show_systems(system_stack.top().get(), args);
+    };
+    const cmd_table sys_cmds{
+        {"", show_sys_lambda},
+        {"add", [&](const string_span& args){
+            do_add_system(system_stack.top().get(), args);
+        }},
+        {"remove", [&](const string_span& args){
+            do_remove_system(system_stack.top().get(), args);
+        }},
+        {"show", show_sys_lambda},
+    };
+
+    const auto show_conns_lambda = [&](const string_span& args){
+        do_show_connections(system_stack.top().get(), args);
+    };
+    const cmd_table conn_cmds{
+        {"", show_conns_lambda},
+        {"add", [&](const string_span& args){
+            do_add_connection(system_stack.top().get(), args);
+        }},
+        {"remove", [&](const string_span& args){
+            do_remove_connection(system_stack.top().get(), args);
+        }},
+        {"show", show_conns_lambda},
+    };
+
     // TODO: make this into a table of CRUD commands...
     const cmd_table cmds{
         {"exit", [&](const string_span& args){
@@ -868,6 +1021,9 @@ auto main(int argc, const char * argv[]) -> int
             do_loop = false;
         }},
         {"help", [&](const string_span& args){
+            if (size(args) == 1u) {
+                std::cout << "Builtin flow commands:\n";
+            }
             do_help(cmds, args);
         }},
         {"editor", [&](const string_span& args){
@@ -891,20 +1047,14 @@ auto main(int argc, const char * argv[]) -> int
         {"unsetenv", [&](const string_span& args){
             do_unsetenv(system_stack.top().get().environment, args);
         }},
-        {"show-system", [&](const string_span& args){
-            do_show_system(system_stack.top().get(), args);
-        }},
         {"show-instances", [&](const string_span& args){
             do_show_instances(instance, args);
         }},
-        {"remove-system", [&](const string_span& args){
-            do_remove_system(system_stack.top().get(), args);
+        {"systems", [&](const string_span& args){
+            do_cmds(sys_cmds, args.subspan(1u));
         }},
-        {"add-system", [&](const string_span& args){
-            do_add_system(system_stack.top().get(), args);
-        }},
-        {"add-connection", [&](const string_span& args){
-            do_add_connection(system_stack.top().get(), args);
+        {"connections", [&](const string_span& args){
+            do_cmds(conn_cmds, args.subspan(1u));
         }},
         {"wait", [&](const string_span& args){
             do_wait(instance, args);
