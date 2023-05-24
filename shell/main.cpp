@@ -25,6 +25,9 @@ namespace {
 using arguments = std::vector<std::string>;
 using string_span = std::span<const std::string>;
 
+using cmd_handler = std::function<void(const string_span& args)>;
+using cmd_table = std::map<std::string, cmd_handler>;
+
 const auto des_prefix = std::string{"--des-"};
 const auto name_prefix = std::string{"--name="};
 const auto parent_prefix = std::string{"--parent="};
@@ -64,6 +67,8 @@ struct EditLineDeleter
     }
 };
 
+using edit_line_ptr = std::unique_ptr<EditLine, EditLineDeleter>;
+
 struct HistoryDeleter
 {
     void operator()(History *p)
@@ -72,6 +77,8 @@ struct HistoryDeleter
     }
 };
 
+using history_ptr = std::unique_ptr<History, HistoryDeleter>;
+
 struct TokenizerDeleter
 {
     void operator()(Tokenizer *p)
@@ -79,6 +86,8 @@ struct TokenizerDeleter
         tok_end(p);
     }
 };
+
+using tokenizer_ptr = std::unique_ptr<Tokenizer, TokenizerDeleter>;
 
 auto continuation = false;
 
@@ -242,8 +251,8 @@ auto do_add_system(flow::system& context, const string_span& args) -> void
         os << "  usage: ";
         os << args[0];
         os << " ";
-        os << help_argument;
-        os << " | [" << parent_prefix << "<name>] ";
+        os << help_argument << "|" << usage_argument;
+        os << "| [" << parent_prefix << "<name>] ";
         os << name_prefix << "<name>";
         os << " [--des-<n>=<in|out>[:<comment>]]";
         os << " [" << file_prefix << "<file>" << " -- arg...]\n";
@@ -605,19 +614,106 @@ auto do_unsetenv(flow::environment_map& map, const string_span& args) -> void
     }
 }
 
+auto do_descriptors(flow::descriptor_map& map, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "prints the I/O descriptors table\n";
+            return;
+        }
+    }
+    std::cout << map;
+    std::cout << "\n";
+}
+
+auto do_history(history_ptr& hist, int& hist_size, const string_span& args)
+    -> void
+{
+    HistEvent ev{};
+    for (auto&& arg: args) {
+        if (arg == help_argument) {
+            std::cout << "shows the history of commands entered\n";
+            return;
+        }
+        if (arg == "clear") {
+            history(hist.get(), &ev, H_CLEAR);
+            return;
+        }
+    }
+    const auto width = static_cast<int>(std::to_string(hist_size).size());
+    for (auto rv = history(hist.get(), &ev, H_LAST);
+         rv != -1;
+         rv = history(hist.get(), &ev, H_PREV)) {
+         std::cout << std::setw(width) << ev.num << " " << ev.str;
+    }
+}
+
+auto do_editor(edit_line_ptr& el, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "shows or sets the shell editor\n";
+            return;
+        }
+        if (arg == "vi" || arg == "emacs") {
+            el_set(el.get(), EL_EDITOR, arg.c_str());
+            continue;
+        }
+    }
+    if (args.size() == 1u) {
+        auto ptr = static_cast<const char *>(nullptr);
+        el_get(el.get(), EL_EDITOR, &ptr);
+        if (!ptr) {
+            std::cerr << "unable to get current shell editor\n";
+            return;
+        }
+        std::cout << "shell editor is currently ";
+        std::cout << std::quoted(ptr);
+        std::cout << '\n';
+    }
+}
+
+auto do_help(const cmd_table& cmds, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "provides help on builtin flow commands\n";
+            return;
+        }
+    }
+    std::cout << "Builtin flow commands:\n";
+    for (auto&& entry: cmds) {
+        std::cout << entry.first << ": ";
+        using strings = std::vector<std::string>;
+        const auto cargs = strings{entry.first, help_argument};
+        (cmds.at(entry.first))(cargs);
+    }
+}
+
+auto find(std::map<flow::system_name, flow::system>& map, const char* name)
+    -> flow::system*
+{
+    auto sname = flow::system_name{};
+    try {
+        sname = flow::system_name{name};
+    }
+    catch (const std::invalid_argument& ex) {
+        return nullptr;
+    }
+    const auto entry = map.find(sname);
+    if (entry == map.end()) {
+        return nullptr;
+    }
+    return &entry->second;
+}
+
 }
 
 auto main(int argc, const char * argv[]) -> int
 {
-    using cmd_handler = std::function<void(const string_span& args)>;
-    using cmd_table = std::map<std::string, cmd_handler>;
-    using edit_line_ptr = std::unique_ptr<EditLine, EditLineDeleter>;
-    using history_ptr = std::unique_ptr<History, HistoryDeleter>;
-    using tokenizer_ptr = std::unique_ptr<Tokenizer, TokenizerDeleter>;
-
-    auto instantiate_opts = flow::instantiate_options{
-        flow::std_descriptors, flow::get_environ()};
-    auto system = flow::system{flow::system::custom{}};
+    auto system = flow::system{
+        flow::system::custom{}, flow::std_descriptors, flow::get_environ()
+    };
     auto instance = flow::instance{flow::instance::custom{}};
     flow::set_signal_handler(flow::signal::interrupt);
     flow::set_signal_handler(flow::signal::terminate);
@@ -643,7 +739,7 @@ auto main(int argc, const char * argv[]) -> int
         if (arg.starts_with(des_prefix)) {
             if (const auto p =
                 parse_descriptor_map_entry(arg.substr(size(des_prefix)))) {
-                update(instantiate_opts.descriptors, *p);
+                update(system.descriptors, *p);
             }
             continue;
         }
@@ -652,7 +748,7 @@ auto main(int argc, const char * argv[]) -> int
     // TODO: make this into a table of CRUD commands...
     const cmd_table cmds{
         {"exit", [&](const string_span& args){
-            for (auto&& arg: args) {
+            for (auto&& arg: args.subspan(1u)) {
                 if (arg == help_argument) {
                     std::cout << "exits the shell\n";
                     return;
@@ -661,56 +757,25 @@ auto main(int argc, const char * argv[]) -> int
             do_loop = false;
         }},
         {"help", [&](const string_span& args){
-            for (auto&& arg: args) {
-                if (arg == help_argument) {
-                    std::cout << "provides help on builtin flow commands\n";
-                    return;
-                }
-            }
-            std::cout << "Builtin flow commands:\n";
-            for (auto&& entry: cmds) {
-                std::cout << entry.first << ": ";
-                using strings = std::vector<std::string>;
-                const auto cargs = strings{entry.first, help_argument};
-                (cmds.at(entry.first))(cargs);
-            }
+            do_help(cmds, args);
+        }},
+        {"editor", [&](const string_span& args){
+            do_editor(el, args);
         }},
         {"history", [&](const string_span& args){
-            for (auto&& arg: args) {
-                if (arg == help_argument) {
-                    std::cout << "shows the history of commands entered\n";
-                    return;
-                }
-                if (arg == "clear") {
-                    history(hist.get(), &ev, H_CLEAR);
-                    return;
-                }
-            }
-            const auto width = static_cast<int>(std::to_string(hist_size).size());
-            for (auto rv = history(hist.get(), &ev, H_LAST);
-                 rv != -1;
-                 rv = history(hist.get(), &ev, H_PREV)) {
-                 std::cout << std::setw(width) << ev.num << " " << ev.str;
-            }
+            do_history(hist, hist_size, args);
         }},
         {"descriptors", [&](const string_span& args){
-            for (auto&& arg: args) {
-                if (arg == help_argument) {
-                    std::cout << "prints the descriptors table\n";
-                    return;
-                }
-            }
-            std::cout << instantiate_opts.descriptors;
-            std::cout << "\n";
+            do_descriptors(system.descriptors, args);
         }},
         {"env", [&](const string_span& args){
-            do_env(instantiate_opts.environment, args);
+            do_env(system.environment, args);
         }},
         {"setenv", [&](const string_span& args){
-            do_setenv(instantiate_opts.environment, args);
+            do_setenv(system.environment, args);
         }},
         {"unsetenv", [&](const string_span& args){
-            do_unsetenv(instantiate_opts.environment, args);
+            do_unsetenv(system.environment, args);
         }},
         {"show-system", [&](const string_span& args){
             do_show_system(system, args);
@@ -750,7 +815,11 @@ auto main(int argc, const char * argv[]) -> int
             continuation = false;
             continue;
         }
-        history(hist.get(), &ev, continuation? H_APPEND: H_ENTER, buf);
+        const auto hist_rv = history(hist.get(), &ev,
+                                     continuation? H_APPEND: H_ENTER, buf);
+        if (hist_rv == -1) {
+            std::cerr << "history error (" << ev.num << ")" << ev.str << "\n";
+        }
         continuation = tok_line_rv > 0;
         if (continuation) {
             continue;
@@ -765,20 +834,19 @@ auto main(int argc, const char * argv[]) -> int
             }
             catch (const std::invalid_argument& ex) {
                 std::cerr << "exception caught from running ";
-                std::cerr << it->first;
+                std::cerr << av[0];
                 std::cerr << " command: ";
                 std::cerr << ex.what();
                 std::cerr << "\n";
             }
             catch (...) {
                 std::cerr << "exception caught from running ";
-                std::cerr << it->first;
+                std::cerr << av[0];
                 std::cerr << " command\n";
             }
         }
-        else if (const auto it = custom.subsystems.find(flow::system_name{av[0]});
-                 it != custom.subsystems.end()) {
-            auto tsys = it->second;
+        else if (const auto found = find(custom.subsystems, av[0])) {
+            auto tsys = *found;
             if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
                 if (ac > 1) {
                     std::copy(av, av + ac, std::back_inserter(p->arguments));
@@ -787,7 +855,10 @@ auto main(int argc, const char * argv[]) -> int
             const auto name = std::string{av[0]} + ((ac > 1)? "+": "-") +
                 std::to_string(sequence);
             try {
-                auto obj = instantiate(tsys, std::cerr, instantiate_opts);
+                auto obj = instantiate(tsys, std::cerr, flow::instantiate_options{
+                    .descriptors = system.descriptors,
+                    .environment = system.environment
+                });
                 const auto results = wait(obj);
                 for (auto&& result: results) {
                     std::cout << result << "\n";
