@@ -1,5 +1,5 @@
 #include <cstdlib> // for std::strtol
-#include <functional> // for std::function
+#include <functional> // for std::function, std::reference_wrapper
 #include <iomanip> // for std::quoted
 #include <iostream>
 #include <iterator>
@@ -7,6 +7,7 @@
 #include <memory> // for std::unique_ptr
 #include <ostream> // for std::flush
 #include <span>
+#include <stack>
 #include <string> // for std::getline
 #include <queue>
 
@@ -24,6 +25,7 @@ namespace {
 
 using arguments = std::vector<std::string>;
 using string_span = std::span<const std::string>;
+using system_stack_type = std::stack<std::reference_wrapper<flow::system>>;
 
 using cmd_handler = std::function<void(const string_span& args)>;
 using cmd_table = std::map<std::string, cmd_handler>;
@@ -719,6 +721,58 @@ auto do_chdir(flow::environment_map& map, const string_span& args) -> void
     map["PWD"] = args[1];
 }
 
+auto do_push(system_stack_type& stack, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "pushes specified custom system onto stack\n";
+            return;
+        }
+    }
+    if (args.size() != 2u) {
+        std::cerr << "invalid argument count " << args.size();
+        std::cerr << ": specify custom system and only that\n";
+        return;
+    }
+    auto names = std::deque<flow::system_name>();
+    try {
+        names = flow::to_system_names(args[1]);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::cerr << std::quoted(args[1]);
+        std::cerr << " not sequence of valid system names:s ";
+        std::cerr << ex.what();
+        std::cerr << "\n";
+        return;
+    }
+    const auto name_basis = parse({{}, names, &stack.top().get()});
+    if (!empty(name_basis.remaining)) {
+        std::cerr << "unable to parse entire sequence of system names\n";
+        return;
+    }
+    if (!std::holds_alternative<flow::system::custom>(name_basis.psystem->info)) {
+        std::cerr << std::quoted(args[1]);
+        std::cerr << ": not custom system, can only push into custom system\n";
+        return;
+    }
+    stack.push(*name_basis.psystem);
+}
+
+auto do_pop(system_stack_type& stack, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "pops the current custom system off the stack\n";
+            return;
+        }
+    }
+    if (stack.size() == 1u) {
+        std::cerr << "already at root custom system.\n";
+        return;
+    }
+    stack.pop();
+}
+
 auto find(std::map<flow::system_name, flow::system>& map, const char* name)
     -> flow::system*
 {
@@ -736,14 +790,41 @@ auto find(std::map<flow::system_name, flow::system>& map, const char* name)
     return &entry->second;
 }
 
+auto find(const system_stack_type& stack, const char* name) -> flow::system*
+{
+    auto& custom = std::get<flow::system::custom>(stack.top().get().info);
+    return find(custom.subsystems, name);
+}
+
+auto run(const cmd_handler& cmd, const string_span& args) -> void
+{
+    try {
+        cmd(args);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::cerr << "exception caught from running ";
+        std::cerr << args[0];
+        std::cerr << " command: ";
+        std::cerr << ex.what();
+        std::cerr << "\n";
+    }
+    catch (...) {
+        std::cerr << "exception caught from running ";
+        std::cerr << args[0];
+        std::cerr << " command\n";
+    }
+}
+
 }
 
 auto main(int argc, const char * argv[]) -> int
 {
-    auto system = flow::system{
+    auto root_system = flow::system{
         flow::system::custom{}, flow::std_descriptors, flow::get_environ()
     };
-    system.environment["SHELL"] = argv[0];
+    root_system.environment["SHELL"] = argv[0];
+    system_stack_type system_stack;
+    system_stack.push(root_system);
     auto instance = flow::instance{flow::instance::custom{}};
     flow::set_signal_handler(flow::signal::interrupt);
     flow::set_signal_handler(flow::signal::terminate);
@@ -769,7 +850,7 @@ auto main(int argc, const char * argv[]) -> int
         if (arg.starts_with(des_prefix)) {
             if (const auto p =
                 parse_descriptor_map_entry(arg.substr(size(des_prefix)))) {
-                update(system.descriptors, *p);
+                update(system_stack.top().get().descriptors, *p);
             }
             continue;
         }
@@ -796,41 +877,46 @@ auto main(int argc, const char * argv[]) -> int
             do_history(hist, hist_size, args);
         }},
         {"descriptors", [&](const string_span& args){
-            do_descriptors(system.descriptors, args);
+            do_descriptors(system_stack.top().get().descriptors, args);
         }},
         {"cd", [&](const string_span& args){
-            do_chdir(system.environment, args);
+            do_chdir(system_stack.top().get().environment, args);
         }},
         {"env", [&](const string_span& args){
-            do_env(system.environment, args);
+            do_env(system_stack.top().get().environment, args);
         }},
         {"setenv", [&](const string_span& args){
-            do_setenv(system.environment, args);
+            do_setenv(system_stack.top().get().environment, args);
         }},
         {"unsetenv", [&](const string_span& args){
-            do_unsetenv(system.environment, args);
+            do_unsetenv(system_stack.top().get().environment, args);
         }},
         {"show-system", [&](const string_span& args){
-            do_show_system(system, args);
+            do_show_system(system_stack.top().get(), args);
         }},
         {"show-instances", [&](const string_span& args){
             do_show_instances(instance, args);
         }},
         {"remove-system", [&](const string_span& args){
-            do_remove_system(system, args);
+            do_remove_system(system_stack.top().get(), args);
         }},
         {"add-system", [&](const string_span& args){
-            do_add_system(system, args);
+            do_add_system(system_stack.top().get(), args);
         }},
         {"add-connection", [&](const string_span& args){
-            do_add_connection(system, args);
+            do_add_connection(system_stack.top().get(), args);
         }},
         {"wait", [&](const string_span& args){
             do_wait(instance, args);
         }},
+        {"push", [&](const string_span& args){
+            do_push(system_stack, args);
+        }},
+        {"pop", [&](const string_span& args){
+            do_pop(system_stack, args);
+        }},
     };
 
-    auto& custom = std::get<flow::system::custom>(system.info);
     auto count = 0;
     auto buf = static_cast<const char*>(nullptr);
     while (do_loop && ((buf = el_gets(el.get(), &count)) != nullptr)) {
@@ -862,23 +948,9 @@ auto main(int argc, const char * argv[]) -> int
             continue;
         }
         if (const auto it = cmds.find(av[0]); it != cmds.end()) {
-            try {
-                it->second(make_arguments(ac, av));
-            }
-            catch (const std::invalid_argument& ex) {
-                std::cerr << "exception caught from running ";
-                std::cerr << av[0];
-                std::cerr << " command: ";
-                std::cerr << ex.what();
-                std::cerr << "\n";
-            }
-            catch (...) {
-                std::cerr << "exception caught from running ";
-                std::cerr << av[0];
-                std::cerr << " command\n";
-            }
+            run(it->second, make_arguments(ac, av));
         }
-        else if (const auto found = find(custom.subsystems, av[0])) {
+        else if (const auto found = find(system_stack, av[0])) {
             auto tsys = *found;
             if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
                 if (ac > 1) {
@@ -889,8 +961,8 @@ auto main(int argc, const char * argv[]) -> int
                 std::to_string(sequence);
             try {
                 auto obj = instantiate(tsys, std::cerr, flow::instantiate_options{
-                    .descriptors = system.descriptors,
-                    .environment = system.environment
+                    .descriptors = system_stack.top().get().descriptors,
+                    .environment = system_stack.top().get().environment
                 });
                 const auto results = wait(obj);
                 for (auto&& result: results) {
