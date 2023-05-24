@@ -19,6 +19,8 @@
 namespace flow {
 
 /// @brief Recursive structure for defining systems.
+/// @note Systems are conceptually made up of three categories of components:
+///   _external_, _interface_, and _internal_.
 /// @note Systems can be instantiated through calls to <code>instantiate</code>
 ///   into instances of the <code>instance</code> type.
 /// @note This type is intended to be moveable, copyable, and equality
@@ -28,14 +30,28 @@ struct system
 {
     struct custom
     {
+        /// @brief Subsystems.
+        /// @note The identifying key of a subsystem is considered an _external_
+        ///   component of that subsystems.
         std::map<system_name, system> subsystems;
+
+        /// @brief Connections.
+        /// @note The connections of this system are considered _internal_
+        ///   components.
         std::vector<connection> connections;
     };
 
     struct executable
     {
+        /// @brief Path to the executable file for this system.
         std::filesystem::path file;
+
+        /// @brief Arguments to pass to the executable.
         std::vector<std::string> arguments;
+
+        /// @brief Working directory.
+        /// @todo Consider what sense this member makes & removing it if
+        ///   there isn't enough reason to keep it around.
         std::filesystem::path working_directory;
     };
 
@@ -61,8 +77,16 @@ struct system
         // Intentionally empty.
     }
 
+    /// @brief Descriptors of the <code>system</code>.
+    /// @note This is considered an _interface_ component of this type.
     descriptor_map descriptors;
+
+    /// @brief Environment for the <code>system</code>.
+    /// @note This is considered an _internal_ component of this type.
     environment_map environment;
+
+    /// @brief System type specific information.
+    /// @note This is considered an _internal_ component of this type.
     variant<custom, executable> info;
 };
 
