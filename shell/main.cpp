@@ -28,6 +28,8 @@ using string_span = std::span<const std::string>;
 using cmd_handler = std::function<void(const string_span& args)>;
 using cmd_table = std::map<std::string, cmd_handler>;
 
+constexpr auto shell_name = "flow";
+
 const auto des_prefix = std::string{"--des-"};
 const auto name_prefix = std::string{"--name="};
 const auto parent_prefix = std::string{"--parent="};
@@ -93,9 +95,11 @@ auto continuation = false;
 
 char *prompt([[maybe_unused]] EditLine *el)
 {
-    static char nl_buf[] = "\1\033[7m\1flow$\1\033[0m\1 ";
-    static char cl_buf[] = "flow> ";
-    return continuation? cl_buf: nl_buf;
+    static auto nl_prefix = std::string{"\1\033[7m\1"};
+    static auto nl_suffix = std::string{"$\1\033[0m\1 "};
+    static auto nl_buf = nl_prefix + shell_name + nl_suffix;
+    static auto cl_buf = std::string{shell_name} + "> ";
+    return continuation? cl_buf.data(): nl_buf.data();
 }
 
 auto to_int(const std::string_view& view)
@@ -690,6 +694,31 @@ auto do_help(const cmd_table& cmds, const string_span& args) -> void
     }
 }
 
+auto do_chdir(flow::environment_map& map, const string_span& args) -> void
+{
+    for (auto&& arg: args.subspan(1u)) {
+        if (arg == help_argument) {
+            std::cout << "changes the current working directory\n";
+            return;
+        }
+    }
+    if (args.size() != 2u) {
+        std::cerr << "specify new working directory and only that\n";
+        return;
+    }
+    auto ec = std::error_code{};
+    std::filesystem::current_path(args[1], ec);
+    if (ec) {
+        std::cerr << "cd ";
+        std::cerr << std::quoted(args[1]);
+        std::cerr << " failed: ";
+        std::cerr << ec.message();
+        std::cerr << "\n";
+        return;
+    }
+    map["PWD"] = args[1];
+}
+
 auto find(std::map<flow::system_name, flow::system>& map, const char* name)
     -> flow::system*
 {
@@ -714,6 +743,7 @@ auto main(int argc, const char * argv[]) -> int
     auto system = flow::system{
         flow::system::custom{}, flow::std_descriptors, flow::get_environ()
     };
+    system.environment["SHELL"] = argv[0];
     auto instance = flow::instance{flow::instance::custom{}};
     flow::set_signal_handler(flow::signal::interrupt);
     flow::set_signal_handler(flow::signal::terminate);
@@ -767,6 +797,9 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"descriptors", [&](const string_span& args){
             do_descriptors(system.descriptors, args);
+        }},
+        {"cd", [&](const string_span& args){
+            do_chdir(system.environment, args);
         }},
         {"env", [&](const string_span& args){
             do_env(system.environment, args);
