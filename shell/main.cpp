@@ -41,6 +41,9 @@ const auto dst_prefix = std::string{"--dst="};
 const auto help_argument = std::string{"--help"};
 const auto usage_argument = std::string{"--usage"};
 
+constexpr auto emacs_editor_str = "emacs";
+constexpr auto vi_editor_str = "vi";
+
 auto make_arguments(int ac, const char*av[]) -> arguments
 {
     auto args = arguments{};
@@ -747,7 +750,7 @@ auto do_editor(edit_line_ptr& el, const string_span& args) -> void
             std::cout << "shows or sets the shell editor.\n";
             return;
         }
-        if (arg == "vi" || arg == "emacs") {
+        if ((arg == vi_editor_str) || (arg == emacs_editor_str)) {
             el_set(el.get(), EL_EDITOR, arg.c_str());
             continue;
         }
@@ -961,6 +964,7 @@ auto main(int argc, const char * argv[]) -> int
     el_set(el.get(), EL_SIGNAL, 1); // installs sig handlers for resizing, etc.
     el_set(el.get(), EL_HIST, history, hist.get());
     el_set(el.get(), EL_PROMPT_ESC, prompt, '\1');
+    el_set(el.get(), EL_EDITOR, emacs_editor_str);
     el_source(el.get(), NULL);
 
     for (auto i = 0; i < argc; ++i) {
