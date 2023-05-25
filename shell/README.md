@@ -13,6 +13,10 @@ This is just a work in progress at the moment.
       something, there would be a rule for removing that something as well.
 - [ ] Being approachable, as in being preferable and easier to use over other shells.
       And not just for recursive systems design, but even for every day use.
+- [ ] Use conventional command line argument syntax. For example, see
+      [POSIX Utility Conventions](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html)
+      and
+      [GNU Program Argument Syntax Conventions](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html).
 
 ## Requirements
 
