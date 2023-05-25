@@ -38,7 +38,7 @@ TEST(instantiate, default_executable)
 
 TEST(instantiate, empty_executable)
 {
-    const auto sys = flow::system{system::executable{}, {}, {}};
+    const auto sys = flow::system{system::executable{}, {}};
     std::ostringstream os;
     auto obj = instance{};
     EXPECT_THROW(obj = instantiate(sys, os), invalid_executable);
@@ -253,15 +253,17 @@ TEST(instantiate, env_system)
     };
     const auto env_exe_sys = flow::system{
         system::executable{"/usr/bin/env"},
-        {stdout_descriptors_entry},
-        {{base_env_name, derived_env_val}}
+        {stdout_descriptors_entry}
     };
-    flow::system base;
-    base.environment = {{base_env_name, base_env_val}};
-    base.info = system::custom{
+    auto overriding_system = flow::system{system::custom{
+        .environment = {{base_env_name, derived_env_val}},
         .subsystems = {{env_exe_name, env_exe_sys}},
         .connections = {env_out},
-    };
+    }};
+    auto base = flow::system{system::custom{
+        .environment = {{base_env_name, base_env_val}},
+        .subsystems = {{"overrider", overriding_system}},
+    }};
     {
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
@@ -270,8 +272,19 @@ TEST(instantiate, env_system)
             .environment = get_environ()
         };
         EXPECT_NO_THROW(object = instantiate(base, diags, opts));
+        diags.seekg(0);
+        std::copy(std::istreambuf_iterator<char>(diags),
+                  std::istreambuf_iterator<char>(),
+                  std::ostream_iterator<char>(os));
+        EXPECT_FALSE(empty(os.str()));
+        os.str({});
         EXPECT_FALSE(empty(object.environment));
-        const auto info = std::get_if<instance::custom>(&object.info);
+        ASSERT_TRUE(std::holds_alternative<instance::custom>(object.info));
+        auto info = std::get_if<instance::custom>(&object.info);
+        ASSERT_EQ(size(info->children), 1u);
+        EXPECT_EQ(size(info->channels), 0u);
+        auto& child = info->children.begin()->second;
+        info = std::get_if<instance::custom>(&child.info);
         EXPECT_NE(info, nullptr);
         auto pipe = static_cast<pipe_channel*>(nullptr);
         if (info) {
@@ -281,14 +294,17 @@ TEST(instantiate, env_system)
             }
             EXPECT_EQ(size(info->children), 1u);
         }
-        const auto pid = get_reference_process_id({env_exe_name}, object);
+        const auto pid = get_reference_process_id({env_exe_name}, child);
         EXPECT_NE(pid, invalid_process_id);
         const auto expected_wait_result = wait_result{
             info_wait_result{pid, wait_exit_status{EXIT_SUCCESS}}
         };
+        auto nresults = 0;
         for (auto&& result: wait(object)) {
             EXPECT_EQ(result, expected_wait_result);
+            ++nresults;
         }
+        EXPECT_EQ(nresults, 1);
         EXPECT_NE(pipe, nullptr);
         if (pipe) {
             EXPECT_NO_THROW(read(*pipe, std::ostream_iterator<char>(os)));
@@ -309,6 +325,10 @@ TEST(instantiate, env_system)
             EXPECT_NE(output.find(std::string(derived_env_val), found),
                       std::string::npos);
         }
+        os.str({});
+        write_diags(object, os);
+        const auto diags_output = os.str();
+        EXPECT_NE(diags_output, std::string());
     }
 }
 
@@ -320,11 +340,12 @@ TEST(instantiate, lsof_system)
     };
 
     flow::system::custom custom;
+    custom.environment = get_environ();
     custom.subsystems.emplace(lsof_name, flow::system{flow::system::executable{
         .file = "lsof",
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
-    }, std_descriptors, get_environ()});
+    }, std_descriptors});
     custom.connections.push_back(unidirectional_connection{
         file_endpoint::dev_null, system_endpoint{lsof_name, stdin_id},
     });
@@ -336,6 +357,13 @@ TEST(instantiate, lsof_system)
         std::stringstream os;
         auto diags = ext::temporary_fstream();
         auto object = instantiate(custom, diags);
+        diags.seekg(0);
+        std::copy(std::istreambuf_iterator<char>(diags),
+                  std::istreambuf_iterator<char>(),
+                  std::ostream_iterator<char>(os));
+        EXPECT_FALSE(empty(os.str()));
+        os.str(std::string());
+
         const auto info = std::get_if<instance::custom>(&object.info);
         auto pipe = static_cast<pipe_channel*>(nullptr);
         EXPECT_NE(info, nullptr);
@@ -377,7 +405,7 @@ TEST(instantiate, lsof_system)
         write_diags(object, os);
         const auto diags_output = os.str();
         EXPECT_NE(diags_output, std::string());
-        std::cerr << diags_output;
+        //std::cerr << diags_output;
     }
 }
 

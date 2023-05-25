@@ -252,7 +252,7 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
         const auto p =
             std::get_if<flow::system::custom>(&arg_basis.psystem->info);
         if (!p) {
-            std::cerr << "system not custom?!\n";
+            std::cerr << "parent not custom?!\n";
             continue;
         }
         if (size(arg_basis.remaining) > 1u) {
@@ -418,10 +418,14 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
             };
             system.descriptors = flow::std_descriptors;
         }
+        else {
+            system.info = flow::system::custom{
+                .environment = psys->environment
+            };
+        }
         for (auto&& entry: descriptor_map_entries) {
             update(system.descriptors, entry);
         }
-        system.environment = name_basis.psystem->environment;
         psys->subsystems.insert_or_assign(name_basis.remaining.front(), system);
     }
 }
@@ -704,7 +708,7 @@ auto do_show_instances(flow::instance& instance, const string_span& args)
     }
 }
 
-auto do_env(const flow::environment_map& map, const string_span& args) -> void
+auto do_env(const flow::system& context, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
@@ -712,12 +716,14 @@ auto do_env(const flow::environment_map& map, const string_span& args) -> void
             return;
         }
     }
+    auto& map = std::get<flow::system::custom>(context.info).environment;
     flow::pretty_print(std::cout, map, "\n");
     std::cout.flush();
 }
 
-auto do_setenv(flow::environment_map& map, const string_span& args) -> void
+auto do_setenv(flow::system& context, const string_span& args) -> void
 {
+    auto& map = std::get<flow::system::custom>(context.info).environment;
     auto usage = [&](std::ostream& os){
         os << "usage: ";
         os << args[0];
@@ -752,8 +758,9 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
     }
 }
 
-auto do_unsetenv(flow::environment_map& map, const string_span& args) -> void
+auto do_unsetenv(flow::system& context, const string_span& args) -> void
 {
+    auto& map = std::get<flow::system::custom>(context.info).environment;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "unsets environment variables.\n";
@@ -857,8 +864,9 @@ auto do_help(const cmd_table& cmds, const string_span& args) -> void
     }
 }
 
-auto do_chdir(flow::environment_map& map, const string_span& args) -> void
+auto do_chdir(flow::system& context, const string_span& args) -> void
 {
+    auto& map = std::get<flow::system::custom>(context.info).environment;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "changes the current working directory.\n";
@@ -1002,10 +1010,12 @@ auto do_cmds(const cmd_table& cmds, const string_span& args) -> void
 
 auto main(int argc, const char * argv[]) -> int
 {
+    auto environment = flow::get_environ();
+    environment["SHELL"] = argv[0];
     auto root_system = flow::system{
-        flow::system::custom{}, flow::std_descriptors, flow::get_environ()
+        flow::system::custom{environment},
+        flow::std_descriptors,
     };
-    root_system.environment["SHELL"] = argv[0];
     system_stack_type system_stack;
     system_stack.push(root_system);
     auto instance = flow::instance{flow::instance::custom{}};
@@ -1068,17 +1078,17 @@ auto main(int argc, const char * argv[]) -> int
         {"show", show_conns_lambda},
     };
 
-    const auto show_end_lambda = [&](const string_span& args){
-        do_env(system_stack.top().get().environment, args);
+    const auto show_env_lambda = [&](const string_span& args){
+        do_env(system_stack.top().get(), args);
     };
     const cmd_table env_cmds{
-        {"", show_end_lambda},
+        {"", show_env_lambda},
         {"set", [&](const string_span& args){
-            do_setenv(system_stack.top().get().environment, args);
+            do_setenv(system_stack.top().get(), args);
         }},
-        {"show", show_end_lambda},
+        {"show", show_env_lambda},
         {"unset", [&](const string_span& args){
-            do_unsetenv(system_stack.top().get().environment, args);
+            do_unsetenv(system_stack.top().get(), args);
         }},
     };
 
@@ -1109,7 +1119,7 @@ auto main(int argc, const char * argv[]) -> int
             do_descriptors(system_stack.top().get().descriptors, args);
         }},
         {"cd", [&](const string_span& args){
-            do_chdir(system_stack.top().get().environment, args);
+            do_chdir(system_stack.top().get(), args);
         }},
         {"env", [&](const string_span& args){
             do_cmds(env_cmds, args.subspan(1u));
@@ -1168,6 +1178,7 @@ auto main(int argc, const char * argv[]) -> int
             run(it->second, make_arguments(ac, av));
         }
         else if (const auto found = find(system_stack, av[0])) {
+            auto& custom = std::get<flow::system::custom>(system_stack.top().get().info);
             auto tsys = *found;
             if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
                 if (ac > 1) {
@@ -1179,7 +1190,7 @@ auto main(int argc, const char * argv[]) -> int
             try {
                 auto obj = instantiate(tsys, std::cerr, flow::instantiate_options{
                     .descriptors = system_stack.top().get().descriptors,
-                    .environment = system_stack.top().get().environment
+                    .environment = custom.environment
                 });
                 const auto results = wait(obj);
                 for (auto&& result: results) {

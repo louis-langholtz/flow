@@ -106,7 +106,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
             .subsystems = {
                 {"subsys_a", flow::system::executable{}},
             }
-        }, std_descriptors, {}
+        }, std_descriptors,
     };
     ASSERT_FALSE(empty(sys.descriptors));
     const auto conn = unidirectional_connection{

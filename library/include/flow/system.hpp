@@ -30,6 +30,10 @@ struct system
 {
     struct custom
     {
+        /// @brief Environment for the <code>system</code>.
+        /// @note This is considered an _internal_ component of this type.
+        environment_map environment;
+
         /// @brief Subsystems.
         /// @note The identifying key of a subsystem is considered an _external_
         ///   component of that subsystems.
@@ -58,20 +62,16 @@ struct system
     system() = default;
 
     system(custom type_info,
-           descriptor_map des_map = {},
-           environment_map env_map = {})
+           descriptor_map des_map = {})
         : descriptors{std::move(des_map)},
-          environment{std::move(env_map)},
           info{std::move(type_info)}
     {
         // Intentionally empty.
     }
 
     system(executable type_info,
-           descriptor_map des_map = std_descriptors,
-           environment_map env_map = {})
+           descriptor_map des_map = std_descriptors)
         : descriptors{std::move(des_map)},
-          environment{std::move(env_map)},
           info{std::move(type_info)}
     {
         // Intentionally empty.
@@ -80,10 +80,6 @@ struct system
     /// @brief Descriptors of the <code>system</code>.
     /// @note This is considered an _interface_ component of this type.
     descriptor_map descriptors;
-
-    /// @brief Environment for the <code>system</code>.
-    /// @note This is considered an _internal_ component of this type.
-    environment_map environment;
 
     /// @brief System type specific information.
     /// @note This is considered an _internal_ component of this type.
@@ -100,6 +96,7 @@ inline auto operator==(const system::custom& lhs,
                        const system::custom& rhs) noexcept -> bool
 {
     return (lhs.subsystems == rhs.subsystems)
+        && (lhs.environment == rhs.environment)
         && (lhs.connections == rhs.connections);
 }
 
@@ -115,7 +112,6 @@ inline auto operator==(const system& lhs,
                        const system& rhs) noexcept -> bool
 {
     return (lhs.descriptors == rhs.descriptors)
-        && (lhs.environment == rhs.environment)
         && (lhs.info == rhs.info);
 }
 

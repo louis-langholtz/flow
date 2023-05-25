@@ -348,11 +348,8 @@ auto make_child(instance& parent,
 {
     instance result;
     confirm_closed(name, system.descriptors, connections);
-    result.environment = parent.environment;
-    for (auto&& entry: system.environment) {
-        result.environment[entry.first] = entry.second;
-    }
     if (const auto p = std::get_if<system::executable>(&system.info)) {
+        result.environment = parent.environment;
         if (!p->file.has_filename()) {
             std::ostringstream os;
             os << "cannot instantiate " << name << ": executable file path ";
@@ -363,6 +360,7 @@ auto make_child(instance& parent,
         result.info = std::move(info);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
+        result.environment = p->environment;
         result.info = instance::custom{};
         auto& parent_info = std::get<instance::custom>(parent.info);
         auto& info = std::get<instance::custom>(result.info);
@@ -658,6 +656,31 @@ auto close_internal_ends(const connection& connection,
     }
 }
 
+auto close_all_internal_ends(instance::custom& instance,
+                             const system::custom& system,
+                             std::ostream& diags) -> void
+{
+    const auto max_i = size(instance.channels);
+    for (auto i = 0u; i < max_i; ++i) {
+        auto& channel = instance.channels[i];
+        const auto& connection = system.connections[i];
+        if (const auto q = std::get_if<pipe_channel>(&channel)) {
+            close_internal_ends(connection, *q, diags);
+            continue;
+        }
+    }
+    for (auto&& entry: instance.children) {
+        const auto& sub_name = entry.first;
+        const auto custom = std::get_if<instance::custom>(&(entry.second.info));
+        if (custom) {
+            const auto& sub_system = system.subsystems.at(sub_name);
+            close_all_internal_ends(*custom,
+                                    std::get<system::custom>(sub_system.info),
+                                    diags);
+        }
+    }
+}
+
 }
 
 auto instantiate(const system& system,
@@ -666,11 +689,8 @@ auto instantiate(const system& system,
     -> instance
 {
     instance result;
-    result.environment = opts.environment;
-    for (auto&& entry: system.environment) {
-        result.environment[entry.first] = entry.second;
-    }
     if (const auto p = std::get_if<system::executable>(&system.info)) {
+        result.environment = opts.environment;
         if (!p->file.has_filename()) {
             throw_has_no_filename(p->file, "executable file path ");
         }
@@ -682,6 +702,7 @@ auto instantiate(const system& system,
         fork_child({}, system, result, pgrp, {}, {}, result, diags);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
+        result.environment = p->environment;
         confirm_closed({}, system.descriptors, p->connections,
                        opts.descriptors);
         result.info = instance::custom{};
@@ -707,15 +728,7 @@ auto instantiate(const system& system,
         fork_executables(*p, result, result, diags);
         // Only now, after making child processes,
         // close parent side of pipe_channels...
-        const auto max_i = size(info.channels);
-        for (auto i = 0u; i < max_i; ++i) {
-            auto& channel = info.channels[i];
-            const auto& connection = p->connections[i];
-            if (const auto q = std::get_if<pipe_channel>(&channel)) {
-                close_internal_ends(connection, *q, diags);
-                continue;
-            }
-        }
+        close_all_internal_ends(info, *p, diags);
     }
     return result;
 }
