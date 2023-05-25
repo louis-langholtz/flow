@@ -642,7 +642,7 @@ auto do_env(const flow::environment_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args) {
         if (arg == help_argument) {
-            std::cout << "prints the current environment variables\n";
+            std::cout << "prints the current environment variables.\n";
             return;
         }
     }
@@ -672,7 +672,7 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
         }
         if (arg == help_argument) {
             std::cout << "sets the named environment variable ";
-            std::cout << "to the given value\n";
+            std::cout << "to the given value.\n";
             return;
         }
         if (arg == "--reset") {
@@ -691,7 +691,7 @@ auto do_unsetenv(flow::environment_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "unsets the named environment variables\n";
+            std::cout << "unsets the named environment variables.\n";
             return;
         }
         if (arg == "--all") {
@@ -710,7 +710,7 @@ auto do_descriptors(flow::descriptor_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "prints the I/O descriptors table\n";
+            std::cout << "prints the I/O descriptors table.\n";
             return;
         }
     }
@@ -724,7 +724,7 @@ auto do_history(history_ptr& hist, int& hist_size, const string_span& args)
     HistEvent ev{};
     for (auto&& arg: args) {
         if (arg == help_argument) {
-            std::cout << "shows the history of commands entered\n";
+            std::cout << "shows the history of commands entered.\n";
             return;
         }
         if (arg == "clear") {
@@ -744,7 +744,7 @@ auto do_editor(edit_line_ptr& el, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "shows or sets the shell editor\n";
+            std::cout << "shows or sets the shell editor.\n";
             return;
         }
         if (arg == "vi" || arg == "emacs") {
@@ -770,7 +770,7 @@ auto do_help(const cmd_table& cmds, const string_span& args) -> void
     if (!empty(args)) {
         for (auto&& arg: args.subspan(1u)) {
             if (arg == help_argument) {
-                std::cout << "provides help on builtin flow commands\n";
+                std::cout << "provides help on builtin flow commands.\n";
                 return;
             }
         }
@@ -796,7 +796,7 @@ auto do_chdir(flow::environment_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "changes the current working directory\n";
+            std::cout << "changes the current working directory.\n";
             return;
         }
     }
@@ -821,7 +821,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "pushes specified custom system onto stack\n";
+            std::cout << "pushes specified custom system onto stack.\n";
             return;
         }
     }
@@ -858,7 +858,7 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "pops the current custom system off the stack\n";
+            std::cout << "pops the current custom system off the stack.\n";
             return;
         }
     }
@@ -1021,7 +1021,7 @@ auto main(int argc, const char * argv[]) -> int
         {"exit", [&](const string_span& args){
             for (auto&& arg: args.subspan(1u)) {
                 if (arg == help_argument) {
-                    std::cout << "exits the shell\n";
+                    std::cout << "exits the shell.\n";
                     return;
                 }
             }
@@ -1029,7 +1029,7 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"help", [&](const string_span& args){
             if (size(args) == 1u) {
-                std::cout << "Builtin flow commands:\n";
+                std::cout << "Builtin flow commands:\n\n";
             }
             do_help(cmds, args);
         }},
