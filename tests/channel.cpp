@@ -83,13 +83,13 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
     const auto name = system_name{};
     const auto sys = flow::system::custom{
         .subsystems = {
-            {"subsys-a", flow::system{}},
-            {"subsys-b", flow::system{}},
+            {"subsys_a", flow::system{}},
+            {"subsys_b", flow::system{}},
         }
     };
     const auto conn = unidirectional_connection{
-        system_endpoint{"subsys-a"},
-        system_endpoint{"subsys-b"},
+        system_endpoint{"subsys_a"},
+        system_endpoint{"subsys_b"},
     };
     const auto pconns = std::vector<connection>{};
     auto pchans = std::vector<channel>{};
@@ -104,13 +104,13 @@ TEST(make_channel, for_exe_subsys_to_sys)
     const auto sys = flow::system{
         flow::system::custom{
             .subsystems = {
-                {"subsys-a", flow::system::executable{}},
+                {"subsys_a", flow::system::executable{}},
             }
         }, std_descriptors, {}
     };
     ASSERT_FALSE(empty(sys.descriptors));
     const auto conn = unidirectional_connection{
-        system_endpoint{"subsys-a"},
+        system_endpoint{"subsys_a"},
         system_endpoint{{}, {reference_descriptor{1}}},
     };
     const auto pconns = std::vector<connection>{
