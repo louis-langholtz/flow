@@ -11,7 +11,7 @@ TEST(system_name, default_construction)
 TEST(system_name, construction)
 {
     EXPECT_NO_THROW(flow::system_name());
-    EXPECT_NO_THROW(flow::system_name("some_name-to-test-5"));
+    EXPECT_NO_THROW(flow::system_name("_some_name_to_test_5"));
     for (auto c = 'A'; c <= 'Z'; ++c) {
         EXPECT_NO_THROW(flow::system_name(std::string{c}));
     }
@@ -22,10 +22,10 @@ TEST(system_name, construction)
         EXPECT_NO_THROW(flow::system_name(std::string{c}));
     }
     EXPECT_NO_THROW(flow::system_name(std::string{'_'}));
-    EXPECT_NO_THROW(flow::system_name(std::string{'-'}));
     EXPECT_NO_THROW(flow::system_name("system#33"));
 
     EXPECT_THROW(flow::system_name(std::string{'\0'}), std::invalid_argument);
+    EXPECT_THROW(flow::system_name("-"), std::invalid_argument);
     EXPECT_THROW(flow::system_name("."), std::invalid_argument);
     EXPECT_THROW(flow::system_name("system@"), std::invalid_argument);
     EXPECT_THROW(flow::system_name("system:0"), std::invalid_argument);
@@ -67,16 +67,16 @@ TEST(to_system_names, with_good_strings)
         EXPECT_EQ(result[0], flow::system_name(""));
         EXPECT_EQ(result[1], flow::system_name(""));
     }
-    EXPECT_NO_THROW(result = flow::to_system_names("a-system"));
+    EXPECT_NO_THROW(result = flow::to_system_names("a_system"));
     EXPECT_EQ(size(result), 1u);
     if (size(result) == 1u) {
-        EXPECT_EQ(result[0], flow::system_name("a-system"));
+        EXPECT_EQ(result[0], flow::system_name("a_system"));
     }
-    EXPECT_NO_THROW(result = flow::to_system_names(".a-system"));
+    EXPECT_NO_THROW(result = flow::to_system_names(".a_system"));
     EXPECT_EQ(size(result), 2u);
     if (size(result) == 2u) {
         EXPECT_EQ(result[0], flow::system_name(""));
-        EXPECT_EQ(result[1], flow::system_name("a-system"));
+        EXPECT_EQ(result[1], flow::system_name("a_system"));
     }
     EXPECT_NO_THROW(result = flow::to_system_names("a.b.c"));
     EXPECT_EQ(size(result), 3u);

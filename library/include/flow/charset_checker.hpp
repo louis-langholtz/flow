@@ -123,7 +123,7 @@ using alphanum_charset = char_template_joiner<
 >::type;
 
 using name_charset = char_template_joiner<
-    alphanum_charset, tcstring<'-','_','#'>
+    alphanum_charset, tcstring<'_','#'>
 >::type;
 
 }

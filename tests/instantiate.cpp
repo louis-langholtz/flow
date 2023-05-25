@@ -181,7 +181,7 @@ TEST(instantiate, ls_system)
 
 TEST(instantiate, ls_outerr_system)
 {
-    const auto ls_exe_name = system_name{"ls-exe"};
+    const auto ls_exe_name = system_name{"ls_exe"};
     const auto ls_exe_sys = system::executable{
         .file = "/bin/ls",
         .arguments = {"ls", no_such_path, "/"},
@@ -246,7 +246,7 @@ TEST(instantiate, env_system)
     const auto base_env_name = env_name{"base"};
     const auto base_env_val = env_value{"base value"};
     const auto derived_env_val = env_value{"derived value"};
-    const auto env_exe_name = system_name{"env-exe"};
+    const auto env_exe_name = system_name{"env_exe"};
     const auto env_out = unidirectional_connection{
         system_endpoint{env_exe_name, stdout_id},
         user_endpoint{},
@@ -383,10 +383,10 @@ TEST(instantiate, lsof_system)
 
 TEST(instantiate, nested_system)
 {
-    const auto cat_system_name = system_name{"cat-system"};
-    const auto cat_process_name = system_name{"cat-process"};
-    const auto xargs_system_name = system_name{"xargs-system"};
-    const auto xargs_process_name = system_name{"xargs-process"};
+    const auto cat_system_name = system_name{"cat_system"};
+    const auto cat_process_name = system_name{"cat_process"};
+    const auto xargs_system_name = system_name{"xargs_system"};
+    const auto xargs_process_name = system_name{"xargs_process"};
     system::custom system;
     {
         system::custom cat_system;
