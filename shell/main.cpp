@@ -665,7 +665,6 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
         os << ": shows help on this command.\n";
         os << "  --reset: resets the flow environment to given.\n";
     };
-    auto argc = 0;
     for (auto&& arg: args) {
         if (arg == usage_argument) {
             usage(std::cout);
@@ -678,20 +677,14 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
         }
         if (arg == "--reset") {
             map = flow::get_environ();
-            --argc;
-            continue;
+            return;
         }
     }
-    switch (argc) {
-    case 1:
-        break;
-    case 3:
-        map[args[1]] = (args.size() > 2)? args[2]: "";
-        break;
-    default:
+    if (size(args) < 2u || size(args) > 3u) {
         usage(std::cerr);
-        break;
+        return;
     }
+    map[args[1]] = (args.size() > 2)? args[2]: "";
 }
 
 auto do_unsetenv(flow::environment_map& map, const string_span& args) -> void
@@ -1009,6 +1002,20 @@ auto main(int argc, const char * argv[]) -> int
         {"show", show_conns_lambda},
     };
 
+    const auto show_end_lambda = [&](const string_span& args){
+        do_env(system_stack.top().get().environment, args);
+    };
+    const cmd_table env_cmds{
+        {"", show_end_lambda},
+        {"set", [&](const string_span& args){
+            do_setenv(system_stack.top().get().environment, args);
+        }},
+        {"show", show_end_lambda},
+        {"unset", [&](const string_span& args){
+            do_unsetenv(system_stack.top().get().environment, args);
+        }},
+    };
+
     // TODO: make this into a table of CRUD commands...
     const cmd_table cmds{
         {"exit", [&](const string_span& args){
@@ -1039,13 +1046,7 @@ auto main(int argc, const char * argv[]) -> int
             do_chdir(system_stack.top().get().environment, args);
         }},
         {"env", [&](const string_span& args){
-            do_env(system_stack.top().get().environment, args);
-        }},
-        {"setenv", [&](const string_span& args){
-            do_setenv(system_stack.top().get().environment, args);
-        }},
-        {"unsetenv", [&](const string_span& args){
-            do_unsetenv(system_stack.top().get().environment, args);
+            do_cmds(env_cmds, args.subspan(1u));
         }},
         {"show-instances", [&](const string_span& args){
             do_show_instances(instance, args);
