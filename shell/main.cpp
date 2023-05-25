@@ -614,6 +614,21 @@ auto do_add_connection(flow::system& context, const string_span& args) -> void
     });
 }
 
+auto print(std::ostream& os, const flow::descriptor_map& descriptors) -> void
+{
+    for (auto&& entry: descriptors) {
+        os << ' ';
+        os << des_prefix;
+        os << entry.first;
+        os << assignment_token;
+        os << entry.second.direction;
+        if (!empty(entry.second.comment)) {
+            os << ':';
+            os << std::quoted(entry.second.comment);
+        }
+    }
+}
+
 auto do_show_systems(flow::system& context, const string_span& args) -> void
 {
     auto show_info = true;
@@ -630,17 +645,7 @@ auto do_show_systems(flow::system& context, const string_span& args) -> void
     const auto& custom = std::get<flow::system::custom>(context.info);
     for (auto&& entry: custom.subsystems) {
         std::cout << entry.first;
-        for (auto&& dentry: entry.second.descriptors) {
-            std::cout << ' ';
-            std::cout << des_prefix;
-            std::cout << dentry.first;
-            std::cout << assignment_token;
-            std::cout << dentry.second.direction;
-            if (!empty(dentry.second.comment)) {
-                std::cout << ':';
-                std::cout << std::quoted(dentry.second.comment);
-            }
-        }
+        print(std::cout, entry.second.descriptors);
         if (show_info) {
             if (const auto p = std::get_if<flow::system::executable>(&entry.second.info)) {
                 if (!p->file.empty()) {
@@ -787,8 +792,8 @@ auto do_descriptors(flow::descriptor_map& map, const string_span& args) -> void
             return;
         }
     }
-    std::cout << map;
-    std::cout << "\n";
+    print(std::cout, map);
+    std::cout << '\n';
 }
 
 auto do_history(history_ptr& hist, int& hist_size, const string_span& args)
