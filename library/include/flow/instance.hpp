@@ -61,21 +61,6 @@ struct instance
         variant<owning_process_id, wait_status> state;
     };
 
-    instance() = default;
-
-    instance(custom type_info, environment_map env_map = {})
-        : environment(std::move(env_map)), info(std::move(type_info))
-    {
-        // Intentionally empty.
-    }
-
-    instance(forked type_info, environment_map env_map = {})
-        : environment(std::move(env_map)), info(std::move(type_info))
-    {
-        // Intentionally empty.
-    }
-
-    environment_map environment;
     variant<custom, forked> info;
 };
 

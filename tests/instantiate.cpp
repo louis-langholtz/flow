@@ -18,7 +18,6 @@ TEST(instantiate, default_custom)
     std::ostringstream os;
     const auto obj = instantiate(system::custom{}, os);
     EXPECT_TRUE(empty(os.str()));
-    EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(std::holds_alternative<instance::custom>(obj.info));
     if (std::holds_alternative<instance::custom>(obj.info)) {
         const auto& info = std::get<instance::custom>(obj.info);
@@ -96,7 +95,6 @@ TEST(instantiate, ls_system)
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(os));
         EXPECT_FALSE(empty(os.str()));
-        EXPECT_TRUE(empty(object.environment));
         EXPECT_TRUE(std::holds_alternative<instance::custom>(object.info));
         auto cat_stdin_pipe = static_cast<pipe_channel*>(nullptr);
         auto xargs_stdout_pipe = static_cast<pipe_channel*>(nullptr);
@@ -216,7 +214,6 @@ TEST(instantiate, ls_outerr_system)
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(os));
         EXPECT_NE(os.str(), std::string());
-        EXPECT_TRUE(empty(object.environment));
         const auto pid = get_reference_process_id({ls_exe_name}, object);
         const auto wait_results = wait(object);
         EXPECT_EQ(size(wait_results), 1u);
@@ -278,7 +275,6 @@ TEST(instantiate, env_system)
                   std::ostream_iterator<char>(os));
         EXPECT_FALSE(empty(os.str()));
         os.str({});
-        EXPECT_FALSE(empty(object.environment));
         ASSERT_TRUE(std::holds_alternative<instance::custom>(object.info));
         auto info = std::get_if<instance::custom>(&object.info);
         ASSERT_EQ(size(info->children), 1u);

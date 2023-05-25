@@ -9,7 +9,6 @@ namespace flow {
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 {
     os << "instance{";
-    os << ".environment=" << value.environment;
     if (const auto p = std::get_if<instance::custom>(&value.info)) {
         os << ",.pgrp=" << p->pgrp;
         os << ",.children={";
@@ -42,20 +41,6 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 auto pretty_print(std::ostream& os, const instance& value) -> void
 {
     os << "{\n";
-    if (value.environment.empty()) {
-        os << "  .environment={},\n";
-    }
-    else {
-        os << "  .environment={\n";
-        {
-            const auto opts = detail::indenting_ostreambuf_options{
-                4, true
-            };
-            const detail::indenting_ostreambuf child_indent{os, opts};
-            pretty_print(os, value.environment);
-        }
-        os << "  },\n";
-    }
     if (const auto p = std::get_if<instance::custom>(&value.info)) {
         os << "  .pgrp=" << p->pgrp << ",\n";
         if (p->children.empty()) {
