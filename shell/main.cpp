@@ -43,6 +43,7 @@ const auto usage_argument = std::string{"--usage"};
 
 constexpr auto emacs_editor_str = "emacs";
 constexpr auto vi_editor_str = "vi";
+constexpr auto assignment_token = '=';
 
 auto make_arguments(int ac, const char*av[]) -> arguments
 {
@@ -120,33 +121,45 @@ auto to_int(const std::string_view& view)
     return {n};
 }
 
+auto parse_assignment(const std::string_view& arg)
+    -> std::optional<std::pair<std::string, std::string>>
+{
+    const auto found = arg.find(assignment_token);
+    if (found == std::string_view::npos) {
+        return {};
+    }
+    return std::pair<std::string, std::string>{
+        arg.substr(0u, found), arg.substr(found + 1u)
+    };
+}
+
 auto parse_descriptor_map_entry(const std::string_view& arg)
     -> std::optional<flow::descriptor_map_entry>
 {
-    const auto found_eq = arg.find('=');
-    if (found_eq == std::string_view::npos) {
-        std::cerr << "aborting: no '=' found in ";
+    const auto name_value = parse_assignment(arg);
+    if (!name_value) {
+        std::cerr << "aborting: no '";
+        std::cerr << assignment_token;
+        std::cerr << "' found in ";
         std::cerr << "descriptor map entry argument\n";
         return {};
     }
-    const auto key = arg.substr(0u, found_eq);
-    const auto found_int = to_int(key);
+    const auto found_int = to_int(name_value->first);
     if (!found_int) {
         std::cerr << "aborting: invalid key ";
-        std::cerr << std::quoted(key);
+        std::cerr << std::quoted(name_value->first);
         std::cerr << "\n";
         return {};
     }
     auto dir_comp = std::string_view{};
     auto des_info = flow::descriptor_info{};
-    const auto value = arg.substr(found_eq + 1u);
-    if (const auto found = value.find(':');
+    if (const auto found = name_value->second.find(':');
         found != std::string::npos) {
-        des_info.comment = value.substr(found + 1u);
-        dir_comp = value.substr(0, found);
+        des_info.comment = name_value->second.substr(found + 1u);
+        dir_comp = name_value->second.substr(0, found);
     }
     else {
-        dir_comp = value;
+        dir_comp = name_value->second;
     }
     if (const auto found = flow::to_io_type(dir_comp)) {
         des_info.direction = *found;
@@ -586,7 +599,7 @@ auto do_show_systems(flow::system& context, const string_span& args) -> void
             std::cout << ' ';
             std::cout << des_prefix;
             std::cout << dentry.first;
-            std::cout << "=";
+            std::cout << assignment_token;
             std::cout << dentry.second.direction;
             if (!empty(dentry.second.comment)) {
                 std::cout << ':';
@@ -626,7 +639,7 @@ auto do_show_instances(flow::instance& instance, const string_span& args)
     -> void
 {
     auto& instances = std::get<flow::instance::custom>(instance.info).children;
-    for (auto&& arg: args) {
+    for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "shows a listing of instantiations.\n";
             return;
@@ -637,13 +650,13 @@ auto do_show_instances(flow::instance& instance, const string_span& args)
         return;
     }
     for (auto&& entry: instances) {
-        std::cout << entry.first << "=" << entry.second << "\n";
+        std::cout << entry.first << assignment_token << entry.second << "\n";
     }
 }
 
 auto do_env(const flow::environment_map& map, const string_span& args) -> void
 {
-    for (auto&& arg: args) {
+    for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "prints the current environment variables.\n";
             return;
@@ -658,7 +671,7 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
     auto usage = [&](std::ostream& os){
         os << "usage: ";
         os << args[0];
-        os << " [--<flag>] [<env-name> <env-value>]\n";
+        os << " [--<flag>] <env-name>=<env-value>...\n";
         os << "  where <floag> may be:\n";
         os << "  ";
         os << usage_argument;
@@ -668,7 +681,7 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
         os << ": shows help on this command.\n";
         os << "  --reset: resets the flow environment to given.\n";
     };
-    for (auto&& arg: args) {
+    for (auto&& arg: args.subspan(1u)) {
         if (arg == usage_argument) {
             usage(std::cout);
             return;
@@ -682,19 +695,18 @@ auto do_setenv(flow::environment_map& map, const string_span& args) -> void
             map = flow::get_environ();
             return;
         }
+        if (const auto found = parse_assignment(arg)) {
+            map[found->first] = found->second;
+            continue;
+        }
     }
-    if (size(args) < 2u || size(args) > 3u) {
-        usage(std::cerr);
-        return;
-    }
-    map[args[1]] = (args.size() > 2)? args[2]: "";
 }
 
 auto do_unsetenv(flow::environment_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "unsets the named environment variables.\n";
+            std::cout << "unsets environment variables.\n";
             return;
         }
         if (arg == "--all") {
