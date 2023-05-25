@@ -87,7 +87,6 @@ auto pretty_print(std::ostream& os, const system& value) -> void
                 pretty_print(os, p->environment);
             }
             os << "  }";
-            top_prefix = ",\n";
         }
         if (!empty(p->subsystems)) {
             os << info_prefix;
