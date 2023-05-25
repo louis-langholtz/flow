@@ -15,10 +15,6 @@ auto operator<<(std::ostream& os, const system& value)
         os << top_prefix << ".descriptors=" << value.descriptors;
         top_prefix = ",";
     }
-    if (!empty(value.environment)) {
-        os << top_prefix << ".environment=" << value.environment;
-        top_prefix = ",";
-    }
     os << top_prefix << ".info=";
     if (const auto p = std::get_if<system::executable>(&(value.info))) {
         os << "executable_info{";
@@ -36,6 +32,10 @@ auto operator<<(std::ostream& os, const system& value)
     else if (const auto p = std::get_if<system::custom>(&(value.info))) {
         os << "custom_info{";
         auto sub_prefix = "";
+        if (!empty(p->environment)) {
+            os << sub_prefix << ".environment=" << p->environment;
+            sub_prefix = ",";
+        }
         if (!empty(p->subsystems)) {
             os << ".subsystems={";
             auto prefix = "";
@@ -71,23 +71,24 @@ auto pretty_print(std::ostream& os, const system& value) -> void
         os << "}";
         top_prefix = ",\n";
     }
-    if (!empty(value.environment)) {
-        os << top_prefix;
-        os << "  .environment={\n";
-        {
-            const auto opts = detail::indenting_ostreambuf_options{
-                4, true
-            };
-            const detail::indenting_ostreambuf child_indent{os, opts};
-            pretty_print(os, value.environment);
-        }
-        os << "  }";
-        top_prefix = ",\n";
-    }
     if (const auto p = std::get_if<system::custom>(&value.info)) {
         os << top_prefix;
         os << "  .info=custom{";
         auto info_prefix = "";
+        if (!empty(p->environment)) {
+            os << info_prefix;
+            os << "\n";
+            os << "  .environment={\n";
+            {
+                const auto opts = detail::indenting_ostreambuf_options{
+                    4, true
+                };
+                const detail::indenting_ostreambuf child_indent{os, opts};
+                pretty_print(os, p->environment);
+            }
+            os << "  }";
+            top_prefix = ",\n";
+        }
         if (!empty(p->subsystems)) {
             os << info_prefix;
             os << "\n";

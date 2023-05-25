@@ -5,6 +5,7 @@
 TEST(system_custom, default_construction)
 {
     flow::system::custom obj;
+    EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(empty(obj.subsystems));
     EXPECT_TRUE(empty(obj.connections));
 }
@@ -16,6 +17,10 @@ TEST(system_custom, equality)
     EXPECT_TRUE(flow::system::custom() == flow::system::custom());
     EXPECT_TRUE(obj_a == flow::system::custom());
     EXPECT_TRUE(flow::system::custom() == obj_a);
+    EXPECT_FALSE(obj_a == obj_b);
+    obj_b = obj_a;
+    ASSERT_TRUE(obj_a == obj_b);
+    obj_b.environment = {{"twu", "one"}};
     EXPECT_FALSE(obj_a == obj_b);
 }
 
@@ -41,7 +46,6 @@ TEST(system, default_construction)
 {
     flow::system obj;
     EXPECT_TRUE(empty(obj.descriptors));
-    EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(std::holds_alternative<flow::system::custom>(obj.info));
     if (std::holds_alternative<flow::system::custom>(obj.info)) {
         const auto& info = std::get<flow::system::custom>(obj.info);
@@ -55,10 +59,6 @@ TEST(system, equality)
     EXPECT_TRUE(flow::system() == flow::system());
     flow::system obj;
     EXPECT_TRUE(obj == flow::system());
-    obj.environment = {{"twu", "one"}};
-    EXPECT_FALSE(obj == flow::system());
-    obj.environment = {};
-    ASSERT_TRUE(obj == flow::system());
     obj.descriptors = flow::std_descriptors;
     EXPECT_FALSE(obj == flow::system());
     obj.descriptors = {};
@@ -73,7 +73,6 @@ TEST(system, executable_construction)
 {
     flow::system obj{flow::system::executable{}};
     EXPECT_FALSE(empty(obj.descriptors));
-    EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(std::holds_alternative<flow::system::executable>(obj.info));
     if (std::holds_alternative<flow::system::executable>(obj.info)) {
         const auto& info = std::get<flow::system::executable>(obj.info);
