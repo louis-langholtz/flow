@@ -349,7 +349,6 @@ auto make_child(instance& parent,
     instance result;
     confirm_closed(name, system.descriptors, connections);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        result.environment = parent.environment;
         if (!p->file.has_filename()) {
             std::ostringstream os;
             os << "cannot instantiate " << name << ": executable file path ";
@@ -360,7 +359,6 @@ auto make_child(instance& parent,
         result.info = std::move(info);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
-        result.environment = p->environment;
         result.info = instance::custom{};
         auto& parent_info = std::get<instance::custom>(parent.info);
         auto& info = std::get<instance::custom>(result.info);
@@ -524,6 +522,7 @@ auto find_file(const std::filesystem::path& file,
 
 auto fork_child(const system_name& name,
                 const system& sys,
+                const environment_map& env,
                 instance& child,
                 reference_process_id& pgrp,
                 const std::span<const connection>& connections,
@@ -539,8 +538,7 @@ auto fork_child(const system_name& name,
     }
     if (exe_path.is_relative() && !exe_path.has_parent_path()) {
         auto path_env_value = static_cast<const env_value*>(nullptr);
-        if (const auto it = child.environment.find("PATH");
-            it != child.environment.end()) {
+        if (const auto it = env.find("PATH"); it != env.end()) {
             path_env_value = &(it->second);
         }
         if (!path_env_value) {
@@ -556,7 +554,7 @@ auto fork_child(const system_name& name,
     }
     auto& child_info = std::get<instance::forked>(child.info);
     auto arg_buffers = make_arg_bufs(exe.arguments, exe_path);
-    auto env_buffers = make_arg_bufs(child.environment);
+    auto env_buffers = make_arg_bufs(env);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
     auto owning_pid = owning_process_id::fork();
@@ -622,8 +620,9 @@ auto fork_executables(const system::custom& system,
             continue;
         }
         if (const auto p = std::get_if<system::executable>(&subsystem.info)) {
-            fork_child(name, subsystem, found->second, info.pgrp,
-                       system.connections, info.channels, root, diags);
+            fork_child(name, subsystem, system.environment, found->second,
+                       info.pgrp, system.connections, info.channels, root,
+                       diags);
             continue;
         }
         if (const auto p = std::get_if<system::custom>(&subsystem.info)) {
@@ -690,7 +689,6 @@ auto instantiate(const system& system,
 {
     instance result;
     if (const auto p = std::get_if<system::executable>(&system.info)) {
-        result.environment = opts.environment;
         if (!p->file.has_filename()) {
             throw_has_no_filename(p->file, "executable file path ");
         }
@@ -699,10 +697,10 @@ auto instantiate(const system& system,
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();
         auto pgrp = no_process_id;
-        fork_child({}, system, result, pgrp, {}, {}, result, diags);
+        fork_child({}, system, opts.environment, result, pgrp, {}, {}, result,
+                   diags);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
-        result.environment = p->environment;
         confirm_closed({}, system.descriptors, p->connections,
                        opts.descriptors);
         result.info = instance::custom{};
