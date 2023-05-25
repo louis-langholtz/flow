@@ -422,6 +422,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
             system.info = flow::system::custom{
                 .environment = psys->environment
             };
+            system.descriptors = name_basis.psystem->descriptors;
         }
         for (auto&& entry: descriptor_map_entries) {
             update(system.descriptors, entry);
