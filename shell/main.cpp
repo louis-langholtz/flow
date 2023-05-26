@@ -44,7 +44,8 @@ const auto usage_argument = std::string{"--usage"};
 constexpr auto emacs_editor_str = "emacs";
 constexpr auto vi_editor_str = "vi";
 constexpr auto assignment_token = '=';
-constexpr auto custom_token = "{}";
+constexpr auto custom_begin_token = "{";
+constexpr auto custom_end_token = "}";
 constexpr auto connection_separator = '-';
 
 auto make_arguments(int ac, const char*av[]) -> arguments
@@ -294,6 +295,8 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
         os << "\n";
     };
     auto index = 1u;
+    const auto custom_token = std::string{custom_begin_token}
+                            + std::string{custom_end_token};
     for (auto&& arg: args.subspan(1u)) {
         ++index;
         if (arg == help_argument) {
@@ -633,16 +636,21 @@ auto print(std::ostream& os, const flow::descriptor_map& descriptors) -> void
     }
 }
 
-auto do_show_systems(flow::system& context, const string_span& args) -> void
+auto do_show_systems(const flow::system& context, const string_span& args) -> void
 {
     auto show_info = true;
+    auto show_recursive = false;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "shows information about systems that have been added.\n";
             return;
         }
         if (arg == "--show-info") {
-            show_info = true;
+            show_info = !show_info;
+            continue;
+        }
+        if (arg == "--recursive") {
+            show_recursive = !show_recursive;
             continue;
         }
     }
@@ -667,7 +675,16 @@ auto do_show_systems(flow::system& context, const string_span& args) -> void
             }
             else if (const auto p = std::get_if<flow::system::custom>(&entry.second.info)) {
                 std::cout << ' ';
-                std::cout << custom_token;
+                std::cout << custom_begin_token;
+                if (show_recursive && !empty(p->subsystems)) {
+                    std::cout << '\n';
+                    auto opts = flow::detail::indenting_ostreambuf_options{
+                        .indent = 2
+                    };
+                    const flow::detail::indenting_ostreambuf indent{std::cout, opts};
+                    do_show_systems(entry.second, args);
+                }
+                std::cout << custom_end_token;
             }
         }
         std::cout << '\n';
