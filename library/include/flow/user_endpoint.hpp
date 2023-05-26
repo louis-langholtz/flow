@@ -14,9 +14,8 @@ struct user_endpoint
 {
     using name_type = detail::checked<
         std::string,
-        detail::allowed_chars_checker<
-            detail::name_charset, detail::tcstring<'+',':','.'>
-        >, user_endpoint
+        detail::allowed_chars_checker<detail::name_charset>,
+        user_endpoint
     >;
 
     name_type name;
