@@ -1,22 +1,19 @@
+#include "flow/reserved.hpp"
 #include "flow/user_endpoint.hpp"
 
 namespace flow {
 
-namespace {
-constexpr auto prefix_char = '^';
-}
-
 auto operator<<(std::ostream& os, const user_endpoint& value)
     -> std::ostream&
 {
-    os << prefix_char;
+    os << reserved::user_endpoint_prefix;
     os << value.name;
     return os;
 }
 
 auto operator>>(std::istream& is, user_endpoint& value) -> std::istream&
 {
-    if (is.peek() != prefix_char) {
+    if (is.peek() != reserved::user_endpoint_prefix) {
         is.setstate(std::ios::failbit);
         return is;
     }

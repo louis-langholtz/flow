@@ -1,16 +1,13 @@
 #include "flow/file_endpoint.hpp"
+#include "flow/reserved.hpp"
 
 namespace flow {
-
-namespace {
-constexpr auto prefix_char = '%';
-}
 
 const file_endpoint file_endpoint::dev_null = file_endpoint{"/dev/null"};
 
 auto operator<<(std::ostream& os, const file_endpoint& value) -> std::ostream&
 {
-    os << prefix_char;
+    os << reserved::file_endpoint_prefix;
     // Uses std::quoted to ensure consistency with input
     os << std::quoted(value.path.string());
     return os;
@@ -18,7 +15,7 @@ auto operator<<(std::ostream& os, const file_endpoint& value) -> std::ostream&
 
 auto operator>>(std::istream& is, file_endpoint& value) -> std::istream&
 {
-    if (is.peek() != prefix_char) {
+    if (is.peek() != reserved::file_endpoint_prefix) {
         is.setstate(std::ios::failbit);
         return is;
     }

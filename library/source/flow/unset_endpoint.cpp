@@ -1,20 +1,17 @@
+#include "flow/reserved.hpp"
 #include "flow/unset_endpoint.hpp"
 
 namespace flow {
 
-namespace {
-constexpr auto prefix_char = '-';
-}
-
 auto operator<<(std::ostream& os, const unset_endpoint&) -> std::ostream&
 {
-    os << prefix_char;
+    os << reserved::unset_endpoint_prefix;
     return os;
 }
 
 auto operator>>(std::istream& is, unset_endpoint&) -> std::istream&
 {
-    if (is.peek() != prefix_char) {
+    if (is.peek() != reserved::unset_endpoint_prefix) {
         is.setstate(std::ios::failbit);
         return is;
     }
