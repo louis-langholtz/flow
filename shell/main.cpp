@@ -32,7 +32,7 @@ using cmd_table = std::map<std::string, cmd_handler>;
 
 constexpr auto shell_name = "flow";
 
-const auto des_prefix = std::string{"--des-"};
+const auto des_prefix = std::string{"+"};
 const auto name_prefix = std::string{"--name="};
 const auto parent_prefix = std::string{"--parent="};
 const auto file_prefix = std::string{"--file="};
@@ -45,6 +45,7 @@ constexpr auto emacs_editor_str = "emacs";
 constexpr auto vi_editor_str = "vi";
 constexpr auto assignment_token = '=';
 constexpr auto custom_token = "{}";
+constexpr auto connection_separator = '-';
 
 auto make_arguments(int ac, const char*av[]) -> arguments
 {
@@ -437,7 +438,7 @@ auto do_show_connections(const flow::system& context, const string_span& args)
     if (!empty(args)) {
         for (auto&& arg: args.subspan(1u)) {
             if (arg == help_argument) {
-                std::cout << "shows connections within the system.\n";
+                std::cout << "shows connections within a system.\n";
                 return;
             }
         }
@@ -445,10 +446,8 @@ auto do_show_connections(const flow::system& context, const string_span& args)
     const auto& custom = std::get<flow::system::custom>(context.info);
     for (auto&& c: custom.connections) {
         if (const auto p = std::get_if<flow::unidirectional_connection>(&c)) {
-            std::cout << src_prefix;
             std::cout << p->src;
-            std::cout << ' ';
-            std::cout << dst_prefix;
+            std::cout << connection_separator;
             std::cout << p->dst;
             std::cout << '\n';
         }
@@ -461,7 +460,7 @@ auto do_remove_connection(flow::system& context, const string_span& args) -> voi
     auto dst_str = std::string{};
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "removes connection between endpoints within a system.\n";
+            std::cout << "removes connections between endpoints within a system.\n";
             return;
         }
         if (arg.starts_with(src_prefix)) {
@@ -511,107 +510,112 @@ auto do_remove_connection(flow::system& context, const string_span& args) -> voi
     std::cout << " matching connection(s)\n";
 }
 
-auto do_add_connection(flow::system& context, const string_span& args) -> void
+auto do_add_connections(flow::system& context, const string_span& args) -> void
 {
-    auto src_str = std::string{};
-    auto dst_str = std::string{};
     auto name = std::string{};
-    auto parent = std::string{};
+    const auto usage = [&](std::ostream& os){
+        os << "  usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument << "|" << usage_argument << "|";
+        os << "[" << parent_prefix << "<parent>]";
+        os << "[" << name_prefix << "<name>]";
+        os << " <lhs_endpoint>-<rhs_endpoint>...";
+        os << '\n';
+    };
+    auto parent_basis = system_basis{{}, {}, &context};
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "adds connection between endpoints within a system.\n";
+            std::cout << "adds connections between endpoints within a system.\n";
             return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
+            return;
+        }
+        if (arg.starts_with(parent_prefix)) {
+            const auto parent = arg.substr(parent_prefix.size());
+            auto parent_names = std::deque<flow::system_name>{};
+            try {
+                parent_names = flow::to_system_names(parent);
+            }
+            catch (const std::invalid_argument& ex) {
+                std::cerr << "can't parse parent name " << std::quoted(parent);
+                std::cerr << ": " << ex.what() << "\n";
+                return;
+            }
+            parent_basis = parse({{}, parent_names, &context});
+            if (!empty(parent) && !empty(parent_basis.remaining)) {
+                std::cerr << std::quoted(parent) << "no such parent\n";
+                return;
+            }
+            continue;
         }
         if (arg.starts_with(name_prefix)) {
             name = arg.substr(name_prefix.size());
             continue;
         }
-        if (arg.starts_with(parent_prefix)) {
-            parent = arg.substr(parent_prefix.size());
+        if (arg.starts_with("-")) {
+            std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
             continue;
         }
-        if (arg.starts_with(src_prefix)) {
-            src_str = arg.substr(src_prefix.size());
+        const auto found = arg.find(connection_separator);
+        if (found == arg.npos) {
+            std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
             continue;
         }
-        if (arg.starts_with(dst_prefix)) {
-            dst_str = arg.substr(dst_prefix.size());
+        const auto lhs = arg.substr(0u, found);
+        const auto rhs = arg.substr(found + 1u);
+        if (empty(lhs)) {
+            std::cerr << std::quoted(arg);
+            std::cerr << ": left-hand-side endpoint must be specified\n";
             continue;
         }
+        if (empty(rhs)) {
+            std::cerr << std::quoted(arg);
+            std::cerr << ": right-hand-side endpoint must be specified\n";
+            continue;
+        }
+        auto names = std::deque<flow::system_name>();
+        try {
+            names = flow::to_system_names(name);
+        }
+        catch (const std::invalid_argument& ex) {
+            std::cerr << "can't parse name " << std::quoted(name);
+            std::cerr << ": " << ex.what() << "\n";
+            return;
+        }
+        const auto name_basis = parse({
+            parent_basis.names, names, parent_basis.psystem
+        });
+        switch (name_basis.remaining.size()) {
+        case 0u:
+            break;
+        default:
+            std::cerr << std::quoted(name) << "no such system\n";
+            return;
+        }
+        const auto p = std::get_if<flow::system::custom>(&name_basis.psystem->info);
+        if (!p) {
+            std::cerr << "specified containing system is not custom\n";
+            return;
+        }
+        auto lhs_endpoint = flow::endpoint{};
+        if (!parse(lhs_endpoint, lhs)) {
+            std::cerr << std::quoted(lhs);
+            std::cerr << ": can't parse left-hand-side endpoint\n";
+            continue;
+        }
+        auto rhs_endpoint = flow::endpoint{};
+        if (!parse(rhs_endpoint, rhs)) {
+            std::cerr << std::quoted(rhs);
+            std::cerr << ": can't parse right-hand-side endpoint\n";
+            continue;
+        }
+        p->connections.emplace_back(flow::unidirectional_connection{
+            lhs_endpoint, rhs_endpoint
+        });
     }
-    auto abort = [](std::ostream& os,
-                    const std::string& src,
-                    const std::string& dst,
-                    const std::string& msg = {}){
-        os << "aborting: unable to add connection from ";
-        os << std::quoted(src);
-        os << " to ";
-        os << std::quoted(dst);
-        os << ": " << msg;
-        os << "\n";
-    };
-    auto parent_names = std::deque<flow::system_name>{};
-    try {
-        parent_names = flow::to_system_names(parent);
-    }
-    catch (const std::invalid_argument& ex) {
-        std::ostringstream os;
-        os << "can't parse parent name " << parent;
-        os << " - " << ex.what() << "\n";
-        abort(std::cerr, src_str, dst_str, os.str());
-        return;
-    }
-    const auto parent_basis = parse({{}, parent_names, &context});
-    if (!empty(parent) && !empty(parent_basis.remaining)) {
-        abort(std::cerr, src_str, dst_str, "no such parent");
-        return;
-    }
-    auto names = std::deque<flow::system_name>();
-    try {
-        names = flow::to_system_names(name);
-    }
-    catch (const std::invalid_argument& ex) {
-        std::ostringstream os;
-        os << ex.what() << "\n";
-        abort(std::cerr, name, parent, os.str());
-        return;
-    }
-    const auto name_basis = parse({
-        parent_basis.names, names, parent_basis.psystem
-    });
-    switch (name_basis.remaining.size()) {
-    case 0u:
-        break;
-    default:
-        abort(std::cerr, src_str, dst_str, "no such system");
-        return;
-    }
-    const auto p = std::get_if<flow::system::custom>(&name_basis.psystem->info);
-    if (!p) {
-        abort(std::cerr, src_str, dst_str, "containing system not custom");
-        return;
-    }
-    if (empty(src_str)) {
-        abort(std::cerr, src_str, dst_str, "source must be specified");
-        return;
-    }
-    if (empty(dst_str)) {
-        abort(std::cerr, src_str, dst_str, "destination must be specified");
-        return;
-    }
-    auto src_endpoint = flow::endpoint{};
-    if (!parse(src_endpoint, src_str)) {
-        abort(std::cerr, src_str, dst_str, "can't parse source");
-        return;
-    }
-    auto dst_endpoint = flow::endpoint{};
-    if (!parse(dst_endpoint, dst_str)) {
-        abort(std::cerr, src_str, dst_str, "can't parse destination");
-        return;
-    }
-    p->connections.emplace_back(flow::unidirectional_connection{
-        src_endpoint, dst_endpoint
-    });
 }
 
 auto print(std::ostream& os, const flow::descriptor_map& descriptors) -> void
@@ -1076,7 +1080,7 @@ auto main(int argc, const char * argv[]) -> int
     const cmd_table conn_cmds{
         {"", show_conns_lambda},
         {"add", [&](const string_span& args){
-            do_add_connection(system_stack.top().get(), args);
+            do_add_connections(system_stack.top().get(), args);
         }},
         {"remove", [&](const string_span& args){
             do_remove_connection(system_stack.top().get(), args);
