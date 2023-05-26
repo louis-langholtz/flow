@@ -5,14 +5,12 @@
 #include <stdexcept> // for std::invalid_argument
 #include <system_error>
 
+#include "flow/reserved.hpp"
 #include "flow/system_endpoint.hpp"
 
 namespace flow {
 
 namespace {
-constexpr auto address_prefix = '@';
-constexpr auto descriptors_prefix = ':';
-constexpr auto descriptor_separator = ',';
 
 auto abs_sub(std::string::size_type lhs, std::string::size_type rhs)
     -> std::string::size_type
@@ -35,27 +33,27 @@ auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
     // ensure separator not valid char for address
     static_assert(std::count(begin(detail::name_charset{}),
                              end(detail::name_charset{}),
-                             descriptors_prefix) == 0);
+                             reserved::descriptors_prefix) == 0);
     const auto empty_address = empty(value.address.get());
     const auto empty_descriptors = empty(value.descriptors);
     if (!empty_descriptors) {
-        os << descriptors_prefix;
+        os << reserved::descriptors_prefix;
         auto need_separator = false;
         for (auto&& descriptor: value.descriptors) {
             if (need_separator) {
-                os << descriptor_separator;
+                os << reserved::descriptor_separator;
             }
             need_separator = true;
             os << descriptor;
         }
     }
     if (!empty_address) {
-        os << address_prefix;
+        os << reserved::address_prefix;
         os << value.address.get();
     }
     if (empty_address && empty_descriptors) {
         // output something so identifiable still as system_endpoint
-        os << descriptors_prefix;
+        os << reserved::descriptors_prefix;
     }
     return os;
 }
@@ -63,15 +61,16 @@ auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
 auto operator>>(std::istream& is, system_endpoint& value) -> std::istream&
 {
     const auto first_char = is.peek();
-    if ((first_char != address_prefix) && (first_char != descriptors_prefix)) {
+    if ((first_char != reserved::address_prefix) &&
+        (first_char != reserved::descriptors_prefix)) {
         is.setstate(std::ios::failbit);
         return is;
     }
     auto string = std::string{};
     is >> string;
     const auto npos = std::string::npos;
-    const auto apos = string.find(address_prefix);
-    const auto dpos = string.find(descriptors_prefix);
+    const auto apos = string.find(reserved::address_prefix);
+    const auto dpos = string.find(reserved::descriptors_prefix);
     const auto address = (apos != npos)?
         string.substr(apos + 1u, abs_sub(dpos, apos + 1u)): std::string{};
     const auto descriptors = (dpos != npos)?
@@ -105,8 +104,8 @@ auto to_descriptors(std::string_view string) -> std::set<reference_descriptor>
         return integer;
     };
     auto dset = std::set<reference_descriptor>{};
-    auto pos = decltype(string.find(descriptor_separator)){};
-    while ((pos = string.find(descriptor_separator)) !=
+    auto pos = decltype(string.find(reserved::descriptor_separator)){};
+    while ((pos = string.find(reserved::descriptor_separator)) !=
            std::string_view::npos) {
         const auto comp = string.substr(0, pos);
         string.remove_prefix(pos + 1);

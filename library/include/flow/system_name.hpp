@@ -9,12 +9,12 @@
 
 #include "flow/checked.hpp"
 #include "flow/charset_checker.hpp"
+#include "flow/reserved.hpp"
 
 namespace flow {
 
 struct system_name_checker: detail::allowed_chars_checker<detail::name_charset>
 {
-    static constexpr auto separator = ".";
 };
 
 /// @brief System name.
@@ -38,10 +38,13 @@ concept is_iterable = requires(T x)
 template <is_iterable<system_name> T>
 auto operator<<(std::ostream& os, const T& names) -> std::ostream&
 {
-    auto prefix = "";
+    auto add_separator = false;
     for (auto&& name: names) {
-        os << prefix << name.get();
-        prefix = system_name_checker::separator;
+        if (add_separator) {
+            os << reserved::system_name_separator;
+        }
+        os << name.get();
+        add_separator = true;
     }
     return os;
 }
@@ -51,7 +54,7 @@ auto operator<<(std::ostream& os, const T& names) -> std::ostream&
 ///   <code>system_name</code>.
 auto to_system_names(std::string_view string,
                      const std::string_view& separator =
-                        system_name_checker::separator)
+                     std::string{reserved::system_name_separator})
     -> std::deque<system_name>;
 
 }

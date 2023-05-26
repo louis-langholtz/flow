@@ -2,16 +2,11 @@
 #include <cstring> // for std::strchr
 
 #include "flow/environment_map.hpp"
+#include "flow/reserved.hpp"
 
 extern char **environ; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 namespace flow {
-
-namespace {
-
-constexpr auto env_separator = '=';
-
-}
 
 auto operator<<(std::ostream& os, const environment_map& value)
     -> std::ostream&
@@ -19,7 +14,10 @@ auto operator<<(std::ostream& os, const environment_map& value)
     os << "{";
     auto prefix = "";
     for (auto&& entry: value) {
-        os << prefix << entry.first << env_separator << entry.second;
+        os << prefix;
+        os << entry.first;
+        os << reserved::env_separator;
+        os << entry.second;
         prefix = ",";
     }
     os << "}";
@@ -30,7 +28,10 @@ auto pretty_print(std::ostream& os, const environment_map& value,
                   const std::string& sep) -> void
 {
     for (auto&& entry: value) {
-        os << entry.first << env_separator << entry.second << sep;
+        os << entry.first;
+        os << reserved::env_separator;
+        os << entry.second;
+        os << sep;
     }
 }
 
@@ -52,7 +53,7 @@ auto make_arg_bufs(const environment_map& envars)
     auto result = std::vector<std::string>{};
     for (const auto& entry: envars) {
         auto string = std::string(entry.first);
-        string += env_separator;
+        string += reserved::env_separator;
         string += std::string(entry.second);
         result.push_back(std::move(string));
     }
