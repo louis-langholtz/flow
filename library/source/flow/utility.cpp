@@ -1,4 +1,5 @@
 #include <algorithm> // for std::find
+#include <atomic>
 #include <csignal> // for kill
 #include <cstddef> // for std::ptrdiff_t
 #include <cstdio> // for ::tmpfile, std::fclose
@@ -14,7 +15,7 @@
 #include <fcntl.h> // for ::open
 #include <sys/types.h> // for mkfifo
 #include <sys/stat.h> // for mkfifo
-#include <unistd.h> // for ::close
+#include <unistd.h> // for ::close, ::getpid
 
 #include "flow/connection.hpp"
 #include "flow/reference_descriptor.hpp"
@@ -77,10 +78,20 @@ auto to_posix_signal(signal sig) -> int
     throw std::invalid_argument{"unknown signal"};
 }
 
+auto sigsafe_counter() -> volatile std::atomic_int32_t&
+{
+    static_assert(std::atomic_int32_t::is_always_lock_free);
+    static volatile auto value = std::atomic_int32_t{};
+    return value;
+}
+
 auto sigaction_cb(int sig, siginfo_t *info, void * /*ucontext*/) -> void
 {
+    ++sigsafe_counter();
+    // TODO: remove the following...
     const auto sender_pid = info? info->si_pid: -1;
-    std::cerr << "caught " << sig << ", from " << sender_pid << "\n";
+    std::cerr << ::getpid();
+    std::cerr << " caught " << sig << ", from " << sender_pid << "\n";
 }
 
 auto kill(const reference_process_id& pid, signal sig) -> int
@@ -88,6 +99,24 @@ auto kill(const reference_process_id& pid, signal sig) -> int
     return ::kill(int(pid), to_posix_signal(sig));
 }
 
+}
+
+auto sigsafe_counter_reset() -> void
+{
+    sigsafe_counter().store(0);
+}
+
+auto sigsafe_counter_take() -> bool
+{
+    for (;;) {
+        auto cur = sigsafe_counter().load();
+        if (cur <= 0) {
+            return false;
+        }
+        if (sigsafe_counter().compare_exchange_strong(cur, cur - 1)) {
+            return true;
+        }
+    }
 }
 
 auto nulldev_fstream() -> ext::fstream
