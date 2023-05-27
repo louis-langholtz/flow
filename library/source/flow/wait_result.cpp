@@ -1,5 +1,7 @@
 #include <sys/wait.h>
 
+#include <csignal> // for kill
+
 #include "flow/instance.hpp"
 #include "flow/system_name.hpp"
 #include "flow/utility.hpp"
@@ -9,64 +11,32 @@ namespace flow {
 
 namespace {
 
-auto find(instance& object, const reference_process_id& pid)
-    -> std::optional<decltype(std::ref(object))>
-{
-    if (const auto p = std::get_if<instance::forked>(&object.info)) {
-        if (const auto q = std::get_if<owning_process_id>(&p->state)) {
-            if (reference_process_id(*q) == pid) {
-                return std::ref(object);
-            }
-        }
-        return {};
-    }
-    if (const auto p = std::get_if<instance::custom>(&object.info)) {
-        for (auto&& entry: p->children) {
-            if (auto found = find(entry.second, pid)) {
-                return found;
-            }
-        }
-    }
-    return {};
-}
-
-auto handle(instance& instance, const info_wait_result& info) -> bool
-{
-    static const auto unknown_name = system_name{"unknown"};
-    const auto entry = find(instance, info.id);
-    std::visit(detail::overloaded{
-        [](const wait_unknown_status&) {},
-        [&entry](const wait_exit_status& arg) {
-            if (entry) {
-                (std::get<instance::forked>(entry->get().info)).state =
-                    wait_status{arg};
-            }
-        },
-        [&entry](const wait_signaled_status& arg) {
-            if (entry) {
-                (std::get<instance::forked>(entry->get().info)).state =
-                    wait_status{arg};
-            }
-        },
-        [](const wait_stopped_status&){},
-        [](const wait_continued_status&){},
-    }, info.status);
-    return true;
-}
-
-auto handle(instance& instance, const wait_result& result) -> bool
+auto wait(instance::forked& instance) -> std::vector<wait_result>
 {
     return std::visit(detail::overloaded{
-        [](const nokids_wait_result&){
-            return false;
+        [&instance](const owning_process_id& id){
+            auto results = std::vector<wait_result>{};
+            for (;;) {
+                auto result = wait(reference_process_id(id));
+                if (std::holds_alternative<nokids_wait_result>(result)) {
+                    break;
+                }
+                if (std::holds_alternative<info_wait_result>(result)) {
+                    instance.state = std::get<info_wait_result>(result).status;
+                    results.push_back(result);
+                    break;
+                }
+                if (std::holds_alternative<error_wait_result>(result)) {
+                    results.push_back(result);
+                    continue;
+                }
+            }
+            return results;
         },
-        [](const error_wait_result&){
-            return true;
-        },
-        [&instance](const info_wait_result& arg){
-            return handle(instance, arg);
-        },
-    }, result);
+        [](const wait_status&){
+            return std::vector<wait_result>{};
+        }
+    }, instance.state);
 }
 
 }
@@ -107,14 +77,31 @@ auto wait(reference_process_id id, wait_option flags) noexcept
     auto status = 0;
     auto pid = decltype(::waitpid(pid_t(id), &status, int(flags))){};
     auto err = 0;
-    do { // NOLINT(cppcoreguidelines-avoid-do-while)
+    if (pid_t(id) > 0) {
+        sigsafe_counter_reset();
+    }
+    auto sig = SIGINT;
+    for (;;) {
         //itimerval new_timer{};
         //itimerval old_timer;
         //setitimer(ITIMER_REAL, &new_timer, &old_timer);
         pid = ::waitpid(pid_t(id), &status, int(flags));
         err = errno;
+        if (pid != -1) {
+            break;
+        }
+        if (err != EINTR) {
+            break;
+        }
+        std::cerr << "waitpid(" << id << ") interrupted by signal\n";
+        if (pid_t(id) > 0) {
+            if (sigsafe_counter_take()) {
+                ::kill(pid_t(id), sig);
+                sig = SIGKILL;
+            }
+        }
         //setitimer(ITIMER_REAL, &old_timer, nullptr);
-    } while ((pid == -1) && (err == EINTR));
+    }
     if ((pid == -1) && (err == ECHILD)) {
         return nokids_wait_result{};
     }
@@ -146,14 +133,19 @@ auto wait(reference_process_id id, wait_option flags) noexcept
 
 auto wait(instance& object) -> std::vector<wait_result>
 {
-    auto results = std::vector<wait_result>{};
-    auto result = decltype(wait()){};
-    while (!std::holds_alternative<nokids_wait_result>(result = wait())) {
-        if (handle(object, result)) {
-            results.push_back(result);
-        }
-    }
-    return results;
+    return std::visit(detail::overloaded{
+        [](instance::forked& obj){
+            return wait(obj);
+        },
+        [](instance::custom& obj){
+            auto results = std::vector<wait_result>{};
+            for (auto&& entry: obj.children) {
+                const auto waits = wait(entry.second);
+                results.insert(end(results), begin(waits), end(waits));
+            }
+            return results;
+        },
+    }, object.info);
 }
 
 }

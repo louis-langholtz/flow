@@ -79,6 +79,9 @@ auto send_signal(signal sig,
 
 auto set_signal_handler(signal sig) -> void;
 
+auto sigsafe_counter_reset() -> void;
+auto sigsafe_counter_take() -> bool;
+
 auto get_matching_set(const descriptor_map& descriptors, io_type io)
     -> std::set<reference_descriptor>;
 
