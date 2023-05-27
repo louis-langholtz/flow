@@ -61,6 +61,9 @@ struct filebuf: public std::streambuf {
     auto operator=(filebuf&& other) noexcept -> filebuf&;
     auto swap(filebuf& rhs) -> void;
     [[nodiscard]] auto is_open() const noexcept -> bool;
+    auto unique(char* path) -> filebuf*;
+    auto unique(std::filesystem::path& path) -> filebuf*;
+    auto unique(std::string& path) -> filebuf*;
     auto open(const char* path, openmode mode) -> filebuf*;
     auto open(const std::filesystem::path& path, openmode mode) -> filebuf*;
     auto open(const std::string& path, openmode mode) -> filebuf*;
@@ -403,6 +406,38 @@ inline auto filebuf::is_open() const noexcept -> bool
     return fp != nullptr;
 }
 
+inline auto filebuf::unique(char* path) -> filebuf*
+{
+    if (fp) {
+        return nullptr;
+    }
+    constexpr auto mode = in|out|binary;
+    const auto mode_cstr = to_fopen_mode(mode);
+    if (!mode_cstr) {
+        return nullptr;
+    }
+    auto new_fp = std::unique_ptr<FILE, fcloser>{};
+    static constexpr char six_x[] = "XXXXXX"; // NOLINT(modernize-avoid-c-arrays)
+    const auto len = std::strlen(path);
+    const auto total_len = len + std::size(six_x);
+    if (total_len >= L_tmpnam) {
+        return nullptr;
+    }
+    std::copy_n(std::data(six_x), std::size(six_x), path + len);
+    const auto fd = ::mkstemp(path);
+    if (fd == -1) {
+        return nullptr;
+    }
+    new_fp = std::unique_ptr<FILE, fcloser>{::fdopen(fd, mode_cstr)};
+    if (!new_fp) {
+        ::close(fd);
+        return nullptr;
+    }
+    fp = std::move(new_fp);
+    opened_mode = mode;
+    return this;
+}
+
 inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
 {
     if (fp) {
@@ -439,32 +474,6 @@ inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
         }
         const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
                                path, oflags, 0666);
-#else
-        static constexpr auto buffer_size = std::size_t{1024u};
-        static constexpr char six_x[] = "XXXXXX"; // NOLINT(modernize-avoid-c-arrays)
-        std::array<char, buffer_size> buffer{};
-        const auto len = std::strlen(path);
-        const auto last_char = (len > 0u)? path[len - 1u]: '\0';
-        const auto separator = (last_char != '/')? "/": "";
-        const auto separator_len = std::strlen(separator);
-        const auto total_len = len + separator_len + std::size(six_x);
-        if (total_len >= buffer_size) {
-            return nullptr;
-        }
-        // Replace the following with the more readable std::format_to_n when available
-        std::copy_n(std::data(six_x), std::size(six_x),
-                    std::copy_n(separator, separator_len,
-                                std::copy_n(path, len, std::data(buffer))));
-        const auto fd = ::mkstemp(std::data(buffer));
-        if (fd != -1) {
-            if (mode & noreplace) {
-                ::unlink(std::data(buffer));
-            }
-            else {
-                // TODO: save filepath to support linking
-            }
-        }
-#endif
         if (fd == -1) {
             return nullptr;
         }
@@ -473,6 +482,9 @@ inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
             ::close(fd);
             return nullptr;
         }
+#else
+        new_fp = std::unique_ptr<FILE, fcloser>{std::tmpfile()};
+#endif
     }
     else {
         new_fp = std::unique_ptr<FILE, fcloser>{::fopen(path, mode_cstr)};
@@ -490,6 +502,34 @@ inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
     fp = std::move(new_fp);
     opened_mode = mode;
     return this;
+}
+
+inline auto filebuf::unique(std::filesystem::path& path) -> filebuf*
+{
+    if (size(path.native()) >= L_tmpnam) {
+        return nullptr;
+    }
+    auto buffer = std::array<char, L_tmpnam>{};
+    std::copy_n(data(path.native()), size(path.native()), data(buffer));
+    const auto p = unique(data(buffer));
+    if (p) {
+        path.assign(data(buffer));
+    }
+    return p;
+}
+
+inline auto filebuf::unique(std::string& path) -> filebuf*
+{
+    if (size(path) >= L_tmpnam) {
+        return nullptr;
+    }
+    auto buffer = std::array<char, L_tmpnam>{};
+    std::copy_n(data(path), size(path), data(buffer));
+    const auto p = unique(data(buffer));
+    if (p) {
+        path.assign(data(buffer));
+    }
+    return p;
 }
 
 inline auto filebuf::open(const std::filesystem::path& path, openmode mode)
