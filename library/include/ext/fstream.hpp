@@ -406,7 +406,7 @@ inline auto filebuf::is_open() const noexcept -> bool
     return fp != nullptr;
 }
 
-inline auto filebuf::unique(char* path) -> filebuf*
+inline auto filebuf::unique(std::filesystem::path& path) -> filebuf*
 {
     if (fp) {
         return nullptr;
@@ -416,23 +416,30 @@ inline auto filebuf::unique(char* path) -> filebuf*
     if (!mode_cstr) {
         return nullptr;
     }
-    auto new_fp = std::unique_ptr<FILE, fcloser>{};
     static constexpr char six_x[] = "XXXXXX"; // NOLINT(modernize-avoid-c-arrays)
-    const auto len = std::strlen(path);
-    const auto total_len = len + std::size(six_x);
+    const auto total_len = size(path.native()) + std::size(six_x);
     if (total_len >= L_tmpnam) {
         return nullptr;
     }
-    std::copy_n(std::data(six_x), std::size(six_x), path + len);
-    const auto fd = ::mkstemp(path);
+    auto buffer = std::array<char, L_tmpnam>{};
+    const auto extension = path.extension();
+    auto new_filename = path.stem();
+    new_filename += six_x;
+    new_filename += extension;
+    auto new_path = path;
+    new_path.replace_filename(new_filename);
+    std::copy_n(data(new_path.native()), size(new_path.native()), data(buffer));
+    const auto fd = ::mkstemps(data(buffer),
+                               static_cast<int>(size(extension.native())));
     if (fd == -1) {
         return nullptr;
     }
-    new_fp = std::unique_ptr<FILE, fcloser>{::fdopen(fd, mode_cstr)};
+    auto new_fp = std::unique_ptr<FILE, fcloser>{::fdopen(fd, mode_cstr)};
     if (!new_fp) {
         ::close(fd);
         return nullptr;
     }
+    path = data(buffer);
     fp = std::move(new_fp);
     opened_mode = mode;
     return this;
@@ -504,32 +511,24 @@ inline auto filebuf::open(const char* path, openmode mode) -> filebuf*
     return this;
 }
 
-inline auto filebuf::unique(std::filesystem::path& path) -> filebuf*
+inline auto filebuf::unique(char* path) -> filebuf*
 {
-    if (size(path.native()) >= L_tmpnam) {
-        return nullptr;
+    auto tmp = std::filesystem::path{path};
+    const auto result = unique(tmp);
+    if (result) {
+        std::strcpy(path, tmp.c_str());
     }
-    auto buffer = std::array<char, L_tmpnam>{};
-    std::copy_n(data(path.native()), size(path.native()), data(buffer));
-    const auto p = unique(data(buffer));
-    if (p) {
-        path.assign(data(buffer));
-    }
-    return p;
+    return result;
 }
 
 inline auto filebuf::unique(std::string& path) -> filebuf*
 {
-    if (size(path) >= L_tmpnam) {
-        return nullptr;
+    auto tmp = std::filesystem::path{path};
+    const auto result = unique(tmp);
+    if (result) {
+        path = tmp.c_str();
     }
-    auto buffer = std::array<char, L_tmpnam>{};
-    std::copy_n(data(path), size(path), data(buffer));
-    const auto p = unique(data(buffer));
-    if (p) {
-        path.assign(data(buffer));
-    }
-    return p;
+    return result;
 }
 
 inline auto filebuf::open(const std::filesystem::path& path, openmode mode)
