@@ -831,6 +831,9 @@ struct fstream: public std::iostream
 
     auto is_open() const -> bool;
     auto close() -> void;
+    auto unique(char* path) -> void;
+    auto unique(std::filesystem::path& path) -> void;
+    auto unique(std::string& path) -> void;
     auto open(const char* path,
               filebuf::openmode mode = filebuf::in|filebuf::out) -> void;
     auto open(const std::string& path,
@@ -870,6 +873,36 @@ inline auto fstream::is_open() const -> bool
 inline auto fstream::close() -> void
 {
     if (!fb.close()) {
+        setstate(ios_base::failbit);
+    }
+}
+
+inline auto fstream::unique(char* path) -> void
+{
+    if (fb.unique(path)) {
+        clear();
+    }
+    else {
+        setstate(ios_base::failbit);
+    }
+}
+
+inline auto fstream::unique(std::filesystem::path& path) -> void
+{
+    if (fb.unique(path)) {
+        clear();
+    }
+    else {
+        setstate(ios_base::failbit);
+    }
+}
+
+inline auto fstream::unique(std::string& path) -> void
+{
+    if (fb.unique(path)) {
+        clear();
+    }
+    else {
         setstate(ios_base::failbit);
     }
 }
