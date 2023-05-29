@@ -68,6 +68,8 @@ enum class signal {
     interrupt,
     terminate,
     kill,
+    cont,
+    winch,
 };
 
 auto operator<<(std::ostream& os, signal s) -> std::ostream&;
@@ -81,6 +83,9 @@ auto set_signal_handler(signal sig) -> void;
 
 auto sigsafe_counter_reset() noexcept -> void;
 auto sigsafe_counter_take() noexcept -> bool;
+auto sigsafe_sigset_put(int sig) noexcept -> bool;
+auto sigsafe_sigset_take(int sig) noexcept -> bool;
+auto sigsafe_sigset_takeany(const std::set<int>& sigs) -> bool;
 
 auto get_matching_set(const descriptor_map& descriptors, io_type io)
     -> std::set<reference_descriptor>;
