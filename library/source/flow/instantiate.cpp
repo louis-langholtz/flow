@@ -314,22 +314,26 @@ auto exec_child(const std::filesystem::path& path,
 auto confirm_closed(const system_name& name,
                     const descriptor_map& descriptors,
                     const std::span<const connection>& connections,
-                    const descriptor_map& available = {}) -> void
+                    const descriptor_map& available) -> bool
 {
+    auto is_internally_closed = true;
     for (auto&& entry: descriptors) {
+        const auto look_for = system_endpoint{name, entry.first};
+        if (find_index(connections, look_for)) {
+            continue;
+        }
         if (const auto it = available.find(entry.first);
             it != available.end()) {
             if (entry.second.direction == it->second.direction) {
+                is_internally_closed = false;
                 continue;
             }
         }
-        const auto look_for = system_endpoint{name, entry.first};
-        if (!find_index(connections, look_for)) {
-            std::ostringstream os;
-            os << "missing connection for " << look_for;
-            throw invalid_descriptor_map{os.str()};
-        }
+        std::ostringstream os;
+        os << "missing connection for " << look_for;
+        throw invalid_descriptor_map{os.str()};
     }
+    return is_internally_closed;
 }
 
 [[noreturn]]
@@ -344,10 +348,12 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 auto make_child(instance& parent,
                 const system_name& name,
                 const system& system,
-                const std::span<const connection>& connections) -> instance
+                const std::span<const connection>& connections,
+                const descriptor_map& descriptors) -> instance
 {
     instance result;
-    confirm_closed(name, system.descriptors, connections);
+    const auto all_closed = confirm_closed(name, system.descriptors,
+                                           connections, descriptors);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
         if (!p->file.has_filename()) {
             std::ostringstream os;
@@ -362,6 +368,9 @@ auto make_child(instance& parent,
         result.info = instance::custom{};
         auto& parent_info = std::get<instance::custom>(parent.info);
         auto& info = std::get<instance::custom>(result.info);
+        if (!all_closed) {
+            info.pgrp = current_process_id();
+        }
         for (auto&& connection: p->connections) {
             auto channel = make_channel(connection, name, system, info.channels,
                                         connections, parent_info.channels);
@@ -372,7 +381,7 @@ auto make_child(instance& parent,
         }
         for (auto&& entry: p->subsystems) {
             auto kid = make_child(result, entry.first, entry.second,
-                                  p->connections);
+                                  p->connections, descriptors);
             info.children.emplace(entry.first, std::move(kid));
         }
     }
@@ -692,19 +701,24 @@ auto instantiate(const system& system,
         if (!p->file.has_filename()) {
             throw_has_no_filename(p->file, "executable file path ");
         }
-        confirm_closed({}, system.descriptors, {}, opts.descriptors);
+        const auto all_closed =
+            confirm_closed({}, system.descriptors, {}, opts.descriptors);
         result.info = instance::forked{};
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();
-        auto pgrp = no_process_id;
+        auto pgrp = all_closed? no_process_id: current_process_id();
         fork_child({}, system, opts.environment, result, pgrp, {}, {}, result,
                    diags);
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
-        confirm_closed({}, system.descriptors, p->connections,
-                       opts.descriptors);
+        const auto all_closed =
+            confirm_closed({}, system.descriptors,
+                           p->connections, opts.descriptors);
         result.info = instance::custom{};
         auto& info = std::get<instance::custom>(result.info);
+        if (!all_closed) {
+            info.pgrp = current_process_id();
+        }
         for (auto&& entry: system.descriptors) {
             const auto look_for = system_endpoint{{}, entry.first};
             if (!find_index(p->connections, look_for)) {
@@ -720,7 +734,8 @@ auto instantiate(const system& system,
         for (auto&& entry: p->subsystems) {
             const auto& sub_name = entry.first;
             const auto& sub_system = entry.second;
-            auto kid = make_child(result, sub_name, sub_system, p->connections);
+            auto kid = make_child(result, sub_name, sub_system, p->connections,
+                                  opts.descriptors);
             info.children.emplace(sub_name, std::move(kid));
         }
         fork_executables(*p, result, result, diags);
