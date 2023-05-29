@@ -1171,9 +1171,22 @@ auto main(int argc, const char * argv[]) -> int
         }},
     };
 
-    auto count = 0;
-    auto buf = static_cast<const char*>(nullptr);
-    while (do_loop && ((buf = el_gets(el.get(), &count)) != nullptr)) {
+    while (do_loop) {
+        auto count = 0;
+        const auto buf = el_gets(el.get(), &count);
+        if (!buf || count == 0) {
+            const auto err = errno;
+            if (errno == EINTR) {
+                std::cerr << "el_gets was interrupted\n";
+                continue;
+            }
+            std::cerr << "aborting: el_gets returned null, count=";
+            std::cerr << count;
+            std::cerr << ", errno=";
+            std::cerr << flow::os_error_code(err);
+            std::cerr << "\n";
+            break;
+        }
         if (!continuation && (count == 1)) {
             continue;
         }
@@ -1198,7 +1211,7 @@ auto main(int argc, const char * argv[]) -> int
             continue;
         }
         if (ac < 1) {
-            std::cerr << "unexpexred argument count of " << ac << "\n";
+            std::cerr << "unexpected argument count of " << ac << "\n";
             continue;
         }
         if (const auto it = cmds.find(av[0]); it != cmds.end()) {
