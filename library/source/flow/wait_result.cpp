@@ -69,20 +69,6 @@ auto operator<<(std::ostream& os, const info_wait_result& arg)
     return os;
 }
 
-namespace detail {
-
-auto get_nohang_wait_option() noexcept -> wait_option
-{
-    return wait_option(WNOHANG);
-}
-
-auto get_untraced_wait_option() noexcept -> wait_option
-{
-    return wait_option(WUNTRACED);
-}
-
-}
-
 auto wait(reference_process_id id, wait_option flags) noexcept
     -> wait_result
 {
