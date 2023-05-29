@@ -74,6 +74,10 @@ auto to_posix_signal(signal sig) -> int
         return SIGTERM;
     case signal::kill:
         return SIGKILL;
+    case signal::cont:
+        return SIGCONT;
+    case signal::winch:
+        return SIGWINCH;
     }
     throw std::invalid_argument{"unknown signal"};
 }
@@ -85,9 +89,18 @@ auto sigsafe_counter() noexcept -> volatile std::atomic_int32_t&
     return value;
 }
 
+/// @brief For any signal between 1 and 63 inclusive.
+auto sigsafe_sigset() noexcept -> volatile std::atomic<std::uint64_t>&
+{
+    static_assert(std::atomic<std::uint64_t>::is_always_lock_free);
+    static volatile auto value = std::atomic<std::uint64_t>{};
+    return value;
+}
+
 auto sigaction_cb(int sig, siginfo_t *info, void * /*ucontext*/) -> void
 {
     ++sigsafe_counter();
+    sigsafe_sigset_put(sig);
     // TODO: remove the following...
     const auto sender_pid = info? info->si_pid: -1;
     std::cerr << ::getpid();
@@ -114,6 +127,57 @@ auto sigsafe_counter_take() noexcept -> bool
             return false;
         }
         if (sigsafe_counter().compare_exchange_strong(cur, cur - 1)) {
+            return true;
+        }
+    }
+}
+
+auto sigsafe_sigset_put(int sig) noexcept -> bool
+{
+    assert(sig > 0 && sig < 64);
+    const auto sigbits = std::uint64_t{1u} << (sig - 1);
+    for (;;) {
+        auto osigset = sigsafe_sigset().load();
+        auto nsigset = osigset | sigbits;
+        if (osigset == nsigset) {
+            return false;
+        }
+        if (sigsafe_sigset().compare_exchange_strong(osigset, nsigset)) {
+            return true;
+        }
+    }
+}
+
+auto sigsafe_sigset_take(int sig) noexcept -> bool
+{
+    assert(sig > 0 && sig < 64);
+    const auto sigbits = std::uint64_t{1u} << (sig - 1);
+    for (;;) {
+        auto osigset = sigsafe_sigset().load();
+        auto nsigset = osigset & ~sigbits;
+        if (osigset == nsigset) {
+            return false;
+        }
+        if (sigsafe_sigset().compare_exchange_strong(osigset, nsigset)) {
+            return true;
+        }
+    }
+}
+
+auto sigsafe_sigset_takeany(const std::set<int>& sigs) -> bool
+{
+    auto sigbits = std::uint64_t{};
+    for (auto&& sig: sigs) {
+        assert(sig > 0 && sig < 64);
+        sigbits |= (std::uint64_t{1u} << (sig - 1));
+    }
+    for (;;) {
+        auto osigset = sigsafe_sigset().load();
+        auto nsigset = osigset & ~sigbits;
+        if (osigset == nsigset) {
+            return false;
+        }
+        if (sigsafe_sigset().compare_exchange_strong(osigset, nsigset)) {
             return true;
         }
     }
@@ -272,6 +336,12 @@ auto operator<<(std::ostream& os, signal s) -> std::ostream&
         break;
     case signal::kill:
         os << "sigkill";
+        break;
+    case signal::cont:
+        os << "sigcont";
+        break;
+    case signal::winch:
+        os << "sigwinch";
         break;
     }
     return os;
