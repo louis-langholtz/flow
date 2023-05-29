@@ -18,6 +18,8 @@ constexpr auto no_process_id = reference_process_id{
     static_cast<std::underlying_type_t<reference_process_id>>(0)
 };
 
+auto current_process_id() noexcept -> reference_process_id;
+
 auto operator<<(std::ostream& os, reference_process_id value)
     -> std::ostream&;
 
