@@ -78,7 +78,7 @@ auto to_posix_signal(signal sig) -> int
     throw std::invalid_argument{"unknown signal"};
 }
 
-auto sigsafe_counter() -> volatile std::atomic_int32_t&
+auto sigsafe_counter() noexcept -> volatile std::atomic_int32_t&
 {
     static_assert(std::atomic_int32_t::is_always_lock_free);
     static volatile auto value = std::atomic_int32_t{};
@@ -101,12 +101,12 @@ auto kill(const reference_process_id& pid, signal sig) -> int
 
 }
 
-auto sigsafe_counter_reset() -> void
+auto sigsafe_counter_reset() noexcept -> void
 {
     sigsafe_counter().store(0);
 }
 
-auto sigsafe_counter_take() -> bool
+auto sigsafe_counter_take() noexcept -> bool
 {
     for (;;) {
         auto cur = sigsafe_counter().load();
@@ -307,12 +307,18 @@ auto send_signal(signal sig,
 
 auto set_signal_handler(signal sig) -> void
 {
-    struct sigaction act{};
-    act.sa_sigaction = sigaction_cb;
-    act.sa_flags = SA_SIGINFO;
-    if (::sigaction(to_posix_signal(sig), &act, nullptr) == -1) {
+    struct sigaction sa{};
+    sa.sa_sigaction = sigaction_cb;
+    sa.sa_flags = SA_SIGINFO;
+    sigfillset(&sa.sa_mask);
+    const auto psig = to_posix_signal(sig);
+    if (::sigaction(psig, &sa, nullptr) == -1) {
         throw std::system_error{errno, std::system_category()};
     }
+    auto old_set = sigset_t{};
+    auto new_set = sigset_t{};
+    sigaddset(&new_set, psig);
+    sigprocmask(SIG_UNBLOCK, &new_set, &old_set); // NOLINT(concurrency-mt-unsafe)
 }
 
 auto get_matching_set(const descriptor_map& descriptors, io_type io)
