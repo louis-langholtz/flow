@@ -25,14 +25,9 @@ constexpr auto operator~(const wait_option& val) noexcept
     return wait_option(~int(val));
 }
 
-namespace detail {
-auto get_nohang_wait_option() noexcept -> wait_option;
-auto get_untraced_wait_option() noexcept -> wait_option;
-}
-
 namespace wait_options {
-const wait_option nohang = detail::get_nohang_wait_option();
-const wait_option untraced = detail::get_untraced_wait_option();
+auto nohang() noexcept -> wait_option;
+auto untraced() noexcept -> wait_option;
 }
 
 }

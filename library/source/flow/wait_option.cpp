@@ -2,14 +2,14 @@
 
 #include "flow/wait_option.hpp"
 
-namespace flow::detail {
+namespace flow::wait_options {
 
-auto get_nohang_wait_option() noexcept -> wait_option
+auto nohang() noexcept -> wait_option
 {
     return wait_option(WNOHANG);
 }
 
-auto get_untraced_wait_option() noexcept -> wait_option
+auto untraced() noexcept -> wait_option
 {
     return wait_option(WUNTRACED);
 }
