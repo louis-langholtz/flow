@@ -95,6 +95,8 @@
 		99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */; };
 		99C193A629F76AB800C3F53F /* descriptor_iostream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */; };
 		99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193AF29F7AFD100C3F53F /* fstream.hpp */; };
+		99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99FE1CA92A25103200D24AE3 /* wait_option.cpp */; };
+		99FE1CAC2A25103200D24AE3 /* wait_option.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99FE1CAA2A25103200D24AE3 /* wait_option.hpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -245,6 +247,8 @@
 		99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor_iostream.cpp; sourceTree = "<group>"; };
 		99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor_iostream.hpp; sourceTree = "<group>"; };
 		99C193AF29F7AFD100C3F53F /* fstream.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = fstream.hpp; sourceTree = "<group>"; };
+		99FE1CA92A25103200D24AE3 /* wait_option.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wait_option.cpp; sourceTree = "<group>"; };
+		99FE1CAA2A25103200D24AE3 /* wait_option.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = wait_option.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -384,6 +388,7 @@
 				9943E8962A021E98002F4C26 /* user_endpoint.hpp */,
 				99C1939E29F5819A00C3F53F /* utility.hpp */,
 				9943E87C29FBF8BE002F4C26 /* variant.hpp */,
+				99FE1CAA2A25103200D24AE3 /* wait_option.hpp */,
 				9943E88329FC0763002F4C26 /* wait_result.hpp */,
 				9943E87929FBF418002F4C26 /* wait_status.hpp */,
 			);
@@ -423,6 +428,7 @@
 				99A88D222A0C229400AFD76F /* unset_endpoint.cpp */,
 				9943E8952A021E98002F4C26 /* user_endpoint.cpp */,
 				99C1939D29F5819A00C3F53F /* utility.cpp */,
+				99FE1CA92A25103200D24AE3 /* wait_option.cpp */,
 				9943E88229FC0763002F4C26 /* wait_result.cpp */,
 				9943E87829FBF418002F4C26 /* wait_status.cpp */,
 			);
@@ -472,6 +478,7 @@
 				99C1939829F5136100C3F53F /* system.hpp in Headers */,
 				99A88D252A0C229400AFD76F /* unset_endpoint.hpp in Headers */,
 				99C193A229F6EB4B00C3F53F /* expected.hpp in Headers */,
+				99FE1CAC2A25103200D24AE3 /* wait_option.hpp in Headers */,
 				99A88D522A17D4E500AFD76F /* tcstring.hpp in Headers */,
 				9943E8902A0068C6002F4C26 /* indenting_ostreambuf.hpp in Headers */,
 				9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */,
@@ -622,6 +629,7 @@
 				99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */,
 				9943E8A32A04A783002F4C26 /* reference_process_id.cpp in Sources */,
 				99940BFF29F1F73900A77461 /* system_name.cpp in Sources */,
+				99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */,
 				99A88D182A0B1BC500AFD76F /* descriptor_info.cpp in Sources */,
 				9943E8AB2A059A28002F4C26 /* file_channel.cpp in Sources */,
 				99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */,

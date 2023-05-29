@@ -7,6 +7,7 @@
 #include "flow/os_error_code.hpp"
 #include "flow/reference_process_id.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, plus ostream support
+#include "flow/wait_option.hpp"
 #include "flow/wait_status.hpp"
 
 namespace flow {
@@ -58,42 +59,6 @@ using wait_result = variant<
 >;
 
 struct instance;
-
-enum class wait_option: int;
-
-constexpr auto operator|(const wait_option& lhs,
-                         const wait_option& rhs) noexcept
-    -> wait_option
-{
-    return wait_option(int(lhs) | int(rhs));
-}
-
-constexpr auto operator&(const wait_option& lhs,
-                         const wait_option& rhs) noexcept
-    -> wait_option
-{
-    return wait_option(int(lhs) & int(rhs));
-}
-
-constexpr auto operator~(const wait_option& val) noexcept
-    -> wait_option
-{
-    return wait_option(~int(val));
-}
-
-namespace detail {
-
-auto get_nohang_wait_option() noexcept -> wait_option;
-auto get_untraced_wait_option() noexcept -> wait_option;
-
-}
-
-namespace wait_options {
-
-const wait_option nohang = detail::get_nohang_wait_option();
-const wait_option untraced = detail::get_untraced_wait_option();
-
-}
 
 auto wait(reference_process_id id = invalid_process_id,
           wait_option flags = {}) noexcept
