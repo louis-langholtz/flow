@@ -11,6 +11,14 @@
 
 namespace flow {
 
+struct empty_wait_result {
+    constexpr auto operator<=>(const empty_wait_result&) const noexcept =
+        default;
+};
+
+auto operator<<(std::ostream& os, const empty_wait_result&)
+    -> std::ostream&;
+
 struct nokids_wait_result {
     constexpr auto operator<=>(const nokids_wait_result&) const noexcept =
         default;
@@ -43,6 +51,7 @@ auto operator<<(std::ostream& os, const info_wait_result& arg)
     -> std::ostream&;
 
 using wait_result = variant<
+    empty_wait_result,
     nokids_wait_result,
     error_wait_result,
     info_wait_result
@@ -75,12 +84,14 @@ constexpr auto operator~(const wait_option& val) noexcept
 namespace detail {
 
 auto get_nohang_wait_option() noexcept -> wait_option;
+auto get_untraced_wait_option() noexcept -> wait_option;
 
 }
 
 namespace wait_options {
 
 const wait_option nohang = detail::get_nohang_wait_option();
+const wait_option untraced = detail::get_untraced_wait_option();
 
 }
 
