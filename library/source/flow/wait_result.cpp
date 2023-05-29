@@ -80,9 +80,6 @@ auto wait(reference_process_id id, wait_option flags) noexcept
     }
     auto sig = SIGINT;
     for (;;) {
-        //itimerval new_timer{};
-        //itimerval old_timer;
-        //setitimer(ITIMER_REAL, &new_timer, &old_timer);
         pid = ::waitpid(pid_t(id), &status, int(flags));
         err = errno;
         if (pid != -1) {
@@ -98,7 +95,6 @@ auto wait(reference_process_id id, wait_option flags) noexcept
                 sig = SIGKILL;
             }
         }
-        //setitimer(ITIMER_REAL, &old_timer, nullptr);
     }
     if (pid < 0) { // treat all negeatives as error
         if (err == ECHILD) {
