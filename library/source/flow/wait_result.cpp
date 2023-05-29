@@ -41,6 +41,13 @@ auto wait(instance::forked& instance) -> std::vector<wait_result>
 
 }
 
+auto operator<<(std::ostream& os, const empty_wait_result&)
+    -> std::ostream&
+{
+    os << "empty wait result";
+    return os;
+}
+
 auto operator<<(std::ostream& os, const nokids_wait_result&)
     -> std::ostream&
 {
@@ -67,6 +74,11 @@ namespace detail {
 auto get_nohang_wait_option() noexcept -> wait_option
 {
     return wait_option(WNOHANG);
+}
+
+auto get_untraced_wait_option() noexcept -> wait_option
+{
+    return wait_option(WUNTRACED);
 }
 
 }
@@ -102,11 +114,14 @@ auto wait(reference_process_id id, wait_option flags) noexcept
         }
         //setitimer(ITIMER_REAL, &old_timer, nullptr);
     }
-    if ((pid == -1) && (err == ECHILD)) {
-        return nokids_wait_result{};
-    }
-    if (pid == -1) {
+    if (pid < 0) { // treat all negeatives as error
+        if (err == ECHILD) {
+            return nokids_wait_result{};
+        }
         return error_wait_result{os_error_code(err)};
+    }
+    if (pid == 0) {
+        return empty_wait_result{};
     }
     if (WIFEXITED(status)) {
         // process terminated normally
@@ -119,7 +134,11 @@ auto wait(reference_process_id id, wait_option flags) noexcept
             wait_signaled_status{WTERMSIG(status), WCOREDUMP(status) != 0}};
     }
     if (WIFSTOPPED(status)) {
-        // process not terminated, but stopped and can be restarted
+        // See "man 4 termios" for more info. From "man 2 waitpid":
+        // Process not terminated, but stopped due to a SIGTTIN, SIGTTOU,
+        // SIGTSTP, or SIGSTOP signal and can be restarted.
+        // Can be true only if wait call specified WUNTRACED option or if
+        // child process is being traced.
         return info_wait_result{reference_process_id{pid},
             wait_stopped_status{WSTOPSIG(status)}};
     }
