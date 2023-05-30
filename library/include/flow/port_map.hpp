@@ -1,5 +1,5 @@
-#ifndef descriptor_map_hpp
-#define descriptor_map_hpp
+#ifndef port_map_hpp
+#define port_map_hpp
 
 #include <map>
 #include <ostream>
@@ -10,21 +10,21 @@
 namespace flow {
 
 using port_map = std::map<reference_descriptor, port_info>;
-using descriptor_map_entry = port_map::value_type;
+using port_map_entry = port_map::value_type;
 
 auto operator<<(std::ostream& os,
                 const port_map& value)
 -> std::ostream&;
 
-const auto stdin_descriptors_entry = descriptor_map_entry{
+const auto stdin_descriptors_entry = port_map_entry{
     reference_descriptor{0}, {"stdin", io_type::in}
 };
 
-const auto stdout_descriptors_entry = descriptor_map_entry{
+const auto stdout_descriptors_entry = port_map_entry{
     reference_descriptor{1}, {"stdout", io_type::out}
 };
 
-const auto stderr_descriptors_entry = descriptor_map_entry{
+const auto stderr_descriptors_entry = port_map_entry{
     reference_descriptor{2}, {"stderr", io_type::out}
 };
 
@@ -36,4 +36,4 @@ const auto std_descriptors = port_map{
 
 }
 
-#endif /* descriptor_map_hpp */
+#endif /* port_map_hpp */

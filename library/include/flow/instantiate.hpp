@@ -26,7 +26,7 @@ struct invalid_executable: std::invalid_argument
     using std::invalid_argument::invalid_argument;
 };
 
-struct invalid_descriptor_map: std::invalid_argument
+struct invalid_port_map: std::invalid_argument
 {
     using std::invalid_argument::invalid_argument;
 };
@@ -41,7 +41,7 @@ struct invalid_descriptor_map: std::invalid_argument
 /// @throws invalid_executable if a <code>system::executable</code> specified
 ///   by @sys (or any of its sub-systems) is invalid such that an
 ///   <code>instance</code> cannot be made for it.
-/// @throws invalid_descriptor_map if a <code>descriptor_map</code> specified
+/// @throws invalid_port_map if a <code>port_map</code> specified
 ///   by @sys (or any of its sub-systems) is invalid such that an
 ///   <code>instance</code> cannot be made for it.
 /// @see instance.
