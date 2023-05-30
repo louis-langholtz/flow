@@ -38,7 +38,7 @@ struct forwarding_channel
         return forwarder.valid();
     }
 
-    auto get() -> counters
+    auto get_result() -> counters
     {
         return forwarder.get();
     }
