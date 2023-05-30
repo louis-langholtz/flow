@@ -54,8 +54,8 @@
 		99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BFA29F1F49F00A77461 /* process_id.hpp */; };
 		99940BFF29F1F73900A77461 /* system_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BFD29F1F73900A77461 /* system_name.cpp */; };
 		99940C0029F1F73900A77461 /* system_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BFE29F1F73900A77461 /* system_name.hpp */; };
-		99A88D182A0B1BC500AFD76F /* descriptor_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D162A0B1BC500AFD76F /* descriptor_info.cpp */; };
-		99A88D192A0B1BC500AFD76F /* descriptor_info.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D172A0B1BC500AFD76F /* descriptor_info.hpp */; };
+		99A88D182A0B1BC500AFD76F /* port_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D162A0B1BC500AFD76F /* port_info.cpp */; };
+		99A88D192A0B1BC500AFD76F /* port_info.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D172A0B1BC500AFD76F /* port_info.hpp */; };
 		99A88D1C2A0B1D8600AFD76F /* port_map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D1A2A0B1D8600AFD76F /* port_map.cpp */; };
 		99A88D1D2A0B1D8600AFD76F /* port_map.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D1B2A0B1D8600AFD76F /* port_map.hpp */; };
 		99A88D202A0B431300AFD76F /* system_pipeline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */; };
@@ -208,8 +208,8 @@
 		99940BFA29F1F49F00A77461 /* process_id.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = process_id.hpp; sourceTree = "<group>"; };
 		99940BFD29F1F73900A77461 /* system_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_name.cpp; sourceTree = "<group>"; };
 		99940BFE29F1F73900A77461 /* system_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_name.hpp; sourceTree = "<group>"; };
-		99A88D162A0B1BC500AFD76F /* descriptor_info.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor_info.cpp; sourceTree = "<group>"; };
-		99A88D172A0B1BC500AFD76F /* descriptor_info.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor_info.hpp; sourceTree = "<group>"; };
+		99A88D162A0B1BC500AFD76F /* port_info.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = port_info.cpp; sourceTree = "<group>"; };
+		99A88D172A0B1BC500AFD76F /* port_info.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = port_info.hpp; sourceTree = "<group>"; };
 		99A88D1A2A0B1D8600AFD76F /* port_map.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = port_map.cpp; sourceTree = "<group>"; };
 		99A88D1B2A0B1D8600AFD76F /* port_map.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = port_map.hpp; sourceTree = "<group>"; };
 		99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_pipeline.cpp; sourceTree = "<group>"; };
@@ -359,7 +359,6 @@
 				9943E8B52A06F6ED002F4C26 /* checked.hpp */,
 				99C1939229F511B700C3F53F /* connection.hpp */,
 				9986C7A12A19102E006B2095 /* descriptor.hpp */,
-				99A88D172A0B1BC500AFD76F /* descriptor_info.hpp */,
 				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
 				9943E88B2A005069002F4C26 /* endpoint.hpp */,
 				9943E8AE2A06F10F002F4C26 /* env_name.hpp */,
@@ -376,6 +375,7 @@
 				9986C7A52A19105A006B2095 /* owning_descriptor.hpp */,
 				9943E89E2A04A63F002F4C26 /* owning_process_id.hpp */,
 				9943E8922A021A46002F4C26 /* pipe_channel.hpp */,
+				99A88D172A0B1BC500AFD76F /* port_info.hpp */,
 				99A88D1B2A0B1D8600AFD76F /* port_map.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
 				99940BF629F1DAE800A77461 /* reference_descriptor.hpp */,
@@ -403,7 +403,6 @@
 				99C1938D29F50EFD00C3F53F /* channel.cpp */,
 				99A88D492A15903A00AFD76F /* charset_checker.cpp */,
 				99C1939129F511B700C3F53F /* connection.cpp */,
-				99A88D162A0B1BC500AFD76F /* descriptor_info.cpp */,
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
 				9986C7B02A1C455C006B2095 /* endpoint.cpp */,
 				9943E89B2A0453F3002F4C26 /* environment_map.cpp */,
@@ -420,6 +419,7 @@
 				9943E8912A021A46002F4C26 /* pipe_channel.cpp */,
 				9943E8A52A055E11002F4C26 /* pipe_registry.cpp */,
 				9943E8A62A055E11002F4C26 /* pipe_registry.hpp */,
+				99A88D162A0B1BC500AFD76F /* port_info.cpp */,
 				99A88D1A2A0B1D8600AFD76F /* port_map.cpp */,
 				99940BF529F1DAE800A77461 /* reference_descriptor.cpp */,
 				9943E8A12A04A783002F4C26 /* reference_process_id.cpp */,
@@ -489,7 +489,7 @@
 				99C193A029F5819A00C3F53F /* utility.hpp in Headers */,
 				9986C7AF2A19220A006B2095 /* forwarding_channel.hpp in Headers */,
 				99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */,
-				99A88D192A0B1BC500AFD76F /* descriptor_info.hpp in Headers */,
+				99A88D192A0B1BC500AFD76F /* port_info.hpp in Headers */,
 				99C1939029F50EFD00C3F53F /* channel.hpp in Headers */,
 				99C1939429F511B700C3F53F /* connection.hpp in Headers */,
 				9943E88529FC0763002F4C26 /* wait_result.hpp in Headers */,
@@ -633,7 +633,7 @@
 				9943E8A32A04A783002F4C26 /* reference_process_id.cpp in Sources */,
 				99940BFF29F1F73900A77461 /* system_name.cpp in Sources */,
 				99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */,
-				99A88D182A0B1BC500AFD76F /* descriptor_info.cpp in Sources */,
+				99A88D182A0B1BC500AFD76F /* port_info.cpp in Sources */,
 				9943E8AB2A059A28002F4C26 /* file_channel.cpp in Sources */,
 				99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */,
 				99A88D242A0C229400AFD76F /* unset_endpoint.cpp in Sources */,
@@ -721,7 +721,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COMPILER_INDEX_STORE_ENABLE = NO;
+				COMPILER_INDEX_STORE_ENABLE = Default;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -783,7 +783,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COMPILER_INDEX_STORE_ENABLE = NO;
+				COMPILER_INDEX_STORE_ENABLE = Default;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;

@@ -21,7 +21,7 @@ auto validate(const system_endpoint& end,
 {
     const auto at = [](const port_map& descriptors,
                        const reference_descriptor& key,
-                       const system_name& name) -> const descriptor_info&
+                       const system_name& name) -> const port_info&
     {
         try {
             return descriptors.at(key);
