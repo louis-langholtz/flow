@@ -15,7 +15,7 @@ struct instantiate_options
 {
     /// @brief Available descriptors.
     /// @note Set to default/empty/none to require closed system.
-    descriptor_map descriptors;
+    port_map descriptors;
 
     /// @brief Base environment settings.
     environment_map environment;

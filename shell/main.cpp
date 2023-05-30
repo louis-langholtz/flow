@@ -178,7 +178,7 @@ auto parse_descriptor_map_entry(const std::string_view& arg)
     }};
 }
 
-auto update(flow::descriptor_map& map, const flow::descriptor_map_entry& entry)
+auto update(flow::port_map& map, const flow::descriptor_map_entry& entry)
     -> void
 {
     if (entry.second.direction == flow::io_type::none) {
@@ -621,7 +621,7 @@ auto do_add_connections(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto print(std::ostream& os, const flow::descriptor_map& descriptors) -> void
+auto print(std::ostream& os, const flow::port_map& descriptors) -> void
 {
     for (auto&& entry: descriptors) {
         os << ' ';
@@ -805,7 +805,7 @@ auto do_unsetenv(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto do_descriptors(flow::descriptor_map& map, const string_span& args) -> void
+auto do_descriptors(flow::port_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {

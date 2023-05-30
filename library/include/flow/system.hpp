@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "flow/connection.hpp"
-#include "flow/descriptor_map.hpp"
+#include "flow/port_map.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/io_type.hpp"
 #include "flow/system_name.hpp"
@@ -62,7 +62,7 @@ struct system
     system() = default;
 
     system(custom type_info,
-           descriptor_map des_map = {})
+           port_map des_map = {})
         : descriptors{std::move(des_map)},
           info{std::move(type_info)}
     {
@@ -70,7 +70,7 @@ struct system
     }
 
     system(executable type_info,
-           descriptor_map des_map = std_descriptors)
+           port_map des_map = std_descriptors)
         : descriptors{std::move(des_map)},
           info{std::move(type_info)}
     {
@@ -79,7 +79,7 @@ struct system
 
     /// @brief Descriptors of the <code>system</code>.
     /// @note This is considered an _interface_ component of this type.
-    descriptor_map descriptors;
+    port_map descriptors;
 
     /// @brief System type specific information.
     /// @note This is considered an _internal_ component of this type.
@@ -128,7 +128,7 @@ auto get_matching_set(const system& sys, io_type io)
 ///   other than <code>io_type::in</code>, <code>io_type::out</code> or
 ///   <code>io_type::bidir</code>.
 auto connect_with_user(const system_name& name,
-                       const descriptor_map& descriptors)
+                       const port_map& descriptors)
     -> std::vector<connection>;
 
 }

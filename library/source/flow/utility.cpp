@@ -392,7 +392,7 @@ auto set_signal_handler(signal sig) -> void
     sigprocmask(SIG_UNBLOCK, &new_set, &old_set); // NOLINT(concurrency-mt-unsafe)
 }
 
-auto get_matching_set(const descriptor_map& descriptors, io_type io)
+auto get_matching_set(const port_map& descriptors, io_type io)
     -> std::set<reference_descriptor>
 {
     auto result = std::set<reference_descriptor>{};
