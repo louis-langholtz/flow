@@ -420,16 +420,16 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
                 .file = file,
                 .arguments = arguments
             };
-            system.descriptors = flow::std_descriptors;
+            system.ports = flow::std_ports;
         }
         else {
             system.info = flow::system::custom{
                 .environment = psys->environment
             };
-            system.descriptors = name_basis.psystem->descriptors;
+            system.ports = name_basis.psystem->ports;
         }
         for (auto&& entry: port_map_entries) {
-            update(system.descriptors, entry);
+            update(system.ports, entry);
         }
         psys->subsystems.insert_or_assign(name_basis.remaining.front(), system);
     }
@@ -621,9 +621,9 @@ auto do_add_connections(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto print(std::ostream& os, const flow::port_map& descriptors) -> void
+auto print(std::ostream& os, const flow::port_map& ports) -> void
 {
-    for (auto&& entry: descriptors) {
+    for (auto&& entry: ports) {
         os << ' ';
         os << des_prefix;
         os << entry.first;
@@ -657,7 +657,7 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
     const auto& custom = std::get<flow::system::custom>(context.info);
     for (auto&& entry: custom.subsystems) {
         std::cout << entry.first;
-        print(std::cout, entry.second.descriptors);
+        print(std::cout, entry.second.ports);
         if (show_info) {
             if (const auto p = std::get_if<flow::system::executable>(&entry.second.info)) {
                 if (!p->file.empty()) {
@@ -805,11 +805,11 @@ auto do_unsetenv(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto do_descriptors(flow::port_map& map, const string_span& args) -> void
+auto do_ports(flow::port_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "prints the I/O descriptors table.\n";
+            std::cout << "prints the I/O ports table.\n";
             return;
         }
     }
@@ -1041,7 +1041,7 @@ auto main(int argc, const char * argv[]) -> int
     environment["SHELL"] = argv[0];
     auto root_system = flow::system{
         flow::system::custom{environment},
-        flow::std_descriptors,
+        flow::std_ports,
     };
     system_stack_type system_stack;
     system_stack.push(root_system);
@@ -1071,7 +1071,7 @@ auto main(int argc, const char * argv[]) -> int
         if (arg.starts_with(des_prefix)) {
             if (const auto p =
                 parse_port_map_entry(arg.substr(size(des_prefix)))) {
-                update(system_stack.top().get().descriptors, *p);
+                update(system_stack.top().get().ports, *p);
             }
             continue;
         }
@@ -1142,8 +1142,8 @@ auto main(int argc, const char * argv[]) -> int
         {"history", [&](const string_span& args){
             do_history(hist, hist_size, args);
         }},
-        {"descriptors", [&](const string_span& args){
-            do_descriptors(system_stack.top().get().descriptors, args);
+        {"ports", [&](const string_span& args){
+            do_ports(system_stack.top().get().ports, args);
         }},
         {"cd", [&](const string_span& args){
             do_chdir(system_stack.top().get(), args);
@@ -1229,7 +1229,7 @@ auto main(int argc, const char * argv[]) -> int
                 std::to_string(sequence);
             try {
                 auto obj = instantiate(tsys, std::cerr, flow::instantiate_options{
-                    .descriptors = system_stack.top().get().descriptors,
+                    .ports = system_stack.top().get().ports,
                     .environment = custom.environment
                 });
                 const auto results = wait(obj);

@@ -35,11 +35,11 @@ auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
                              end(detail::name_charset{}),
                              reserved::descriptors_prefix) == 0);
     const auto empty_address = empty(value.address.get());
-    const auto empty_descriptors = empty(value.descriptors);
-    if (!empty_descriptors) {
+    const auto empty_ports = empty(value.ports);
+    if (!empty_ports) {
         os << reserved::descriptors_prefix;
         auto need_separator = false;
-        for (auto&& descriptor: value.descriptors) {
+        for (auto&& descriptor: value.ports) {
             if (need_separator) {
                 os << reserved::descriptor_separator;
             }
@@ -51,7 +51,7 @@ auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
         os << reserved::address_prefix;
         os << value.address.get();
     }
-    if (empty_address && empty_descriptors) {
+    if (empty_address && empty_ports) {
         // output something so identifiable still as system_endpoint
         os << reserved::descriptors_prefix;
     }
@@ -73,9 +73,9 @@ auto operator>>(std::istream& is, system_endpoint& value) -> std::istream&
     const auto dpos = string.find(reserved::descriptors_prefix);
     const auto address = (apos != npos)?
         string.substr(apos + 1u, abs_sub(dpos, apos + 1u)): std::string{};
-    const auto descriptors = (dpos != npos)?
+    const auto ports = (dpos != npos)?
         string.substr(dpos + 1u, abs_sub(apos, dpos + 1u)): std::string{};
-    value = system_endpoint{system_name{address}, to_descriptors(descriptors)};
+    value = system_endpoint{system_name{address}, to_descriptors(ports)};
     return is;
 }
 

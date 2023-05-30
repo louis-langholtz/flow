@@ -16,22 +16,22 @@ auto operator<<(std::ostream& os,
                 const port_map& value)
 -> std::ostream&;
 
-const auto stdin_descriptors_entry = port_map_entry{
+const auto stdin_ports_entry = port_map_entry{
     reference_descriptor{0}, {"stdin", io_type::in}
 };
 
-const auto stdout_descriptors_entry = port_map_entry{
+const auto stdout_ports_entry = port_map_entry{
     reference_descriptor{1}, {"stdout", io_type::out}
 };
 
-const auto stderr_descriptors_entry = port_map_entry{
+const auto stderr_ports_entry = port_map_entry{
     reference_descriptor{2}, {"stderr", io_type::out}
 };
 
-const auto std_descriptors = port_map{
-    stdin_descriptors_entry,
-    stdout_descriptors_entry,
-    stderr_descriptors_entry,
+const auto std_ports = port_map{
+    stdin_ports_entry,
+    stdout_ports_entry,
+    stderr_ports_entry,
 };
 
 }

@@ -19,16 +19,16 @@ struct system_endpoint
     explicit system_endpoint(system_name a = {}): address{std::move(a)} {}
 
     system_endpoint(system_name a, std::set<reference_descriptor> d):
-        address{std::move(a)}, descriptors{std::move(d)} {}
+        address{std::move(a)}, ports{std::move(d)} {}
 
     system_endpoint(system_name a,
                     std::convertible_to<reference_descriptor> auto&& ...d):
-        address{std::move(a)}, descriptors{std::move(d)...} {}
+        address{std::move(a)}, ports{std::move(d)...} {}
 
     system_name address;
 
-    ///@brief Well known descriptor ID of endpoint for systems.
-    std::set<reference_descriptor> descriptors;
+    ///@brief Well known port IDs of endpoint for systems.
+    std::set<reference_descriptor> ports;
 };
 
 // Ensure regularity in terms of special member functions supported...
@@ -54,7 +54,7 @@ inline auto operator==(const system_endpoint& lhs,
                        const system_endpoint& rhs) -> bool
 {
     return (lhs.address == rhs.address)
-        && (lhs.descriptors == rhs.descriptors);
+        && (lhs.ports == rhs.ports);
 }
 
 auto operator<<(std::ostream& os, const system_endpoint& value)

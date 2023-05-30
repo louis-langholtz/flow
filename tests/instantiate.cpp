@@ -250,7 +250,7 @@ TEST(instantiate, env_system)
     };
     const auto env_exe_sys = flow::system{
         system::executable{"/usr/bin/env"},
-        {stdout_descriptors_entry}
+        {stdout_ports_entry}
     };
     auto overriding_system = flow::system{system::custom{
         .environment = {{base_env_name, derived_env_val}},
@@ -341,7 +341,7 @@ TEST(instantiate, lsof_system)
         .file = "lsof",
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
-    }, std_descriptors});
+    }, std_ports});
     custom.connections.push_back(unidirectional_connection{
         file_endpoint::dev_null, system_endpoint{lsof_name, stdin_id},
     });
@@ -430,7 +430,7 @@ TEST(instantiate, nested_system)
             system_endpoint{system_name{}, reference_descriptor{2}},
         });
         system.subsystems.emplace(cat_system_name,
-                                  flow::system{cat_system, std_descriptors});
+                                  flow::system{cat_system, std_ports});
     }
     {
         system::custom xargs_system;
@@ -451,7 +451,7 @@ TEST(instantiate, nested_system)
             system_endpoint{system_name{}, reference_descriptor{2}},
         });
         system.subsystems.emplace(xargs_system_name,
-                                  flow::system{xargs_system, std_descriptors});
+                                  flow::system{xargs_system, std_ports});
     }
     const auto system_stdin = unidirectional_connection{
         user_endpoint{},

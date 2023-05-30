@@ -19,12 +19,12 @@ auto validate(const system_endpoint& end,
               const system& system,
               io_type expected_io) -> void
 {
-    const auto at = [](const port_map& descriptors,
+    const auto at = [](const port_map& ports,
                        const reference_descriptor& key,
                        const system_name& name) -> const port_info&
     {
         try {
-            return descriptors.at(key);
+            return ports.at(key);
         }
         catch (const std::out_of_range& ex) {
             std::ostringstream os;
@@ -41,8 +41,8 @@ auto validate(const system_endpoint& end,
         }
     };
     if (end.address == system_name{}) {
-        for (auto&& d: end.descriptors) {
-            const auto& d_info = at(system.descriptors, d, end.address);
+        for (auto&& d: end.ports) {
+            const auto& d_info = at(system.ports, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
                 throw invalid_connection{"bad custom system endpoint io"};
             }
@@ -59,8 +59,8 @@ auto validate(const system_endpoint& end,
             throw invalid_connection{os.str()};
         }
         const auto& subsys = p->subsystems.at(end.address);
-        for (auto&& d: end.descriptors) {
-            const auto& d_info = at(subsys.descriptors, d, end.address);
+        for (auto&& d: end.ports) {
+            const auto& d_info = at(subsys.ports, d, end.address);
             if (d_info.direction != expected_io) {
                 throw invalid_connection{"bad subsys endpoint io"};
             }
@@ -186,13 +186,13 @@ auto make_channel(const unidirectional_connection& conn,
     if (src_system) {
         validate(*src_system, system, io_type::out);
         if (src_system->address == system_name{}) {
-            src_dset = src_system->descriptors;
+            src_dset = src_system->ports;
         }
     }
     if (dst_system) {
         validate(*dst_system, system, io_type::in);
         if (dst_system->address == system_name{}) {
-            dst_dset = dst_system->descriptors;
+            dst_dset = dst_system->ports;
         }
     }
     if (src_dset && dst_dset) {
