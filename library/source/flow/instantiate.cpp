@@ -29,6 +29,25 @@ auto exit(int exit_code) -> void
     std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
 }
 
+auto dup2(int fd, reference_descriptor from) -> bool
+{
+    return ::dup2(fd, int(from)) != -1;
+}
+
+auto close(reference_descriptor d) -> bool
+{
+    return ::close(int(d)) != -1;
+}
+
+auto close(const std::set<port_id>& ports) -> void
+{
+    for (auto&& port: ports) {
+        if (std::holds_alternative<reference_descriptor>(port)) {
+            close(std::get<reference_descriptor>(port));
+        }
+    }
+}
+
 constexpr auto pid_buffer_size = 32u;
 using pid_buffer = std::array<char, pid_buffer_size>;
 
@@ -132,6 +151,22 @@ auto dup2(pipe_channel& p, pipe_channel::io side, reference_descriptor id,
     }
 }
 
+auto dup2(pipe_channel& pc,
+          pipe_channel::io side,
+          const std::set<port_id>& ports,
+          const system_name& name,
+          const connection& conn,
+          std::ostream& diags)
+    -> void
+{
+    for (auto&& port: ports) {
+        if (std::holds_alternative<reference_descriptor>(port)) {
+            dup2(pc, side, std::get<reference_descriptor>(port),
+                 name, conn, diags);
+        }
+    }
+}
+
 auto setup(const system_name& name,
            const connection& conn,
            pipe_channel& p,
@@ -154,17 +189,13 @@ auto setup(const system_name& name,
     if (ends[0]) { // src
         if (ends[0]->address == name) {
             close(p, io::read, name, conn, diags);
-            for (auto&& descriptor: ends[0]->ports) {
-                dup2(p, io::write, descriptor, name, conn, diags);
-            }
+            dup2(p, io::write, ends[0]->ports, name, conn, diags);
         }
     }
     if (ends[1]) { // dst
         if (ends[1]->address == name) {
             close(p, io::write, name, conn, diags);
-            for (auto&& descriptor: ends[1]->ports) {
-                dup2(p, io::read, descriptor, name, conn, diags);
-            }
+            dup2(p, io::read, ends[1]->ports, name, conn, diags);
         }
     }
 }
@@ -204,9 +235,7 @@ auto setup(const system_name& name,
                 diags << "\n";
                 exit(exit_failure_code);
             }
-            for (auto&& descriptor: op->ports) {
-                ::close(int(descriptor));
-            }
+            close(op->ports);
             return;
         }
         const auto mode = 0600;
@@ -221,12 +250,14 @@ auto setup(const system_name& name,
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
-        for (auto&& descriptor: op->ports) {
-            if (::dup2(fd, int(descriptor)) == -1) {
-                diags << name << " " << c;
-                diags << ", dup2(" << fd << "," << descriptor << ") failed: ";
-                diags << os_error_code(errno) << "\n";
-                exit(exit_failure_code);
+        for (auto&& port: op->ports) {
+            if (std::holds_alternative<reference_descriptor>(port)) {
+                if (!dup2(fd, std::get<reference_descriptor>(port))) {
+                    diags << name << " " << c;
+                    diags << ", dup2(" << fd << "," << port << ") failed: ";
+                    diags << os_error_code(errno) << "\n";
+                    exit(exit_failure_code);
+                }
             }
         }
     }
@@ -257,9 +288,7 @@ auto setup(const system_name& name,
                 diags << "\n";
                 exit(exit_failure_code);
             }
-            for (auto&& descriptor: op->ports) {
-                ::close(int(descriptor));
-            }
+            close(op->ports);
             return;
         }
         const auto mode = 0600;
@@ -274,12 +303,14 @@ auto setup(const system_name& name,
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
-        for (auto&& descriptor: op->ports) {
-            if (::dup2(fd, int(descriptor)) == -1) {
-                diags << name << " " << conn;
-                diags << ", dup2(" << fd << "," << descriptor << ") failed: ";
-                diags << os_error_code(errno) << "\n";
-                exit(exit_failure_code);
+        for (auto&& port: op->ports) {
+            if (std::holds_alternative<reference_descriptor>(port)) {
+                if (!dup2(fd, std::get<reference_descriptor>(port))) {
+                    diags << name << " " << conn;
+                    diags << ", dup2(" << fd << "," << port << ") failed: ";
+                    diags << os_error_code(errno) << "\n";
+                    exit(exit_failure_code);
+                }
             }
         }
     }
@@ -407,55 +438,52 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
     }
 }
 
+auto set_found(const std::span<bool>& found, const port_id& port)
+    -> void
+{
+    if (std::holds_alternative<reference_descriptor>(port)) {
+        const auto d = int(std::get<reference_descriptor>(port));
+        if ((d >= 0) && (unsigned(d) < size(found))) {
+            found[d] = true;
+        }
+    }
+}
+
+auto set_found(const std::span<bool>& found, const std::set<port_id>& ports)
+    -> void
+{
+    for (auto&& port: ports) {
+        set_found(found, port);
+    }
+}
+
+auto set_found(const std::span<bool>& found, const port_map& ports)
+    -> void
+{
+    for (auto&& entry: ports) {
+        set_found(found, entry.first);
+    }
+}
+
 auto close_unused_ports(const system_name& name,
                         const std::span<const connection>& conns,
                         const port_map& ports)
     -> void
 {
-    auto using_stdin = false;
-    auto using_stdout = false;
-    auto using_stderr = false;
+    auto using_des = std::array<bool, 3u>{};
     for (auto&& conn: conns) {
         const auto ends = make_endpoints<system_endpoint>(conn);
         for (auto&& end: ends) {
             if (end && end->address == name) {
-                for (auto&& descriptor: end->ports) {
-                    switch (descriptor) {
-                    case descriptors::stdin_id:
-                        using_stdin = true;
-                        break;
-                    case descriptors::stdout_id:
-                        using_stdout = true;
-                        break;
-                    case descriptors::stderr_id:
-                        using_stderr = true;
-                        break;
-                    }
-                }
+                set_found(using_des, end->ports);
             }
         }
     }
-    for (auto&& entry: ports) {
-        switch (entry.first) {
-        case reference_descriptor{0}:
-            using_stdin = true;
-            break;
-        case reference_descriptor{1}:
-            using_stdout = true;
-            break;
-        case reference_descriptor{2}:
-            using_stderr = true;
-            break;
+    set_found(using_des, ports);
+    for (auto&& use: using_des) {
+        if (!use) {
+            ::close(int(&use - data(using_des)));
         }
-    }
-    if (!using_stdin) {
-        ::close(int(descriptors::stdin_id));
-    }
-    if (!using_stdout) {
-        ::close(int(descriptors::stdout_id));
-    }
-    if (!using_stderr) {
-        ::close(int(descriptors::stderr_id));
     }
 }
 
@@ -474,6 +502,24 @@ auto close_pipes_except(instance& root,
     }
 }
 
+auto setup(const system_name& name,
+           const connection& conn,
+           channel& chan,
+           std::ostream& diags) -> void
+{
+    const auto chan_p = fully_deref(&chan);
+    assert(chan_p != nullptr);
+    if (const auto pipe_p = std::get_if<pipe_channel>(chan_p)) {
+        setup(name, conn, *pipe_p, diags);
+        return;
+    }
+    if (const auto file_p = std::get_if<file_channel>(chan_p)) {
+        setup(name, conn, *file_p, diags);
+        return;
+    }
+    diags << "found UNKNOWN channel type!!!!\n";
+}
+
 auto setup(instance& root,
            const system_name& name,
            const port_map& ports,
@@ -486,17 +532,7 @@ auto setup(instance& root,
     const auto max_index = size(connections);
     assert(max_index == size(channels));
     for (auto index = 0u; index < max_index; ++index) {
-        const auto chan_p = fully_deref(&channels[index]);
-        assert(chan_p != nullptr);
-        if (const auto pipe_p = std::get_if<pipe_channel>(chan_p)) {
-            setup(name, connections[index], *pipe_p, child_info.diags);
-            continue;
-        }
-        if (const auto file_p = std::get_if<file_channel>(chan_p)) {
-            setup(name, connections[index], *file_p, child_info.diags);
-            continue;
-        }
-        child_info.diags << "found UNKNOWN channel type!!!!\n";
+        setup(name, connections[index], channels[index], child_info.diags);
     }
     close_unused_ports(name, connections, ports);
     close_pipes_except(root, child);

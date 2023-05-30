@@ -20,7 +20,7 @@ auto validate(const system_endpoint& end,
               io_type expected_io) -> void
 {
     const auto at = [](const port_map& ports,
-                       const reference_descriptor& key,
+                       const port_id& key,
                        const system_name& name) -> const port_info&
     {
         try {
@@ -108,7 +108,7 @@ auto make_channel(const pipe_channel& src, const pipe_channel& dst)
     };
 }
 
-auto make_channel(const std::set<reference_descriptor>& dset,
+auto make_channel(const std::set<port_id>& dset,
                   const system_name& name,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
@@ -181,8 +181,8 @@ auto make_channel(const unidirectional_connection& conn,
     if (!src_system && !dst_system) {
         throw invalid_connection{no_system_end_error};
     }
-    auto src_dset = std::optional<std::set<reference_descriptor>>{};
-    auto dst_dset = std::optional<std::set<reference_descriptor>>{};
+    auto src_dset = std::optional<std::set<port_id>>{};
+    auto dst_dset = std::optional<std::set<port_id>>{};
     if (src_system) {
         validate(*src_system, system, io_type::out);
         if (src_system->address == system_name{}) {

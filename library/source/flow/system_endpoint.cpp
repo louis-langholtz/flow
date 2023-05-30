@@ -75,11 +75,11 @@ auto operator>>(std::istream& is, system_endpoint& value) -> std::istream&
         string.substr(apos + 1u, abs_sub(dpos, apos + 1u)): std::string{};
     const auto ports = (dpos != npos)?
         string.substr(dpos + 1u, abs_sub(apos, dpos + 1u)): std::string{};
-    value = system_endpoint{system_name{address}, to_descriptors(ports)};
+    value = system_endpoint{system_name{address}, to_ports(ports)};
     return is;
 }
 
-auto to_descriptors(std::string_view string) -> std::set<reference_descriptor>
+auto to_ports(std::string_view string) -> std::set<port_id>
 {
     auto get_integer = [](const std::string_view& comp){
         auto integer = 0;
@@ -103,7 +103,7 @@ auto to_descriptors(std::string_view string) -> std::set<reference_descriptor>
         }
         return integer;
     };
-    auto dset = std::set<reference_descriptor>{};
+    auto dset = std::set<port_id>{};
     auto pos = decltype(string.find(reserved::descriptor_separator)){};
     while ((pos = string.find(reserved::descriptor_separator)) !=
            std::string_view::npos) {

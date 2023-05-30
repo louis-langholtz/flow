@@ -152,7 +152,7 @@ auto pretty_print(std::ostream& os, const system& value) -> void
 }
 
 auto get_matching_set(const system& sys, io_type io)
-    -> std::set<reference_descriptor>
+    -> std::set<port_id>
 {
     return get_matching_set(sys.ports, io);
 }
@@ -163,8 +163,7 @@ auto connect_with_user(const system_name& name,
 {
     auto result = std::vector<connection>{};
     for (auto&& entry: ports) {
-        const auto user_ep_name = name.get() + ":" +
-            std::to_string(int(entry.first));
+        const auto user_ep_name = name.get() + ":" + to_string(entry.first);
         switch (entry.second.direction) {
         case io_type::in:
             result.emplace_back(unidirectional_connection{

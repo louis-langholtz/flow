@@ -120,7 +120,7 @@ auto operator<<(std::ostream& os, const system& value)
 auto pretty_print(std::ostream& os, const system& value) -> void;
 
 auto get_matching_set(const system& sys, io_type io)
-    -> std::set<reference_descriptor>;
+    -> std::set<port_id>;
 
 /// @brief Makes connections for each of the specified ports with
 ///   <code>user_endpoint</code> on the other end.

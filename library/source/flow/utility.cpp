@@ -393,9 +393,9 @@ auto set_signal_handler(signal sig) -> void
 }
 
 auto get_matching_set(const port_map& ports, io_type io)
-    -> std::set<reference_descriptor>
+    -> std::set<port_id>
 {
-    auto result = std::set<reference_descriptor>{};
+    auto result = std::set<port_id>{};
     for (auto&& entry: ports) {
         if (entry.second.direction == io) {
             result.insert(entry.first);

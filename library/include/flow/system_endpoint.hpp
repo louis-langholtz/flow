@@ -9,7 +9,7 @@
 #include <utility> // for std::move
 #include <type_traits> // for std::is_default_constructible_v
 
-#include "flow/reference_descriptor.hpp"
+#include "flow/port_id.hpp"
 #include "flow/system_name.hpp"
 
 namespace flow {
@@ -18,17 +18,18 @@ struct system_endpoint
 {
     explicit system_endpoint(system_name a = {}): address{std::move(a)} {}
 
-    system_endpoint(system_name a, std::set<reference_descriptor> d):
+    system_endpoint(system_name a, std::set<port_id> d):
         address{std::move(a)}, ports{std::move(d)} {}
 
     system_endpoint(system_name a,
-                    std::convertible_to<reference_descriptor> auto&& ...d):
+                    std::convertible_to<port_id> auto&& ...d):
         address{std::move(a)}, ports{std::move(d)...} {}
 
+    /// @brief Well known name identifier for a system.
     system_name address;
 
-    ///@brief Well known port IDs of endpoint for systems.
-    std::set<reference_descriptor> ports;
+    /// @brief Well known port IDs of endpoint for a system.
+    std::set<port_id> ports;
 };
 
 // Ensure regularity in terms of special member functions supported...
@@ -42,7 +43,7 @@ static_assert(std::is_move_assignable_v<system_endpoint>);
 static_assert(std::is_constructible_v<system_endpoint,
               system_name>);
 static_assert(std::is_constructible_v<system_endpoint,
-              system_name, std::set<reference_descriptor>>);
+              system_name, std::set<port_id>>);
 
 // Ensure pack-expansion constructor works for descriptor_id's...
 static_assert(std::is_constructible_v<system_endpoint,
@@ -61,7 +62,7 @@ auto operator<<(std::ostream& os, const system_endpoint& value)
     -> std::ostream&;
 auto operator>>(std::istream& is, system_endpoint& value) -> std::istream&;
 
-auto to_descriptors(std::string_view string) -> std::set<reference_descriptor>;
+auto to_ports(std::string_view string) -> std::set<port_id>;
 
 }
 
