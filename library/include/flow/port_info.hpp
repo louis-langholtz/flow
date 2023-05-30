@@ -1,5 +1,5 @@
-#ifndef descriptor_info_hpp
-#define descriptor_info_hpp
+#ifndef port_info_hpp
+#define port_info_hpp
 
 #include <ostream>
 #include <string>
@@ -24,4 +24,4 @@ auto operator<<(std::ostream& os, const port_info& value)
 
 }
 
-#endif /* descriptor_info_hpp */
+#endif /* port_info_hpp */

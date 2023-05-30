@@ -136,8 +136,8 @@ auto parse_assignment(const std::string_view& arg)
     };
 }
 
-auto parse_descriptor_map_entry(const std::string_view& arg)
-    -> std::optional<flow::descriptor_map_entry>
+auto parse_port_map_entry(const std::string_view& arg)
+    -> std::optional<flow::port_map_entry>
 {
     const auto name_value = parse_assignment(arg);
     if (!name_value) {
@@ -173,12 +173,12 @@ auto parse_descriptor_map_entry(const std::string_view& arg)
         std::cerr << "\n";
         return {};
     }
-    return {flow::descriptor_map_entry{
+    return {flow::port_map_entry{
         flow::reference_descriptor(*found_int), des_info
     }};
 }
 
-auto update(flow::port_map& map, const flow::descriptor_map_entry& entry)
+auto update(flow::port_map& map, const flow::port_map_entry& entry)
     -> void
 {
     if (entry.second.direction == flow::io_type::none) {
@@ -275,7 +275,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
     auto custom = false;
     auto executable = false;
     auto file = std::string{};
-    auto descriptor_map_entries = std::vector<flow::descriptor_map_entry>{};
+    auto port_map_entries = std::vector<flow::port_map_entry>{};
     auto usage = [&](std::ostream& os){
         os << "  usage: ";
         os << args[0];
@@ -313,7 +313,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
         }
         if (arg.starts_with(des_prefix)) {
             const auto value = arg.substr(size(des_prefix));
-            const auto entry = parse_descriptor_map_entry(value);
+            const auto entry = parse_port_map_entry(value);
             if (!entry) {
                 std::ostringstream os;
                 os << "bad descriptor map entry: ";
@@ -321,7 +321,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
                 abort(std::cerr, parent, os.str());
                 return;
             }
-            descriptor_map_entries.emplace_back(*entry);
+            port_map_entries.emplace_back(*entry);
             continue;
         }
         if (arg.starts_with(file_prefix)) {
@@ -428,7 +428,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
             };
             system.descriptors = name_basis.psystem->descriptors;
         }
-        for (auto&& entry: descriptor_map_entries) {
+        for (auto&& entry: port_map_entries) {
             update(system.descriptors, entry);
         }
         psys->subsystems.insert_or_assign(name_basis.remaining.front(), system);
@@ -1070,7 +1070,7 @@ auto main(int argc, const char * argv[]) -> int
         const auto arg = std::string_view{argv[i]};
         if (arg.starts_with(des_prefix)) {
             if (const auto p =
-                parse_descriptor_map_entry(arg.substr(size(des_prefix)))) {
+                parse_port_map_entry(arg.substr(size(des_prefix)))) {
                 update(system_stack.top().get().descriptors, *p);
             }
             continue;
