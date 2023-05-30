@@ -270,8 +270,8 @@ auto is_matching(const unidirectional_connection& conn,
     for (auto&& end: ends) {
         if (end) {
             if (end->address == look_for.address) {
-                for (auto&& end_d: end->descriptors) {
-                    for (auto&& look_d: look_for.descriptors) {
+                for (auto&& end_d: end->ports) {
+                    for (auto&& look_d: look_for.ports) {
                         if (end_d == look_d) {
                             return true;
                         }
@@ -392,11 +392,11 @@ auto set_signal_handler(signal sig) -> void
     sigprocmask(SIG_UNBLOCK, &new_set, &old_set); // NOLINT(concurrency-mt-unsafe)
 }
 
-auto get_matching_set(const port_map& descriptors, io_type io)
+auto get_matching_set(const port_map& ports, io_type io)
     -> std::set<reference_descriptor>
 {
     auto result = std::set<reference_descriptor>{};
-    for (auto&& entry: descriptors) {
+    for (auto&& entry: ports) {
         if (entry.second.direction == io) {
             result.insert(entry.first);
         }

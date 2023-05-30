@@ -13,9 +13,9 @@ namespace flow {
 /// @see instantiate.
 struct instantiate_options
 {
-    /// @brief Available descriptors.
+    /// @brief Available ports.
     /// @note Set to default/empty/none to require closed system.
-    port_map descriptors;
+    port_map ports;
 
     /// @brief Base environment settings.
     environment_map environment;

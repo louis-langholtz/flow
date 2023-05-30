@@ -45,7 +45,7 @@ TEST(system_executable, equality)
 TEST(system, default_construction)
 {
     flow::system obj;
-    EXPECT_TRUE(empty(obj.descriptors));
+    EXPECT_TRUE(empty(obj.ports));
     EXPECT_TRUE(std::holds_alternative<flow::system::custom>(obj.info));
     if (std::holds_alternative<flow::system::custom>(obj.info)) {
         const auto& info = std::get<flow::system::custom>(obj.info);
@@ -59,9 +59,9 @@ TEST(system, equality)
     EXPECT_TRUE(flow::system() == flow::system());
     flow::system obj;
     EXPECT_TRUE(obj == flow::system());
-    obj.descriptors = flow::std_descriptors;
+    obj.ports = flow::std_ports;
     EXPECT_FALSE(obj == flow::system());
-    obj.descriptors = {};
+    obj.ports = {};
     ASSERT_TRUE(obj == flow::system());
     obj.info = flow::system::executable{};
     EXPECT_FALSE(obj == flow::system());
@@ -72,7 +72,7 @@ TEST(system, equality)
 TEST(system, executable_construction)
 {
     flow::system obj{flow::system::executable{}};
-    EXPECT_FALSE(empty(obj.descriptors));
+    EXPECT_FALSE(empty(obj.ports));
     EXPECT_TRUE(std::holds_alternative<flow::system::executable>(obj.info));
     if (std::holds_alternative<flow::system::executable>(obj.info)) {
         const auto& info = std::get<flow::system::executable>(obj.info);

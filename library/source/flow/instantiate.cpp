@@ -154,7 +154,7 @@ auto setup(const system_name& name,
     if (ends[0]) { // src
         if (ends[0]->address == name) {
             close(p, io::read, name, conn, diags);
-            for (auto&& descriptor: ends[0]->descriptors) {
+            for (auto&& descriptor: ends[0]->ports) {
                 dup2(p, io::write, descriptor, name, conn, diags);
             }
         }
@@ -162,7 +162,7 @@ auto setup(const system_name& name,
     if (ends[1]) { // dst
         if (ends[1]->address == name) {
             close(p, io::write, name, conn, diags);
-            for (auto&& descriptor: ends[1]->descriptors) {
+            for (auto&& descriptor: ends[1]->ports) {
                 dup2(p, io::read, descriptor, name, conn, diags);
             }
         }
@@ -204,7 +204,7 @@ auto setup(const system_name& name,
                 diags << "\n";
                 exit(exit_failure_code);
             }
-            for (auto&& descriptor: op->descriptors) {
+            for (auto&& descriptor: op->ports) {
                 ::close(int(descriptor));
             }
             return;
@@ -221,7 +221,7 @@ auto setup(const system_name& name,
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
-        for (auto&& descriptor: op->descriptors) {
+        for (auto&& descriptor: op->ports) {
             if (::dup2(fd, int(descriptor)) == -1) {
                 diags << name << " " << c;
                 diags << ", dup2(" << fd << "," << descriptor << ") failed: ";
@@ -257,7 +257,7 @@ auto setup(const system_name& name,
                 diags << "\n";
                 exit(exit_failure_code);
             }
-            for (auto&& descriptor: op->descriptors) {
+            for (auto&& descriptor: op->ports) {
                 ::close(int(descriptor));
             }
             return;
@@ -274,7 +274,7 @@ auto setup(const system_name& name,
             diags << " failed: " << os_error_code(errno) << "\n";
             exit(exit_failure_code);
         }
-        for (auto&& descriptor: op->descriptors) {
+        for (auto&& descriptor: op->ports) {
             if (::dup2(fd, int(descriptor)) == -1) {
                 diags << name << " " << conn;
                 diags << ", dup2(" << fd << "," << descriptor << ") failed: ";
@@ -313,12 +313,12 @@ auto exec_child(const std::filesystem::path& path,
 }
 
 auto confirm_closed(const system_name& name,
-                    const port_map& descriptors,
+                    const port_map& ports,
                     const std::span<const connection>& connections,
                     const port_map& available) -> bool
 {
     auto is_internally_closed = true;
-    for (auto&& entry: descriptors) {
+    for (auto&& entry: ports) {
         const auto look_for = system_endpoint{name, entry.first};
         if (find_index(connections, look_for)) {
             continue;
@@ -350,11 +350,11 @@ auto make_child(instance& parent,
                 const system_name& name,
                 const system& system,
                 const std::span<const connection>& connections,
-                const port_map& descriptors) -> instance
+                const port_map& ports) -> instance
 {
     instance result;
-    const auto all_closed = confirm_closed(name, system.descriptors,
-                                           connections, descriptors);
+    const auto all_closed = confirm_closed(name, system.ports,
+                                           connections, ports);
     if (const auto p = std::get_if<system::executable>(&system.info)) {
         if (!p->file.has_filename()) {
             std::ostringstream os;
@@ -382,7 +382,7 @@ auto make_child(instance& parent,
         }
         for (auto&& entry: p->subsystems) {
             auto kid = make_child(result, entry.first, entry.second,
-                                  p->connections, descriptors);
+                                  p->connections, ports);
             info.children.emplace(entry.first, std::move(kid));
         }
     }
@@ -407,9 +407,9 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
     }
 }
 
-auto close_unused_descriptors(const system_name& name,
-                              const std::span<const connection>& conns,
-                              const port_map& descriptors)
+auto close_unused_ports(const system_name& name,
+                        const std::span<const connection>& conns,
+                        const port_map& ports)
     -> void
 {
     auto using_stdin = false;
@@ -419,7 +419,7 @@ auto close_unused_descriptors(const system_name& name,
         const auto ends = make_endpoints<system_endpoint>(conn);
         for (auto&& end: ends) {
             if (end && end->address == name) {
-                for (auto&& descriptor: end->descriptors) {
+                for (auto&& descriptor: end->ports) {
                     switch (descriptor) {
                     case descriptors::stdin_id:
                         using_stdin = true;
@@ -435,7 +435,7 @@ auto close_unused_descriptors(const system_name& name,
             }
         }
     }
-    for (auto&& entry: descriptors) {
+    for (auto&& entry: ports) {
         switch (entry.first) {
         case reference_descriptor{0}:
             using_stdin = true;
@@ -476,7 +476,7 @@ auto close_pipes_except(instance& root,
 
 auto setup(instance& root,
            const system_name& name,
-           const port_map& descriptors,
+           const port_map& ports,
            const std::span<const connection>& connections,
            const std::span<channel>& channels,
            instance& child) -> void
@@ -498,7 +498,7 @@ auto setup(instance& root,
         }
         child_info.diags << "found UNKNOWN channel type!!!!\n";
     }
-    close_unused_descriptors(name, connections, descriptors);
+    close_unused_ports(name, connections, ports);
     close_pipes_except(root, child);
 }
 
@@ -599,7 +599,7 @@ auto fork_child(const system_name& name,
         // Also:
         // Close file descriptors inherited by child that it's not using.
         // See: https://stackoverflow.com/a/7976880/7410358
-        setup(root, name, sys.descriptors, connections, channels, child);
+        setup(root, name, sys.ports, connections, channels, child);
         // NOTE: child.diags streams opened close-on-exec, so no need
         //   to close them.
         if (!exe.working_directory.empty()) {
@@ -704,7 +704,7 @@ auto instantiate(const system& system,
             throw_has_no_filename(p->file, "executable file path ");
         }
         const auto all_closed =
-            confirm_closed({}, system.descriptors, {}, opts.descriptors);
+            confirm_closed({}, system.ports, {}, opts.ports);
         result.info = instance::forked{};
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();
@@ -714,14 +714,14 @@ auto instantiate(const system& system,
     }
     else if (const auto p = std::get_if<system::custom>(&system.info)) {
         const auto all_closed =
-            confirm_closed({}, system.descriptors,
-                           p->connections, opts.descriptors);
+            confirm_closed({}, system.ports,
+                           p->connections, opts.ports);
         result.info = instance::custom{};
         auto& info = std::get<instance::custom>(result.info);
         if (!all_closed) {
             info.pgrp = current_process_id();
         }
-        for (auto&& entry: system.descriptors) {
+        for (auto&& entry: system.ports) {
             const auto look_for = system_endpoint{{}, entry.first};
             if (!find_index(p->connections, look_for)) {
                 throw invalid_port_map{"enclosing endpoint not connected"};
@@ -737,7 +737,7 @@ auto instantiate(const system& system,
             const auto& sub_name = entry.first;
             const auto& sub_system = entry.second;
             auto kid = make_child(result, sub_name, sub_system, p->connections,
-                                  opts.descriptors);
+                                  opts.ports);
             info.children.emplace(sub_name, std::move(kid));
         }
         fork_executables(*p, result, result, diags);

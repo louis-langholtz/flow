@@ -11,8 +11,8 @@ auto operator<<(std::ostream& os, const system& value)
 {
     os << "system{";
     auto top_prefix = "";
-    if (!empty(value.descriptors)) {
-        os << top_prefix << ".descriptors=" << value.descriptors;
+    if (!empty(value.ports)) {
+        os << top_prefix << ".ports=" << value.ports;
         top_prefix = ",";
     }
     os << top_prefix << ".info=";
@@ -64,10 +64,10 @@ auto pretty_print(std::ostream& os, const system& value) -> void
 {
     os << "{\n";
     auto top_prefix = "";
-    if (!empty(value.descriptors)) {
+    if (!empty(value.ports)) {
         os << top_prefix;
-        os << "  .descriptors={";
-        os << value.descriptors;
+        os << "  .ports={";
+        os << value.ports;
         os << "}";
         top_prefix = ",\n";
     }
@@ -154,15 +154,15 @@ auto pretty_print(std::ostream& os, const system& value) -> void
 auto get_matching_set(const system& sys, io_type io)
     -> std::set<reference_descriptor>
 {
-    return get_matching_set(sys.descriptors, io);
+    return get_matching_set(sys.ports, io);
 }
 
 auto connect_with_user(const system_name& name,
-                       const port_map& descriptors)
+                       const port_map& ports)
     -> std::vector<connection>
 {
     auto result = std::vector<connection>{};
-    for (auto&& entry: descriptors) {
+    for (auto&& entry: ports) {
         const auto user_ep_name = name.get() + ":" +
             std::to_string(int(entry.first));
         switch (entry.second.direction) {

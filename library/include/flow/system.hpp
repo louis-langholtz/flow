@@ -63,23 +63,23 @@ struct system
 
     system(custom type_info,
            port_map des_map = {})
-        : descriptors{std::move(des_map)},
+        : ports{std::move(des_map)},
           info{std::move(type_info)}
     {
         // Intentionally empty.
     }
 
     system(executable type_info,
-           port_map des_map = std_descriptors)
-        : descriptors{std::move(des_map)},
+           port_map des_map = std_ports)
+        : ports{std::move(des_map)},
           info{std::move(type_info)}
     {
         // Intentionally empty.
     }
 
-    /// @brief Descriptors of the <code>system</code>.
+    /// @brief Ports of the <code>system</code>.
     /// @note This is considered an _interface_ component of this type.
-    port_map descriptors;
+    port_map ports;
 
     /// @brief System type specific information.
     /// @note This is considered an _internal_ component of this type.
@@ -111,7 +111,7 @@ inline auto operator==(const system::executable& lhs,
 inline auto operator==(const system& lhs,
                        const system& rhs) noexcept -> bool
 {
-    return (lhs.descriptors == rhs.descriptors)
+    return (lhs.ports == rhs.ports)
         && (lhs.info == rhs.info);
 }
 
@@ -122,13 +122,13 @@ auto pretty_print(std::ostream& os, const system& value) -> void;
 auto get_matching_set(const system& sys, io_type io)
     -> std::set<reference_descriptor>;
 
-/// @brief Makes connections for each of the specified descriptors with
+/// @brief Makes connections for each of the specified ports with
 ///   <code>user_endpoint</code> on the other end.
-/// @throws std::invalid_argument if a descriptor map entry has a direction
+/// @throws std::invalid_argument if a port map entry has a direction
 ///   other than <code>io_type::in</code>, <code>io_type::out</code> or
 ///   <code>io_type::bidir</code>.
 auto connect_with_user(const system_name& name,
-                       const port_map& descriptors)
+                       const port_map& ports)
     -> std::vector<connection>;
 
 }
