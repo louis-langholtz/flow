@@ -575,10 +575,11 @@ auto fork_child(const system_name& name,
         diags << "fork failed: " << os_error_code(errno) << "\n";
         return;
     case no_process_id: { // child process
-        // Have to be especially careful here!
+        // Have to be careful here!
         // From https://man7.org/linux/man-pages/man2/fork.2.html:
-        // "child can safely call only async-signal-safe functions
-        //  (see signal-safety(7)) until such time as it calls execve(2)."
+        //   "in a multithreaded program, the child can safely call only
+        //   async-signal-safe functions (see signal-safety(7)) until such
+        //   time as it calls execve(2)."
         // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
         // for "functions required to be async-signal-safe by POSIX.1".
         if (::setpgid(0, int(pgrp)) == -1) {
