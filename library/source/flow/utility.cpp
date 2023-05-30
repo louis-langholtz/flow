@@ -5,6 +5,7 @@
 #include <cstdio> // for ::tmpfile, std::fclose
 #include <cstdlib> // for ::mkstemp, ::fork
 #include <functional> // for std::ref
+#include <iomanip> // for std::quoted
 #include <ios> // for std::boolalpha
 #include <iterator> // for std::distance
 #include <memory> // for std::unique_ptr

@@ -1,3 +1,5 @@
+#include <iomanip> // for std::quoted
+
 #include "flow/file_endpoint.hpp"
 #include "flow/reserved.hpp"
 

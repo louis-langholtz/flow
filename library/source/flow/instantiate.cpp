@@ -1,6 +1,7 @@
 #include <concepts> // for std::convertible_to
 #include <cstdlib> // for std::exit, EXIT_FAILURE
 #include <cstring> // for std::strcmp
+#include <iomanip> // for std::setfill
 #include <sstream> // for std::ostringstream
 
 #include <unistd.h> // for getpid, setpgid
