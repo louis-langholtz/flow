@@ -97,6 +97,7 @@
 		99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193AF29F7AFD100C3F53F /* fstream.hpp */; };
 		99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99FE1CA92A25103200D24AE3 /* wait_option.cpp */; };
 		99FE1CAC2A25103200D24AE3 /* wait_option.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99FE1CAA2A25103200D24AE3 /* wait_option.hpp */; };
+		99FE1CAE2A25697B00D24AE3 /* forwarding_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99FE1CAD2A25697B00D24AE3 /* forwarding_channel.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -249,6 +250,7 @@
 		99C193AF29F7AFD100C3F53F /* fstream.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = fstream.hpp; sourceTree = "<group>"; };
 		99FE1CA92A25103200D24AE3 /* wait_option.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wait_option.cpp; sourceTree = "<group>"; };
 		99FE1CAA2A25103200D24AE3 /* wait_option.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = wait_option.hpp; sourceTree = "<group>"; };
+		99FE1CAD2A25697B00D24AE3 /* forwarding_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = forwarding_channel.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -443,6 +445,7 @@
 				9986C7B22A1D3D9E006B2095 /* endpoint.cpp */,
 				99A88D412A128CCB00AFD76F /* env_name.cpp */,
 				99A88D432A12A69D00AFD76F /* env_value.cpp */,
+				99FE1CAD2A25697B00D24AE3 /* forwarding_channel.cpp */,
 				99A88D3D2A1003DC00AFD76F /* fstream.cpp */,
 				99A88D3B2A0FB2B100AFD76F /* instance.cpp */,
 				99A88D3F2A115E5D00AFD76F /* instantiate.cpp */,
@@ -657,6 +660,7 @@
 			files = (
 				99A88D422A128CCB00AFD76F /* env_name.cpp in Sources */,
 				99A88D442A12A69D00AFD76F /* env_value.cpp in Sources */,
+				99FE1CAE2A25697B00D24AE3 /* forwarding_channel.cpp in Sources */,
 				99A88D402A115E5D00AFD76F /* instantiate.cpp in Sources */,
 				9986C7A92A19139A006B2095 /* owning_descriptor.cpp in Sources */,
 				99A88D4E2A16BB3600AFD76F /* system_name.cpp in Sources */,
