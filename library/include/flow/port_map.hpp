@@ -4,12 +4,12 @@
 #include <map>
 #include <ostream>
 
-#include "flow/reference_descriptor.hpp"
+#include "flow/port_id.hpp"
 #include "flow/port_info.hpp"
 
 namespace flow {
 
-using port_map = std::map<reference_descriptor, port_info>;
+using port_map = std::map<port_id, port_info>;
 using port_map_entry = port_map::value_type;
 
 auto operator<<(std::ostream& os,

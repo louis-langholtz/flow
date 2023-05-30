@@ -95,6 +95,8 @@
 		99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */; };
 		99C193A629F76AB800C3F53F /* descriptor_iostream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */; };
 		99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C193AF29F7AFD100C3F53F /* fstream.hpp */; };
+		99F29E2B2A269A9C00D861B0 /* port_id.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99F29E292A269A9C00D861B0 /* port_id.cpp */; };
+		99F29E2C2A269A9C00D861B0 /* port_id.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99F29E2A2A269A9C00D861B0 /* port_id.hpp */; };
 		99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99FE1CA92A25103200D24AE3 /* wait_option.cpp */; };
 		99FE1CAC2A25103200D24AE3 /* wait_option.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99FE1CAA2A25103200D24AE3 /* wait_option.hpp */; };
 		99FE1CAE2A25697B00D24AE3 /* forwarding_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99FE1CAD2A25697B00D24AE3 /* forwarding_channel.cpp */; };
@@ -248,6 +250,8 @@
 		99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = descriptor_iostream.cpp; sourceTree = "<group>"; };
 		99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = descriptor_iostream.hpp; sourceTree = "<group>"; };
 		99C193AF29F7AFD100C3F53F /* fstream.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = fstream.hpp; sourceTree = "<group>"; };
+		99F29E292A269A9C00D861B0 /* port_id.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = port_id.cpp; sourceTree = "<group>"; };
+		99F29E2A2A269A9C00D861B0 /* port_id.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = port_id.hpp; sourceTree = "<group>"; };
 		99FE1CA92A25103200D24AE3 /* wait_option.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wait_option.cpp; sourceTree = "<group>"; };
 		99FE1CAA2A25103200D24AE3 /* wait_option.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = wait_option.hpp; sourceTree = "<group>"; };
 		99FE1CAD2A25697B00D24AE3 /* forwarding_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = forwarding_channel.cpp; sourceTree = "<group>"; };
@@ -375,6 +379,7 @@
 				9986C7A52A19105A006B2095 /* owning_descriptor.hpp */,
 				9943E89E2A04A63F002F4C26 /* owning_process_id.hpp */,
 				9943E8922A021A46002F4C26 /* pipe_channel.hpp */,
+				99F29E2A2A269A9C00D861B0 /* port_id.hpp */,
 				99A88D172A0B1BC500AFD76F /* port_info.hpp */,
 				99A88D1B2A0B1D8600AFD76F /* port_map.hpp */,
 				99940BFA29F1F49F00A77461 /* process_id.hpp */,
@@ -419,6 +424,7 @@
 				9943E8912A021A46002F4C26 /* pipe_channel.cpp */,
 				9943E8A52A055E11002F4C26 /* pipe_registry.cpp */,
 				9943E8A62A055E11002F4C26 /* pipe_registry.hpp */,
+				99F29E292A269A9C00D861B0 /* port_id.cpp */,
 				99A88D162A0B1BC500AFD76F /* port_info.cpp */,
 				99A88D1A2A0B1D8600AFD76F /* port_map.cpp */,
 				99940BF529F1DAE800A77461 /* reference_descriptor.cpp */,
@@ -463,6 +469,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99F29E2C2A269A9C00D861B0 /* port_id.hpp in Headers */,
 				9943E8B62A06F6ED002F4C26 /* checked.hpp in Headers */,
 				9943E8982A021E98002F4C26 /* user_endpoint.hpp in Headers */,
 				99940BEF29F1C9A500A77461 /* io_type.hpp in Headers */,
@@ -633,6 +640,7 @@
 				9943E8A32A04A783002F4C26 /* reference_process_id.cpp in Sources */,
 				99940BFF29F1F73900A77461 /* system_name.cpp in Sources */,
 				99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */,
+				99F29E2B2A269A9C00D861B0 /* port_id.cpp in Sources */,
 				99A88D182A0B1BC500AFD76F /* port_info.cpp in Sources */,
 				9943E8AB2A059A28002F4C26 /* file_channel.cpp in Sources */,
 				99C193A529F76AB800C3F53F /* descriptor_iostream.cpp in Sources */,

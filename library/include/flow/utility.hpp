@@ -88,7 +88,7 @@ auto sigsafe_sigset_take(int sig) noexcept -> bool;
 auto sigsafe_sigset_takeany(const std::set<int>& sigs) -> bool;
 
 auto get_matching_set(const port_map& ports, io_type io)
-    -> std::set<reference_descriptor>;
+    -> std::set<port_id>;
 
 }
 
