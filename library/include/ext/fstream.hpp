@@ -424,7 +424,7 @@ inline auto filebuf::unique(std::filesystem::path& path) -> filebuf*
     auto buffer = std::array<char, L_tmpnam>{};
     const auto extension = path.extension();
     auto new_filename = path.stem();
-    new_filename += six_x;
+    new_filename += std::data(six_x);
     new_filename += extension;
     auto new_path = path;
     new_path.replace_filename(new_filename);
@@ -516,7 +516,8 @@ inline auto filebuf::unique(char* path) -> filebuf*
     auto tmp = std::filesystem::path{path};
     const auto result = unique(tmp);
     if (result) {
-        std::strcpy(path, tmp.c_str());
+        // Add 1 to also copy nul terminator.
+        std::copy_n(data(tmp.native()), size(tmp.native()) + 1u, path);
     }
     return result;
 }
