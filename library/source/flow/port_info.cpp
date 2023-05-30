@@ -1,8 +1,8 @@
-#include "flow/descriptor_info.hpp"
+#include "flow/port_info.hpp"
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const descriptor_info& value)
+auto operator<<(std::ostream& os, const port_info& value)
     -> std::ostream&
 {
     os << value.direction;

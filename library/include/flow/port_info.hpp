@@ -8,18 +8,18 @@
 
 namespace flow {
 
-struct descriptor_info {
+struct port_info {
     std::string comment;
     io_type direction;
 };
 
-inline auto operator==(const descriptor_info& lhs,
-                       const descriptor_info& rhs) noexcept
+inline auto operator==(const port_info& lhs,
+                       const port_info& rhs) noexcept
 {
     return (lhs.comment == rhs.comment) && (lhs.direction == rhs.direction);
 }
 
-auto operator<<(std::ostream& os, const descriptor_info& value)
+auto operator<<(std::ostream& os, const port_info& value)
     -> std::ostream&;
 
 }

@@ -155,7 +155,7 @@ auto parse_descriptor_map_entry(const std::string_view& arg)
         return {};
     }
     auto dir_comp = std::string_view{};
-    auto des_info = flow::descriptor_info{};
+    auto des_info = flow::port_info{};
     if (const auto found = name_value->second.find(':');
         found != std::string::npos) {
         des_info.comment = name_value->second.substr(found + 1u);
