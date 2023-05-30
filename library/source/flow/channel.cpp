@@ -19,7 +19,7 @@ auto validate(const system_endpoint& end,
               const system& system,
               io_type expected_io) -> void
 {
-    const auto at = [](const descriptor_map& descriptors,
+    const auto at = [](const port_map& descriptors,
                        const reference_descriptor& key,
                        const system_name& name) -> const descriptor_info&
     {

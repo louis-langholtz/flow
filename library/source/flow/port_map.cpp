@@ -1,8 +1,8 @@
-#include "flow/descriptor_map.hpp"
+#include "flow/port_map.hpp"
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const descriptor_map& value)
+auto operator<<(std::ostream& os, const port_map& value)
     -> std::ostream&
 {
     os << "{";

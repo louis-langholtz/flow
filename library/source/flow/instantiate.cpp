@@ -313,9 +313,9 @@ auto exec_child(const std::filesystem::path& path,
 }
 
 auto confirm_closed(const system_name& name,
-                    const descriptor_map& descriptors,
+                    const port_map& descriptors,
                     const std::span<const connection>& connections,
-                    const descriptor_map& available) -> bool
+                    const port_map& available) -> bool
 {
     auto is_internally_closed = true;
     for (auto&& entry: descriptors) {
@@ -350,7 +350,7 @@ auto make_child(instance& parent,
                 const system_name& name,
                 const system& system,
                 const std::span<const connection>& connections,
-                const descriptor_map& descriptors) -> instance
+                const port_map& descriptors) -> instance
 {
     instance result;
     const auto all_closed = confirm_closed(name, system.descriptors,
@@ -409,7 +409,7 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
 
 auto close_unused_descriptors(const system_name& name,
                               const std::span<const connection>& conns,
-                              const descriptor_map& descriptors)
+                              const port_map& descriptors)
     -> void
 {
     auto using_stdin = false;
@@ -476,7 +476,7 @@ auto close_pipes_except(instance& root,
 
 auto setup(instance& root,
            const system_name& name,
-           const descriptor_map& descriptors,
+           const port_map& descriptors,
            const std::span<const connection>& connections,
            const std::span<channel>& channels,
            instance& child) -> void
