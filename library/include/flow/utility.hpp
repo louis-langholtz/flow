@@ -90,6 +90,15 @@ auto sigsafe_sigset_takeany(const std::set<int>& sigs) -> bool;
 auto get_matching_set(const port_map& ports, io_type io)
     -> std::set<port_id>;
 
+/// @brief Converts the given enumerate into its underlying value.
+/// @note This is basically a back port from C++23.
+template <class Enum>
+constexpr auto to_underlying(Enum e) noexcept ->
+    decltype(static_cast<std::underlying_type_t<Enum>>(e))
+{
+    return static_cast<std::underlying_type_t<Enum>>(e);
+}
+
 }
 
 #endif /* utility_hpp */
