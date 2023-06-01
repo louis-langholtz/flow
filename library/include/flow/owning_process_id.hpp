@@ -1,6 +1,8 @@
 #ifndef owning_process_id_hpp
 #define owning_process_id_hpp
 
+#include <experimental/propagate_const>
+#include <memory> // for std::unique_ptr
 #include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/reference_process_id.hpp"
@@ -14,21 +16,27 @@ struct owning_process_id
 
     static auto fork() -> owning_process_id;
 
-    owning_process_id() noexcept = default;
+    owning_process_id() noexcept;
+    owning_process_id(reference_process_id id);
     owning_process_id(const owning_process_id& other) = delete;
     owning_process_id(owning_process_id&& other) noexcept;
     ~owning_process_id();
+
+    auto operator=(const owning_process_id& other) -> owning_process_id& = delete;
     auto operator=(owning_process_id&& other) noexcept -> owning_process_id&;
 
-    operator reference_process_id() const { return pid; }
-    explicit operator std::int32_t() const { return std::int32_t(pid); }
+    operator reference_process_id() const noexcept;
+
+    explicit operator std::int32_t() const
+    {
+        return std::int32_t(reference_process_id(*this));
+    }
 
     auto wait(wait_option flags = {}) noexcept -> wait_result;
 
-    auto operator<=>(const owning_process_id&) const = default;
+    auto operator<=>(const owning_process_id& other) const noexcept;
 
 private:
-    owning_process_id(reference_process_id id): pid{id} {}
     reference_process_id pid{default_process_id};
 };
 

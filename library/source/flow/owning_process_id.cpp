@@ -15,6 +15,14 @@ auto owning_process_id::fork() -> owning_process_id
     return owning_process_id{reference_process_id(::fork())};
 }
 
+owning_process_id::owning_process_id() noexcept = default;
+
+owning_process_id::owning_process_id(reference_process_id id):
+    pid{id}
+{
+    // Intentionally empty.
+}
+
 owning_process_id::owning_process_id(owning_process_id&& other) noexcept
     : pid(std::exchange(other.pid, default_process_id))
 {
@@ -26,6 +34,16 @@ owning_process_id::~owning_process_id()
     while (int(pid) > 0) {
         wait(wait_option{});
     }
+}
+
+owning_process_id::operator reference_process_id() const noexcept
+{
+    return pid;
+}
+
+auto owning_process_id::operator<=>(const owning_process_id& other) const noexcept
+{
+    return pid <=> other.pid;
 }
 
 auto owning_process_id::operator=(owning_process_id&& other) noexcept
