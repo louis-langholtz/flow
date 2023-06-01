@@ -14,21 +14,19 @@ namespace {
 auto wait(instance::forked& instance) -> std::vector<wait_result>
 {
     return std::visit(detail::overloaded{
-        [&instance](const owning_process_id& id){
+        [&instance](owning_process_id& id){
+            const auto pid = reference_process_id(id);
             auto results = std::vector<wait_result>{};
             for (;;) {
-                auto result = wait(reference_process_id(id));
-                if (std::holds_alternative<nokids_wait_result>(result)) {
+                const auto result = id.wait();
+                results.emplace_back(info_wait_result{
+                    .id = pid,
+                    .status = result
+                });
+                if (std::holds_alternative<wait_exit_status>(result) ||
+                    std::holds_alternative<wait_signaled_status>(result)) {
+                    instance.state = result;
                     break;
-                }
-                if (std::holds_alternative<info_wait_result>(result)) {
-                    instance.state = std::get<info_wait_result>(result).status;
-                    results.push_back(result);
-                    break;
-                }
-                if (std::holds_alternative<error_wait_result>(result)) {
-                    results.push_back(result);
-                    continue;
                 }
             }
             return results;

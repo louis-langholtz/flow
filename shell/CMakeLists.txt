@@ -1,4 +1,8 @@
 find_package(LibEdit REQUIRED)
+find_package(Boost)
+if(Boost_FOUND)
+	target_include_directories(flow SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
+endif()
 
 file(GLOB SHELL_SRCS *.cpp)
 

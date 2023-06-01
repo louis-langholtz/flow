@@ -95,6 +95,7 @@ TEST(instantiate, ls_system)
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(os));
         EXPECT_FALSE(empty(os.str()));
+        std::cerr << os.str() << '\n';
         EXPECT_TRUE(std::holds_alternative<instance::custom>(object.info));
         auto cat_stdin_pipe = static_cast<pipe_channel*>(nullptr);
         auto xargs_stdout_pipe = static_cast<pipe_channel*>(nullptr);
@@ -141,6 +142,7 @@ TEST(instantiate, ls_system)
             EXPECT_TRUE(std::holds_alternative<info_wait_result>(result));
             if (std::holds_alternative<info_wait_result>(result)) {
                 const auto& info = std::get<info_wait_result>(result);
+                EXPECT_GT(info.id, flow::no_process_id);
                 EXPECT_TRUE(info.id == cat_pid || info.id == xargs_pid);
                 if (info.id == cat_pid) {
                     // Maybe there's a race between cat & xargs where if xargs
@@ -174,6 +176,9 @@ TEST(instantiate, ls_system)
             const auto result = os.str();
             EXPECT_TRUE(empty(result));
         }
+        write_diags(object, os);
+        const auto diags_output = os.str();
+        EXPECT_NE(diags_output, std::string());
     }
 }
 

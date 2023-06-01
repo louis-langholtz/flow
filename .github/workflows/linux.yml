@@ -22,7 +22,7 @@ jobs:
     - name: Install Prerequisites
       run: |
         sudo apt update
-        sudo apt install libedit-dev
+        sudo apt install libedit-dev libboost-all-dev
 
     - name: Configure
       # Configure CMake in a 'build' subdirectory.

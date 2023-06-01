@@ -13,10 +13,11 @@ namespace flow {
 struct owning_process_id
 {
     static constexpr auto default_process_id = invalid_process_id;
+    static constexpr auto default_status = wait_unknown_status{};
 
-    static auto fork() -> owning_process_id;
+    static auto fork() -> reference_process_id;
 
-    owning_process_id() noexcept;
+    owning_process_id();
     owning_process_id(reference_process_id id);
     owning_process_id(const owning_process_id& other) = delete;
     owning_process_id(owning_process_id&& other) noexcept;
@@ -32,12 +33,21 @@ struct owning_process_id
         return std::int32_t(reference_process_id(*this));
     }
 
-    auto wait(wait_option flags = {}) noexcept -> wait_result;
+    auto wait(wait_option flags = {}) noexcept -> wait_status;
 
     auto operator<=>(const owning_process_id& other) const noexcept;
 
+    /// @brief Status of the process.
+    /// @note This is an observer function.
+    /// @return <code>wait_unknown_status{}</code> if the associated process
+    ///   has not yet terminated (possibly because this has no associated
+    ///   process).
+    [[nodiscard]] auto status() const noexcept -> wait_status;
+
+    struct impl;
+
 private:
-    reference_process_id pid{default_process_id};
+    std::experimental::propagate_const<std::unique_ptr<impl>> pimpl;
 };
 
 static_assert(std::is_default_constructible_v<owning_process_id>);
