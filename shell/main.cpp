@@ -1046,8 +1046,6 @@ auto main(int argc, const char * argv[]) -> int
     system_stack_type system_stack;
     system_stack.push(root_system);
     auto instance = flow::instance{flow::instance::custom{}};
-    flow::set_signal_handler(flow::signal::interrupt);
-    flow::set_signal_handler(flow::signal::terminate);
     auto do_loop = true;
     auto hist_size = 100;
     auto sequence = std::size_t{0};

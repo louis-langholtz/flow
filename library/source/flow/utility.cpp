@@ -389,7 +389,7 @@ auto set_signal_handler(signal sig) -> void
     auto old_set = sigset_t{};
     auto new_set = sigset_t{};
     sigaddset(&new_set, psig);
-    sigprocmask(SIG_UNBLOCK, &new_set, &old_set); // NOLINT(concurrency-mt-unsafe)
+    pthread_sigmask(SIG_UNBLOCK, &new_set, &old_set);
 }
 
 auto get_matching_set(const port_map& ports, io_type io)

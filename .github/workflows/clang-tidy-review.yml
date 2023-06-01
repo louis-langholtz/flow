@@ -12,13 +12,14 @@ jobs:
 
     # Optionally generate compile_commands.json
 
-    - uses: ZedThree/clang-tidy-review@v0.10.1
+    - uses: ZedThree/clang-tidy-review@v0.13.1
       id: review
       with:
         clang_tidy_version: '14'
         config_file: '.clang-tidy'
         cmake_command: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
         include: 'library/**.[ch]pp'
+        apt_packages: libboost-all-dev
 
     # If there are any comments, fail the check
     #- if: steps.review.outputs.total_comments > 0

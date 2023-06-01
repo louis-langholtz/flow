@@ -1,11 +1,13 @@
 #include <concepts> // for std::convertible_to
+#include <csignal>
 #include <cstdlib> // for std::exit, EXIT_FAILURE
 #include <cstring> // for std::strcmp
 #include <iomanip> // for std::setfill
 #include <sstream> // for std::ostringstream
 
-#include <unistd.h> // for getpid, setpgid
 #include <fcntl.h> // for ::open
+#include <pthread.h>
+#include <unistd.h> // for getpid, setpgid
 
 #include "ext/expected.hpp"
 
@@ -21,12 +23,20 @@ namespace {
 constexpr auto exit_failure_code = EXIT_FAILURE;
 
 /// @brief Exit the running process.
-/// @note This exists to abstractly wrap the actual exit function used.
-/// @note This also helps isolate clang-tidy issues to this sole function.
+/// @note This exists to abstractly wrap the actual exit function used
+///   for exiting from a forked child process.
+/// @note We have to be careful how we actually exit. As a C++ library,
+///   we need to make sure our normal destructors actually don't get
+///   called from this context! Otherwise, things like calling
+///   std::future::get can block awaiting a thread that it thinks is
+///   running when ::fork() actually doesn't copy threads. That leaves
+///   user code stuck!
+/// @note The alternative, is the child exec's. Which is for our purpose
+///   closer to what we get when calling the underlying system _exit call.
 [[noreturn]]
 auto exit(int exit_code) -> void
 {
-    std::exit(exit_code); // NOLINT(concurrency-mt-unsafe)
+    ::_exit(exit_code); // NOLINT(concurrency-mt-unsafe)
 }
 
 auto dup2(int fd, reference_descriptor from) -> bool
@@ -134,6 +144,7 @@ auto close(pipe_channel& p, pipe_channel::io side,
     diags << name << " " << c << " " << p;
     diags << ", close  " << side << "-side\n";
     if (!p.close(side, diags)) { // close unused end
+        diags.flush();
         exit(exit_failure_code);
     }
 }
@@ -147,6 +158,7 @@ auto dup2(pipe_channel& p, pipe_channel::io side, reference_descriptor id,
     diags << ", dup " << side << "-side to ";
     diags << id << "\n";
     if (!p.dup(side, id, diags)) {
+        diags.flush();
         exit(exit_failure_code);
     }
 }
@@ -233,6 +245,7 @@ auto setup(const system_name& name,
                 diags << ", can't get needed open flags: ";
                 diags << flags.error();
                 diags << "\n";
+                diags.flush();
                 exit(exit_failure_code);
             }
             close(op->ports);
@@ -286,6 +299,7 @@ auto setup(const system_name& name,
                 diags << ", can't get needed open flags: ";
                 diags << flags.error();
                 diags << "\n";
+                diags.flush();
                 exit(exit_failure_code);
             }
             close(op->ports);
@@ -434,6 +448,7 @@ auto change_directory(const std::filesystem::path& path, std::ostream& diags)
         diags << "chdir " << path << " failed: ";
         write(diags, ec);
         diags << "\n";
+        diags.flush();
         exit(exit_failure_code);
     }
 }
@@ -603,9 +618,13 @@ auto fork_child(const system_name& name,
     auto env_buffers = make_arg_bufs(env);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
-    auto owning_pid = owning_process_id::fork();
-    const auto pid = reference_process_id(owning_pid);
-    child_info.state = std::move(owning_pid);
+    sigset_t old_set{};
+    sigset_t new_set{};
+    sigemptyset(&old_set);
+    sigemptyset(&new_set);
+    sigaddset(&new_set, SIGCHLD);
+    pthread_sigmask(SIG_BLOCK, &new_set, &old_set);
+    const auto pid = owning_process_id::fork();
     switch (pid) {
     case invalid_process_id:
         diags << "fork failed: " << os_error_code(errno) << "\n";
@@ -618,6 +637,7 @@ auto fork_child(const system_name& name,
         //   time as it calls execve(2)."
         // See https://man7.org/linux/man-pages/man7/signal-safety.7.html
         // for "functions required to be async-signal-safe by POSIX.1".
+        pthread_sigmask(SIG_SETMASK, &old_set, nullptr);
         if (::setpgid(0, int(pgrp)) == -1) {
             child_info.diags << "setpgid failed(0, ";
             child_info.diags << pgrp;
@@ -645,8 +665,10 @@ auto fork_child(const system_name& name,
         exec_child(exe_path, argv.data(), envp.data(), child_info.diags);
     }
     default: // case for the spawning/parent process
+        child_info.state = owning_process_id(pid);
+        pthread_sigmask(SIG_SETMASK, &old_set, nullptr);
         if (pgrp == no_process_id) {
-            pgrp = reference_process_id(int(pid));
+            pgrp = pid;
         }
         break;
     }
