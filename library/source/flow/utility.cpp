@@ -66,25 +66,6 @@ auto show_diags(std::ostream& os, const std::string& name,
               std::ostream_iterator<char>(os));
 }
 
-auto to_posix_signal(signal sig) -> int
-{
-    switch (sig) {
-    case signal::interrupt:
-        return SIGINT;
-    case signal::terminate:
-        return SIGTERM;
-    case signal::kill:
-        return SIGKILL;
-    case signal::cont:
-        return SIGCONT;
-    case signal::child:
-        return SIGCHLD;
-    case signal::winch:
-        return SIGWINCH;
-    }
-    throw std::invalid_argument{"unknown signal"};
-}
-
 auto sigsafe_counter() noexcept -> volatile std::atomic_int32_t&
 {
     static_assert(std::atomic_int32_t::is_always_lock_free);
@@ -112,7 +93,7 @@ auto sigaction_cb(int sig, siginfo_t *info, void * /*ucontext*/) -> void
 
 auto kill(const reference_process_id& pid, signal sig) -> int
 {
-    return ::kill(int(pid), to_posix_signal(sig));
+    return ::kill(int(pid), int(sig));
 }
 
 }
@@ -328,31 +309,6 @@ auto mkfifo(const file_endpoint& file) -> void
     }
 }
 
-auto operator<<(std::ostream& os, signal s) -> std::ostream&
-{
-    switch (s) {
-    case signal::interrupt:
-        os << "sigint";
-        break;
-    case signal::terminate:
-        os << "sigterm";
-        break;
-    case signal::kill:
-        os << "sigkill";
-        break;
-    case signal::cont:
-        os << "sigcont";
-        break;
-    case signal::child:
-        os << "sigchild";
-        break;
-    case signal::winch:
-        os << "sigwinch";
-        break;
-    }
-    return os;
-}
-
 auto send_signal(signal sig,
                  const instance& instance,
                  std::ostream& diags,
@@ -372,7 +328,7 @@ auto send_signal(signal sig,
                 diags << std::quoted(name) << "\n";
                 if (kill(reference_process_id(*q), sig) == -1) {
                     diags << "kill(" << *q;
-                    diags << "," << to_posix_signal(sig);
+                    diags << "," << sig;
                     diags << ") failed: " << os_error_code(errno);
                     diags << "\n";
                 }
@@ -387,7 +343,7 @@ auto set_signal_handler(signal sig) -> void
     sa.sa_sigaction = sigaction_cb;
     sa.sa_flags = SA_SIGINFO;
     sigfillset(&sa.sa_mask);
-    const auto psig = to_posix_signal(sig);
+    const auto psig = int(sig);
     if (::sigaction(psig, &sa, nullptr) == -1) {
         throw std::system_error{errno, std::system_category()};
     }

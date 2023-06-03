@@ -14,6 +14,7 @@
 #include "flow/connection.hpp"
 #include "flow/port_map.hpp"
 #include "flow/environment_map.hpp"
+#include "flow/signal.hpp"
 #include "flow/system_name.hpp"
 
 namespace flow {
@@ -63,17 +64,6 @@ auto find_index(const std::span<const connection>& connections,
 auto touch(const file_endpoint& file) -> void;
 
 auto mkfifo(const file_endpoint& file) -> void;
-
-enum class signal {
-    interrupt,
-    terminate,
-    kill,
-    cont,
-    child,
-    winch,
-};
-
-auto operator<<(std::ostream& os, signal s) -> std::ostream&;
 
 auto send_signal(signal sig,
                  const instance& instance,
