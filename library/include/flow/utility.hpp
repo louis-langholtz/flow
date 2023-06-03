@@ -69,6 +69,7 @@ enum class signal {
     terminate,
     kill,
     cont,
+    child,
     winch,
 };
 
