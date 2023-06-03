@@ -109,7 +109,7 @@ private:
 
 manager::manager()
 {
-    set_signal_handler(signal::child);
+    set_signal_handler(signals::child());
     runner = std::async(std::launch::async, [&](){
         const auto opts = wait_options::untraced();
         while (do_run) {
