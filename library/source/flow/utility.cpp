@@ -77,6 +77,8 @@ auto to_posix_signal(signal sig) -> int
         return SIGKILL;
     case signal::cont:
         return SIGCONT;
+    case signal::child:
+        return SIGCHLD;
     case signal::winch:
         return SIGWINCH;
     }
@@ -340,6 +342,9 @@ auto operator<<(std::ostream& os, signal s) -> std::ostream&
         break;
     case signal::cont:
         os << "sigcont";
+        break;
+    case signal::child:
+        os << "sigchild";
         break;
     case signal::winch:
         os << "sigwinch";
