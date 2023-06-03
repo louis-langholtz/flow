@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED)
+find_package(Boost)
 
 file(GLOB FLOW_SRCS "source/flow/*.cpp")
 file(GLOB FLOW_HDRS "include/flow/*.hpp")
