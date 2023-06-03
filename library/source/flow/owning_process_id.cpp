@@ -13,9 +13,6 @@
 #include <set>
 #include <utility> // for std::exchange
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/signal_set.hpp>
-
 #include "flow/owning_process_id.hpp"
 #include "flow/utility.hpp"
 
@@ -62,7 +59,6 @@ auto wait(owning_process_id::impl& impl, wait_option flags = wait_option{})
         });
         impl.last_status = impl.statuses.front();
         impl.statuses.pop();
-        std::cerr << "got new wait status: " << impl.last_status << "\n";
         if (std::holds_alternative<wait_exit_status>(impl.last_status) ||
             std::holds_alternative<wait_signaled_status>(impl.last_status)) {
             impl.pid = owning_process_id::default_process_id;
@@ -80,8 +76,18 @@ auto wait(owning_process_id::impl& impl, wait_option flags = wait_option{})
 
 namespace {
 
-using signal_handler =
-    std::function<void(const boost::system::error_code& error, int sig)>;
+auto count_alive(const std::set<owning_process_id::impl*>& impls)
+    -> std::size_t
+{
+    auto count = std::size_t{};
+    for (auto&& impl: impls) {
+        const std::lock_guard<decltype(impl->mutex)> lk{impl->mutex};
+        if (impl->pid > no_process_id) {
+            ++count;
+        }
+    }
+    return count;
+}
 
 struct manager
 {
@@ -94,72 +100,31 @@ struct manager
 
 private:
     std::mutex mutex;
+    std::condition_variable cv;
     reference_process_id pid{current_process_id()};
     std::set<owning_process_id::impl*> impls;
-    boost::asio::io_context io_context;
-    boost::asio::signal_set signals{io_context};
-    signal_handler handler;
+    std::atomic_bool do_run{true};
     std::future<void> runner;
 };
 
 manager::manager()
 {
-    handler = [this](const boost::system::error_code& error, int sig) {
-        if (error) {
-            std::cerr << "got error " << error << "\n";
-            return;
-        }
-        signals.async_wait(handler);
-        std::cerr << flow::current_process_id();
-        std::cerr << ": asio caught signal " << sig << '\n';
-        if (sig != SIGCHLD) {
-            return;
-        }
-        const auto opts = wait_options::nohang()|wait_options::untraced();
-        for (;;) {
-            const auto ret = wait(invalid_process_id, opts);
-            if (std::holds_alternative<nokids_wait_result>(ret)) {
-                break;
-            }
-            handle(ret);
-        }
-    };
-
-    signals.add(SIGCHLD);
-    signals.async_wait(handler);
+    set_signal_handler(signal::child);
     runner = std::async(std::launch::async, [&](){
-        sigset_t new_set{};
-        sigemptyset(&new_set);
-        sigaddset(&new_set, SIGCHLD);
-        pthread_sigmask(SIG_UNBLOCK, &new_set, nullptr);
-        std::cerr << "runner start\n";
-        io_context.run();
-        std::cerr << "runner end\n";
+        const auto opts = wait_options::untraced();
+        while (do_run) {
+            handle(wait(invalid_process_id, opts));
+        }
     });
 }
 
 manager::~manager() noexcept
 {
     if (pid == current_process_id()) {
-        try {
-            signals.cancel();
-        }
-        catch (const boost::system::system_error& ex) {
-            std::cerr << "signals.cancel threw exception: ";
-            std::cerr << ex.what();
-            std::cerr << "\n";
-        }
-        catch (...) {
-            std::cerr << "signals.cancel threw exception!\n";
-        }
-        try {
-            io_context.stop();
-        }
-        catch (...) {
-            std::cerr << "io_context.stop() threw exception\n";
-        }
         if (runner.valid()) {
             try {
+                do_run = false;
+                cv.notify_all();
                 runner.get();
             }
             catch (...) {
@@ -174,12 +139,18 @@ auto manager::insert(owning_process_id::impl* pimpl) -> bool
     if (!pimpl || (reference_process_id(pimpl->pid) <= no_process_id)) {
         return false;
     }
-    const std::lock_guard<decltype(mutex)> lock{mutex};
-    std::cerr << "insert " << size(impls);
-    std::cerr << ", for " << pimpl->pid;
-    std::cerr << ", by " << current_process_id();
-    std::cerr << "\n";
-    return impls.insert(pimpl).second;
+    auto first = false;
+    {
+        const std::lock_guard lock{mutex};
+        first = empty(impls);
+        if (!impls.insert(pimpl).second) {
+            return false;
+        }
+    }
+    if (first) {
+        cv.notify_one();
+    }
+    return true;
 }
 
 auto manager::erase(owning_process_id::impl* pimpl) -> bool
@@ -187,15 +158,13 @@ auto manager::erase(owning_process_id::impl* pimpl) -> bool
     if (!pimpl) {
         return false;
     }
-    const std::lock_guard<decltype(mutex)> lock{mutex};
-    std::cerr << "erase " << size(impls) << ", by " << current_process_id() << "\n";
+    const std::lock_guard lock{mutex};
     return impls.erase(pimpl) > 0u;
 }
 
 auto manager::handle(const flow::info_wait_result& result) -> void
 {
-    std::cerr << "child signaled " << result << "\n";
-    const std::lock_guard<decltype(mutex)> lock{mutex};
+    const std::lock_guard lock{mutex};
     const auto it = find_if(begin(impls), end(impls),
                             [&result](const owning_process_id::impl *pimpl){
         return pimpl->pid == result.id;
@@ -206,7 +175,7 @@ auto manager::handle(const flow::info_wait_result& result) -> void
     }
     auto& impl = *(*it);
     {
-        const std::lock_guard<decltype(impl.mutex)> lock{impl.mutex};
+        const std::lock_guard lock{impl.mutex};
         impl.statuses.push(result.status);
     }
     impl.cv.notify_one();
@@ -216,6 +185,12 @@ auto manager::handle(const flow::wait_result& result) -> void
 {
     std::visit(detail::overloaded{
         [](auto) noexcept {},
+        [&](const nokids_wait_result&) {
+            std::unique_lock lk(mutex);
+            cv.wait(lk, [this]{
+                return (count_alive(impls) > 0) || !do_run;
+            });
+        },
         [](const error_wait_result& result) {
             std::cerr << result << ": odd?\n";
         },
@@ -299,7 +274,7 @@ auto owning_process_id::status() const noexcept -> wait_status
 {
     if (pimpl) {
         auto& impl = *pimpl;
-        const std::lock_guard<decltype(impl.mutex)> lock{impl.mutex};
+        const std::lock_guard lock{impl.mutex};
         return empty(impl.statuses)? default_status: impl.statuses.front();
     }
     return default_status;
