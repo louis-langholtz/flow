@@ -322,11 +322,14 @@ auto send_signal(signal sig,
     }
     else if (const auto p = std::get_if<instance::forked>(&instance.info)) {
         if (const auto q = std::get_if<owning_process_id>(&(p->state))) {
-            if ((reference_process_id(*q) != invalid_process_id) &&
-                (reference_process_id(*q) != no_process_id)) {
+            const auto pid = reference_process_id(*q);
+            if ((pid != invalid_process_id) && (pid != no_process_id)) {
                 diags << "sending " << sig << " to ";
-                diags << std::quoted(name) << "\n";
-                if (kill(reference_process_id(*q), sig) == -1) {
+                diags << std::quoted(name);
+                diags << " (";
+                diags << pid;
+                diags << ")\n";
+                if (kill(pid, sig) == -1) {
                     diags << "kill(" << *q;
                     diags << "," << sig;
                     diags << ") failed: " << os_error_code(errno);

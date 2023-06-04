@@ -25,6 +25,9 @@ auto operator<<(std::ostream& os, signal s) -> std::ostream&
     case SIGWINCH:
         os << "sigwinch";
         break;
+    case SIGINFO:
+        os << "siginfo";
+        break;
     default:
         os << "signal-#" << std::to_string(int(s));
         break;
@@ -64,6 +67,11 @@ auto child() noexcept -> signal
 auto winch() noexcept -> signal
 {
     return signal{SIGWINCH};
+}
+
+auto info() noexcept -> signal
+{
+    return signal{SIGINFO};
 }
 
 }

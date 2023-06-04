@@ -5,12 +5,18 @@
 #include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/reference_descriptor.hpp"
+#include "flow/signal.hpp"
 #include "flow/variant.hpp"
 
 namespace flow {
 
+/// @brief Port identifier.
+/// @note Ports are _passive_ endpoints for communications in the sense
+///   that they're always acted upon rather than the other way around.
+/// @note Ports can be connection oriented or connectionless.
 using port_id = variant<
-    reference_descriptor
+    reference_descriptor,
+    signal
 >;
 
 template <class T>

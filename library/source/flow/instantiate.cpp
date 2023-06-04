@@ -364,6 +364,9 @@ auto confirm_closed(const system_name& name,
 {
     auto is_internally_closed = true;
     for (auto&& entry: ports) {
+        if (!requires_connection(entry)) {
+            continue;
+        }
         const auto look_for = system_endpoint{name, entry.first};
         if (find_index(connections, look_for)) {
             continue;
