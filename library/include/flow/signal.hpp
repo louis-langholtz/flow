@@ -16,6 +16,8 @@ auto kill() noexcept -> signal;
 auto cont() noexcept -> signal;
 auto child() noexcept -> signal;
 auto winch() noexcept -> signal;
+
+auto dd_progress() noexcept -> signal;
 }
 
 }
