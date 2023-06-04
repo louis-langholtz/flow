@@ -11,9 +11,9 @@ the focus is on data moving through them.
 
 See the references section below to find out more about data-flow in general.
 
-For the moment at least, the project uses existing POSIX descriptor based file I/O to implement the flow of data,
-and applications using well known descriptors to implement underlying leaf execution units.
-As abstractions, these conveniently fit the data flow model.
+At present, the project uses POSIX descriptors and signals to implement the flow of data,
+and applications having well known descriptors and signals to implement underlying leaf execution units.
+As abstractions, these conveniently fit the data flow model and when instantiated execution is _asynchronous_.
 See the [system.hpp](library/include/flow/system.hpp) header file for specifics on how systems can be designed in C++.
 
 ## Why?
@@ -36,6 +36,7 @@ This is just a work in progress at the moment.
 
 ## References
 
+- Devopedia's [Dataflow Programming](https://devopedia.org/dataflow-programming) page.
 - Wikipedia's [Dataflow programming](https://en.wikipedia.org/wiki/Dataflow_programming) page.
 - Wikipedia's [POSIX](https://en.wikipedia.org/wiki/POSIX) page.
 - Wikipedia's [Assembly theory](https://en.m.wikipedia.org/wiki/Assembly_theory).
