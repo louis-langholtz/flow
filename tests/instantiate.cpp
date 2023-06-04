@@ -1,4 +1,6 @@
+#include <chrono>
 #include <sstream> // for std::ostringstream
+#include <thread> // for std::this_thread
 
 #include <gtest/gtest.h>
 
@@ -540,5 +542,87 @@ TEST(instantiate, nested_system)
                   std::istreambuf_iterator<char>(),
                   std::ostream_iterator<char>(std::cerr));
         write_diags(object, std::cerr);
+    }
+}
+
+TEST(instantiate, bin_dd)
+{
+    const auto exe_name = system_name{"dd"};
+    auto sys = flow::system{system::custom{
+        .subsystems = {{exe_name, {
+            system::executable{
+                .file = "/bin/dd",
+                .arguments = {
+                    "dd",
+                    "iflag=fullblock",
+                    "if=/dev/zero",
+                    "of=/dev/null",
+                    "count=50000000",
+                    "bs=1000"
+                }
+            },
+            {
+                {
+                    reference_descriptor{2},
+                    {"stderr", io_type::out}
+                },
+                {
+                    signals::dd_progress(),
+                    {"puts progress info on stderr", io_type::in}
+                },
+            }
+        }}},
+        .connections = {unidirectional_connection{
+            system_endpoint{exe_name, reference_descriptor{2}},
+            user_endpoint{},
+        }},
+    }};
+    {
+        using namespace std::chrono_literals;
+        std::stringstream os;
+        auto instance = instantiate(sys, std::cerr);
+        ASSERT_TRUE(std::holds_alternative<instance::custom>(instance.info));
+        auto& info = std::get<instance::custom>(instance.info);
+        ASSERT_EQ(size(info.channels), 1u);
+        // Wait a moment before sending SIGINFO to help ensure dd is up
+        // and has it's SIGINFO handler registered...
+        std::this_thread::sleep_for(200ms);
+        send_signal(signals::dd_progress(), instance, std::cerr);
+        ASSERT_TRUE(std::holds_alternative<pipe_channel>(info.channels.front()));
+        auto& pipe = std::get<pipe_channel>(info.channels.front());
+        auto buffer = std::array<char, 1u>{};
+        auto linenum = 0;
+        while (linenum < 3) {
+            if (pipe.read(buffer, std::cerr) == -1) {
+                break;
+            }
+            const auto c = *buffer.data();
+            std::cerr << char(c);
+            os << c;
+            if (c == '\n') {
+                ++linenum;
+                switch (linenum) {
+                case 1:
+                    EXPECT_NE(os.str().find("records in"), std::string::npos);
+                    break;
+                case 2:
+                    EXPECT_NE(os.str().find("records out"), std::string::npos);
+                    break;
+                case 3:
+                    EXPECT_NE(os.str().find("bytes"), std::string::npos);
+                    break;
+                }
+                os.str(std::string{});
+            }
+        }
+        EXPECT_EQ(linenum, 3);
+        send_signal(signals::kill(), instance, std::cerr);
+        const auto waits = wait(instance);
+        ASSERT_EQ(size(waits), 1u);
+        ASSERT_TRUE(std::holds_alternative<info_wait_result>(waits.front()));
+        const auto& rv = std::get<info_wait_result>(waits.front());
+        ASSERT_TRUE(std::holds_alternative<wait_signaled_status>(rv.status));
+        const auto& es = std::get<wait_signaled_status>(rv.status);
+        EXPECT_EQ(es.signal, int(signals::kill()));
     }
 }

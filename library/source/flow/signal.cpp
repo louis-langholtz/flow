@@ -66,4 +66,15 @@ auto winch() noexcept -> signal
     return signal{SIGWINCH};
 }
 
+auto dd_progress() noexcept -> signal
+{
+#if defined(__APPLE__) && defined(SIGINFO)
+    return signal{SIGINFO};
+#elif defined(__linux__) && defined(SIGUSR1)
+    return signal{SIGUSR1};
+#else
+#error "not supported"
+#endif
+}
+
 }
