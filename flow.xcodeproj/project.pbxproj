@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		992A247D2A2BB6540074248B /* signal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 992A247B2A2BB6540074248B /* signal.cpp */; };
 		992A247E2A2BB6540074248B /* signal.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 992A247C2A2BB6540074248B /* signal.hpp */; };
+		992A24812A2D16280074248B /* signal_channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 992A247F2A2D16280074248B /* signal_channel.cpp */; };
+		992A24822A2D16280074248B /* signal_channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 992A24802A2D16280074248B /* signal_channel.hpp */; };
 		9943E87629FB444F002F4C26 /* os_error_code.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E87429FB444F002F4C26 /* os_error_code.cpp */; };
 		9943E87729FB444F002F4C26 /* os_error_code.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 9943E87529FB444F002F4C26 /* os_error_code.hpp */; };
 		9943E87A29FBF418002F4C26 /* wait_status.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9943E87829FBF418002F4C26 /* wait_status.cpp */; };
@@ -167,6 +169,8 @@
 /* Begin PBXFileReference section */
 		992A247B2A2BB6540074248B /* signal.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = signal.cpp; sourceTree = "<group>"; };
 		992A247C2A2BB6540074248B /* signal.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = signal.hpp; sourceTree = "<group>"; };
+		992A247F2A2D16280074248B /* signal_channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = signal_channel.cpp; sourceTree = "<group>"; };
+		992A24802A2D16280074248B /* signal_channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = signal_channel.hpp; sourceTree = "<group>"; };
 		9943E87429FB444F002F4C26 /* os_error_code.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = os_error_code.cpp; sourceTree = "<group>"; };
 		9943E87529FB444F002F4C26 /* os_error_code.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = os_error_code.hpp; sourceTree = "<group>"; };
 		9943E87829FBF418002F4C26 /* wait_status.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wait_status.cpp; sourceTree = "<group>"; };
@@ -391,6 +395,7 @@
 				9943E8A22A04A783002F4C26 /* reference_process_id.hpp */,
 				9986C7B52A20F990006B2095 /* reserved.hpp */,
 				992A247C2A2BB6540074248B /* signal.hpp */,
+				992A24802A2D16280074248B /* signal_channel.hpp */,
 				99C1939629F5136100C3F53F /* system.hpp */,
 				99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */,
 				99940BFE29F1F73900A77461 /* system_name.hpp */,
@@ -435,6 +440,7 @@
 				99940BF529F1DAE800A77461 /* reference_descriptor.cpp */,
 				9943E8A12A04A783002F4C26 /* reference_process_id.cpp */,
 				992A247B2A2BB6540074248B /* signal.cpp */,
+				992A247F2A2D16280074248B /* signal_channel.cpp */,
 				99C1939529F5136100C3F53F /* system.cpp */,
 				99C1937929F4D70F00C3F53F /* system_endpoint.cpp */,
 				99940BFD29F1F73900A77461 /* system_name.cpp */,
@@ -495,6 +501,7 @@
 				99C1939829F5136100C3F53F /* system.hpp in Headers */,
 				99A88D252A0C229400AFD76F /* unset_endpoint.hpp in Headers */,
 				99C193A229F6EB4B00C3F53F /* expected.hpp in Headers */,
+				992A24822A2D16280074248B /* signal_channel.hpp in Headers */,
 				99FE1CAC2A25103200D24AE3 /* wait_option.hpp in Headers */,
 				99A88D522A17D4E500AFD76F /* tcstring.hpp in Headers */,
 				9943E8902A0068C6002F4C26 /* indenting_ostreambuf.hpp in Headers */,
@@ -633,6 +640,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				992A24812A2D16280074248B /* signal_channel.cpp in Sources */,
 				9943E8A72A055E11002F4C26 /* pipe_registry.cpp in Sources */,
 				9943E88F2A0068C6002F4C26 /* indenting_ostreambuf.cpp in Sources */,
 				99940BF729F1DAE800A77461 /* reference_descriptor.cpp in Sources */,

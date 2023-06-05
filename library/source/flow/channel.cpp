@@ -15,39 +15,111 @@ namespace flow {
 
 namespace {
 
+enum class port_type { unknown, descriptor, signal };
+
+auto at(const port_map& ports, const port_id& key, const system_name& name)
+    -> const port_info&
+{
+    try {
+        return ports.at(key);
+    }
+    catch (const std::out_of_range& ex) {
+        std::ostringstream os;
+        os << "can't find " << key << " in ";
+        if (name == system_name{}) {
+            os << "system's";
+        }
+        else {
+            os << name << " subsystem's";
+        }
+        os << " descriptor mapping: ";
+        os << ex.what();
+        throw invalid_connection{os.str()};
+    }
+}
+
+using port_size_array = std::array<std::size_t, std::variant_size_v<port_id>>;
+
+auto count_types(const std::set<port_id>& ports)
+    -> port_size_array
+{
+    auto counts = port_size_array{};
+    for (auto&& port: ports) {
+        ++counts[port.index()];
+    }
+    return counts;
+}
+
+auto multiple_types(const port_size_array& counts) -> bool
+{
+    auto previous = false;
+    for (auto&& count: counts) {
+        if (count > 0u) {
+            if (previous) {
+                return true;
+            }
+            previous = true;
+        }
+    }
+    return false;
+}
+
+/// @brief Gets the index in the variant of the specified type.
+/// @see https://stackoverflow.com/a/52304395/7410358
+template <typename T, typename... Ts>
+constexpr auto get_index(std::variant<Ts...> const&) -> std::size_t
+{
+    auto r = std::size_t{};
+    auto test = [&](bool b){
+        if (!b) {
+            ++r;
+        }
+        return b;
+    };
+    (test(std::is_same_v<T,Ts>) || ...);
+    return r;
+}
+
+auto get_port_type(const port_size_array& counts) -> port_type
+{
+    for (auto&& count: counts) {
+        const auto index = static_cast<std::size_t>(&count - data(counts));
+        if (count > 0u) {
+            if (get_index<signal>(port_id{}) == index) {
+                return port_type::signal;
+            }
+            if (get_index<reference_descriptor>(port_id{}) == index) {
+                return port_type::descriptor;
+            }
+        }
+    }
+    return port_type::unknown;
+}
+
 auto validate(const system_endpoint& end,
               const system& system,
-              io_type expected_io) -> void
+              io_type expected_io) -> port_type
 {
-    const auto at = [](const port_map& ports,
-                       const port_id& key,
-                       const system_name& name) -> const port_info&
-    {
-        try {
-            return ports.at(key);
-        }
-        catch (const std::out_of_range& ex) {
-            std::ostringstream os;
-            os << "can't find " << key << " in ";
-            if (name == system_name{}) {
-                os << "system's";
-            }
-            else {
-                os << name << " subsystem's";
-            }
-            os << " descriptor mapping: ";
-            os << ex.what();
-            throw invalid_connection{os.str()};
-        }
-    };
     if (end.address == system_name{}) {
         for (auto&& d: end.ports) {
             const auto& d_info = at(system.ports, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
-                throw invalid_connection{"bad custom system endpoint io"};
+                std::ostringstream os;
+                os << "bad custom system endpoint io: expected=";
+                os << reverse(expected_io);
+                os << ", got ";
+                os << d_info.direction;
+                throw invalid_connection{os.str()};
             }
         }
-        return;
+        const auto counts = count_types(end.ports);
+        if (multiple_types(counts)) {
+            std::ostringstream os;
+            os << "system endpoint can't specify";
+            os << " both signal & descriptor ports";
+            throw invalid_connection{os.str()};
+        }
+        return get_port_type(counts);
     }
     if (const auto p = std::get_if<system::custom>(&(system.info))) {
         const auto found = p->subsystems.find(end.address);
@@ -58,16 +130,26 @@ auto validate(const system_endpoint& end,
             os << " not found";
             throw invalid_connection{os.str()};
         }
-        const auto& subsys = p->subsystems.at(end.address);
+        const auto& subsys = found->second;
         for (auto&& d: end.ports) {
             const auto& d_info = at(subsys.ports, d, end.address);
             if (d_info.direction != expected_io) {
                 throw invalid_connection{"bad subsys endpoint io"};
             }
         }
-        return;
+        const auto counts = count_types(end.ports);
+        if (multiple_types(counts)) {
+            std::ostringstream os;
+            os << "subsystem endpoint can't specify";
+            os << " both signal & descriptor ports";
+            throw invalid_connection{os.str()};
+        }
+        return get_port_type(counts);
     }
-
+    if (const auto p = std::get_if<system::executable>(&(system.info))) {
+        return port_type::unknown;
+    }
+    throw std::logic_error{"validate: unknown system type"};
 }
 
 auto make_channel(const file_endpoint& src, const file_endpoint& dst)
@@ -149,6 +231,42 @@ auto make_channel(const user_endpoint& src, const user_endpoint& dst,
                         std::get<pipe_channel>(channels[*dst_conn]));
 }
 
+auto to_signal_set(const std::set<port_id>& ports) -> std::set<signal>
+{
+    auto signals = std::set<signal>{};
+    for (auto&& port: ports) {
+        signals.insert(std::get<signal>(port));
+    }
+    return signals;
+}
+
+auto make_signal_channel(const system_endpoint& src,
+                         const system_endpoint& dst) -> signal_channel
+{
+    if (src.ports != dst.ports) {
+        std::ostringstream os;
+        os << "connection between different signal sets not supported";
+        throw invalid_connection{os.str()};
+    }
+    if (src.address != system_name{}) {
+        std::ostringstream os;
+        os << "connection src system endpoint for signal(s) must be";
+        os << " empty address; not ";
+        os << src.address;
+        throw invalid_connection{os.str()};
+    }
+    return signal_channel{
+        to_signal_set(src.ports),
+        dst.address
+    };
+}
+
+auto get_interface_ports(const system_endpoint* end)
+    -> const std::set<port_id>*
+{
+    return (end && (end->address == system_name{}))? &(end->ports): nullptr;
+}
+
 auto make_channel(const unidirectional_connection& conn,
                   const system_name& name,
                   const system& system,
@@ -181,20 +299,14 @@ auto make_channel(const unidirectional_connection& conn,
     if (!src_system && !dst_system) {
         throw invalid_connection{no_system_end_error};
     }
-    auto src_dset = std::optional<std::set<port_id>>{};
-    auto dst_dset = std::optional<std::set<port_id>>{};
-    if (src_system) {
-        validate(*src_system, system, io_type::out);
-        if (src_system->address == system_name{}) {
-            src_dset = src_system->ports;
-        }
-    }
-    if (dst_system) {
-        validate(*dst_system, system, io_type::in);
-        if (dst_system->address == system_name{}) {
-            dst_dset = dst_system->ports;
-        }
-    }
+    const auto src_port_type = src_system
+        ? validate(*src_system, system, io_type::out)
+        : port_type::unknown;
+    const auto dst_port_type = dst_system
+        ? validate(*dst_system, system, io_type::in)
+        : port_type::unknown;
+    const auto src_dset = get_interface_ports(src_system);
+    const auto dst_dset = get_interface_ports(dst_system);
     if (src_dset && dst_dset) {
         // TODO: make a forwarding channel for this case
         std::ostringstream os;
@@ -209,6 +321,18 @@ auto make_channel(const unidirectional_connection& conn,
     }
     if (src_user || dst_user) {
         return pipe_channel{};
+    }
+    if (src_system && dst_system) {
+        if (src_port_type != dst_port_type) {
+            std::ostringstream os;
+            os << "connection between different port types not supported";
+            os << ": src-type=" << int(src_port_type);
+            os << ", dst-type=" << int(dst_port_type);
+            throw invalid_connection{os.str()};
+        }
+        if (src_port_type == port_type::signal) {
+            return make_signal_channel(*src_system, *dst_system);
+        }
     }
     if (src_dset) {
         return make_channel(*src_dset, name,
