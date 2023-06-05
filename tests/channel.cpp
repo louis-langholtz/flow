@@ -110,7 +110,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
     };
     ASSERT_FALSE(empty(sys.ports));
     const auto conn = unidirectional_connection{
-        system_endpoint{"subsys_a"},
+        system_endpoint{"subsys_a", {reference_descriptor{1}}},
         system_endpoint{{}, {reference_descriptor{1}}},
     };
     const auto pconns = std::vector<connection>{
@@ -122,4 +122,37 @@ TEST(make_channel, for_exe_subsys_to_sys)
     pchans.emplace_back(channel{pipe_channel{}});
     EXPECT_NO_THROW(chan = make_channel(conn, name, sys, {}, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<reference_channel>(chan));
+}
+
+TEST(make_channel, signal_channel)
+{
+    const auto exe_name = system_name{"exe"};
+    const auto sig = flow::signals::winch();
+    auto name = flow::system_name{};
+    auto sys = flow::system{
+        system::custom{
+            .subsystems = {{exe_name, {
+                system::executable{},
+                port_map{
+                    {sig, {"", io_type::in}},
+                    stdout_ports_entry,
+                    stderr_ports_entry
+                }
+            }}}
+        },
+        port_map{{sig, {"", io_type::in}}}
+    };
+    auto conn = flow::unidirectional_connection{
+        system_endpoint{{}, {sig}},
+        system_endpoint{exe_name, {sig}},
+    };
+    auto channels = std::vector<channel>{};
+    auto pconns = std::vector<connection>{};
+    auto pchans = std::vector<channel>{};
+    const auto rv = make_channel(conn, name, sys, channels, pconns, pchans);
+    ASSERT_TRUE(std::holds_alternative<signal_channel>(rv));
+    const auto& sc = std::get<signal_channel>(rv);
+    EXPECT_EQ(sc.address, exe_name);
+    ASSERT_EQ(size(sc.signals), 1u);
+    EXPECT_EQ(*sc.signals.begin(), sig);
 }

@@ -310,34 +310,69 @@ auto mkfifo(const file_endpoint& file) -> void
 }
 
 auto send_signal(signal sig,
+                 const instance::custom& info,
+                 std::ostream& diags,
+                 const std::string& name) -> void
+{
+    for (auto&& channel: info.channels) {
+        if (const auto q = std::get_if<signal_channel>(&channel)) {
+            if (q->signals.contains(sig)) {
+                for (auto&& entry: info.children) {
+                    if (entry.first == q->address) {
+                        send_signal(sig, entry.second, diags,
+                                    name + "." + entry.first.get());
+                        return;
+                    }
+                }
+                return;
+            }
+        }
+    }
+    for (auto&& entry: info.children) {
+        send_signal(sig, entry.second, diags,
+                    name + "." + entry.first.get());
+    }
+}
+
+auto send_signal(signal sig,
+                 const instance::forked& info,
+                 std::ostream& diags,
+                 const std::string& name) -> void
+{
+    if (const auto q = std::get_if<owning_process_id>(&(info.state))) {
+        const auto pid = reference_process_id(*q);
+        if ((pid != invalid_process_id) && (pid != no_process_id)) {
+            diags << "sending " << sig << " to ";
+            diags << std::quoted(name);
+            diags << " (";
+            diags << pid;
+            diags << ")\n";
+            if (kill(pid, sig) == -1) {
+                diags << "kill(" << *q;
+                diags << "," << sig;
+                diags << ") failed: " << os_error_code(errno);
+                diags << "\n";
+            }
+        }
+    }
+}
+
+auto send_signal(signal sig,
                  const instance& instance,
                  std::ostream& diags,
                  const std::string& name) -> void
 {
-    if (const auto p = std::get_if<instance::custom>(&instance.info)) {
-        for (auto&& child: p->children) {
-            send_signal(sig, child.second, diags,
-                        name + "." + child.first.get());
+    std::visit(detail::overloaded{
+        [](auto) {
+            throw std::logic_error{"unsupported instance info type"};
+        },
+        [&](const instance::custom& info) {
+            send_signal(sig, info, diags, name);
+        },
+        [&](const instance::forked& info) {
+            send_signal(sig, info, diags, name);
         }
-    }
-    else if (const auto p = std::get_if<instance::forked>(&instance.info)) {
-        if (const auto q = std::get_if<owning_process_id>(&(p->state))) {
-            const auto pid = reference_process_id(*q);
-            if ((pid != invalid_process_id) && (pid != no_process_id)) {
-                diags << "sending " << sig << " to ";
-                diags << std::quoted(name);
-                diags << " (";
-                diags << pid;
-                diags << ")\n";
-                if (kill(pid, sig) == -1) {
-                    diags << "kill(" << *q;
-                    diags << "," << sig;
-                    diags << ") failed: " << os_error_code(errno);
-                    diags << "\n";
-                }
-            }
-        }
-    }
+    }, instance.info);
 }
 
 auto set_signal_handler(signal sig) -> void

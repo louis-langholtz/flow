@@ -71,7 +71,7 @@ static_assert(std::is_nothrow_move_constructible_v<pipe_channel>);
 static_assert(std::is_nothrow_move_assignable_v<pipe_channel>);
 
 auto operator<<(std::ostream& os, pipe_channel::io value)
--> std::ostream&;
+    -> std::ostream&;
 
 auto operator<<(std::ostream& os, const pipe_channel& value) -> std::ostream&;
 

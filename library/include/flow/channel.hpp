@@ -10,6 +10,7 @@
 #include "flow/file_channel.hpp"
 #include "flow/forwarding_channel.hpp"
 #include "flow/pipe_channel.hpp"
+#include "flow/signal_channel.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
@@ -23,6 +24,7 @@ struct reference_channel
         reference_channel,
         file_channel,
         pipe_channel,
+        signal_channel,
         forwarding_channel
     >;
 
