@@ -81,7 +81,7 @@ auto count_alive(const std::set<owning_process_id::impl*>& impls)
 {
     auto count = std::size_t{};
     for (auto&& impl: impls) {
-        const std::lock_guard<decltype(impl->mutex)> lk{impl->mutex};
+        const std::lock_guard lk{impl->mutex};
         if (impl->pid > no_process_id) {
             ++count;
         }
