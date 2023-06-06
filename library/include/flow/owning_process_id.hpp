@@ -12,6 +12,8 @@ namespace flow {
 
 struct owning_process_id
 {
+    struct impl;
+
     static constexpr auto default_process_id = invalid_process_id;
     static constexpr auto default_status = wait_unknown_status{};
 
@@ -43,8 +45,6 @@ struct owning_process_id
     ///   has not yet terminated (possibly because this has no associated
     ///   process).
     [[nodiscard]] auto status() const noexcept -> wait_status;
-
-    struct impl;
 
 private:
     std::experimental::propagate_const<std::unique_ptr<impl>> pimpl;
