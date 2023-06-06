@@ -2,7 +2,8 @@
 #define forwarding_channel_hpp
 
 #include <cstdint> // for std::uintmax_t
-#include <future>
+#include <experimental/propagate_const>
+#include <memory> // for std::unique_ptr
 #include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/descriptor.hpp"
@@ -11,6 +12,8 @@ namespace flow {
 
 struct forwarding_channel
 {
+    struct impl;
+
     struct counters
     {
         std::uintmax_t reads;
@@ -18,39 +21,30 @@ struct forwarding_channel
         std::uintmax_t bytes;
     };
 
-    forwarding_channel() = default;
+    forwarding_channel();
     forwarding_channel(descriptor src_, descriptor dst_);
+    forwarding_channel(const forwarding_channel& other) = delete;
+    forwarding_channel(forwarding_channel&& other) noexcept;
+    ~forwarding_channel();
+    auto operator=(const forwarding_channel& other)
+        -> forwarding_channel& = delete;
+    auto operator=(forwarding_channel&& other) noexcept
+        -> forwarding_channel&;
 
-    [[nodiscard]] constexpr auto source() const noexcept
-        -> reference_descriptor
-    {
-        return to_reference_descriptor(src);
-    }
+    [[nodiscard]] auto source() const noexcept -> reference_descriptor;
 
-    [[nodiscard]] constexpr auto destination() const noexcept
-        -> reference_descriptor
-    {
-        return to_reference_descriptor(dst);
-    }
+    [[nodiscard]] auto destination() const noexcept -> reference_descriptor;
 
-    [[nodiscard]] auto valid() const noexcept -> bool
-    {
-        return forwarder.valid();
-    }
+    [[nodiscard]] auto valid() const noexcept -> bool;
 
-    auto get_result() -> counters
-    {
-        return forwarder.get();
-    }
+    auto get_result() -> counters;
 
 private:
-    descriptor src;
-    descriptor dst;
-    std::future<counters> forwarder; // non-essential part!
+    std::experimental::propagate_const<std::unique_ptr<impl>> pimpl;
 };
 
-constexpr auto operator==(const forwarding_channel& lhs,
-                          const forwarding_channel& rhs) noexcept -> bool
+inline auto operator==(const forwarding_channel& lhs,
+                       const forwarding_channel& rhs) noexcept -> bool
 {
     // Just checks essential parts...
     return (lhs.source() == rhs.source()) &&

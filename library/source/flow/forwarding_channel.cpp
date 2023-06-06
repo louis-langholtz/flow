@@ -1,4 +1,5 @@
 #include <array>
+#include <future>
 #include <sstream> // for std::ostringstream
 
 #include <unistd.h> // for read, write
@@ -47,12 +48,59 @@ auto relay(int from, int to) -> forwarding_channel::counters
 
 }
 
-forwarding_channel::forwarding_channel(descriptor src_, descriptor dst_)
-    : src(std::move(src_)),
-      dst(std::move(dst_)),
-      forwarder(std::async(std::launch::async,
-                           relay, int(source()), int(destination())))
+struct forwarding_channel::impl
 {
+    impl(descriptor src_, descriptor dst_):
+        src{std::move(src_)},
+        dst{std::move(dst_)},
+        forwarder{std::async(std::launch::async,
+                             relay,
+                             int(to_reference_descriptor(src)),
+                             int(to_reference_descriptor(dst)))}
+    {
+        // Intentionally empty.
+    }
+
+    descriptor src;
+    descriptor dst;
+    std::future<counters> forwarder; // non-essential part!
+};
+
+forwarding_channel::forwarding_channel() = default;
+
+forwarding_channel::forwarding_channel(descriptor src_, descriptor dst_)
+    : pimpl{std::make_unique<impl>(std::move(src_), std::move(dst_))}
+{
+}
+
+forwarding_channel::forwarding_channel(forwarding_channel&& other) noexcept =
+    default;
+
+forwarding_channel::~forwarding_channel() = default;
+
+auto forwarding_channel::operator=(forwarding_channel&& other) noexcept
+    -> forwarding_channel& = default;
+
+auto forwarding_channel::source() const noexcept
+    -> reference_descriptor
+{
+    return pimpl? to_reference_descriptor(pimpl->src): descriptors::invalid_id;
+}
+
+auto forwarding_channel::destination() const noexcept
+    -> reference_descriptor
+{
+    return pimpl? to_reference_descriptor(pimpl->dst): descriptors::invalid_id;
+}
+
+auto forwarding_channel::valid() const noexcept -> bool
+{
+    return pimpl? pimpl->forwarder.valid(): false;
+}
+
+auto forwarding_channel::get_result() -> counters
+{
+    return pimpl? pimpl->forwarder.get(): counters{};
 }
 
 auto operator<<(std::ostream& os, const forwarding_channel& value)
