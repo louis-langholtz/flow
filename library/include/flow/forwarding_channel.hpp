@@ -37,6 +37,7 @@ struct forwarding_channel
 
     [[nodiscard]] auto valid() const noexcept -> bool;
 
+    auto get_progress() const -> counters;
     auto get_result() -> counters;
 
 private:
