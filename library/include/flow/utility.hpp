@@ -7,6 +7,7 @@
 #include <set>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "ext/fstream.hpp"
@@ -52,7 +53,7 @@ auto write(std::ostream& os, const std::error_code& ec)
 /// @brief Outputs diagnostics information to the given output stream.
 auto write_diags(instance& object,
                  std::ostream& os,
-                 const std::string& name = {}) -> void;
+                 const std::string_view& name = {}) -> void;
 
 auto find_index(const std::span<const connection>& connections,
                 const connection& look_for)

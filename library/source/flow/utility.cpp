@@ -32,7 +32,7 @@ namespace flow {
 
 namespace {
 
-auto show_diags(std::ostream& os, const std::string& name,
+auto show_diags(std::ostream& os, const std::string_view& name,
                 std::iostream& diags) -> void
 {
     if (diags.rdstate()) {
@@ -215,8 +215,8 @@ auto write(std::ostream& os, const std::error_code& ec)
     return os;
 }
 
-auto write_diags(instance& object, std::ostream& os, const std::string& name)
-    -> void
+auto write_diags(instance& object, std::ostream& os,
+                 const std::string_view& name) -> void
 {
     if (const auto p = std::get_if<instance::forked>(&object.info)) {
         if (!p->diags.is_open()) {
@@ -228,7 +228,7 @@ auto write_diags(instance& object, std::ostream& os, const std::string& name)
     }
     else if (const auto p = std::get_if<instance::custom>(&object.info)) {
         for (auto&& entry: p->children) {
-            const auto full_name = name + "." + entry.first.get();
+            const auto full_name = std::string{name} + "." + entry.first.get();
             write_diags(entry.second, os, full_name);
         }
     }
