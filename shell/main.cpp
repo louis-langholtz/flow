@@ -48,6 +48,8 @@ constexpr auto custom_begin_token = "{";
 constexpr auto custom_end_token = "}";
 constexpr auto connection_separator = '-';
 
+auto sequence = std::size_t{0};
+
 auto make_arguments(int ac, const char*av[]) -> arguments
 {
     auto args = arguments{};
@@ -111,6 +113,30 @@ char *prompt([[maybe_unused]] EditLine *el)
     static auto nl_buf = nl_prefix + shell_name + nl_suffix;
     static auto cl_buf = std::string{shell_name} + "> ";
     return continuation? cl_buf.data(): nl_buf.data();
+}
+
+auto find(const std::map<flow::system_name, flow::system>& map,
+          const char* name) -> const flow::system*
+{
+    auto sname = flow::system_name{};
+    try {
+        sname = flow::system_name{name};
+    }
+    catch (const std::invalid_argument& ex) {
+        return nullptr;
+    }
+    const auto entry = map.find(sname);
+    if (entry == map.end()) {
+        return nullptr;
+    }
+    return &entry->second;
+}
+
+auto find(const system_stack_type& stack, const char* name)
+    -> const flow::system*
+{
+    const auto& custom = std::get<flow::system::custom>(stack.top().get().info);
+    return find(custom.subsystems, name);
 }
 
 auto to_int(const std::string_view& view)
@@ -264,6 +290,47 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
         if (p->subsystems.erase(arg_basis.remaining.front()) == 0) {
             std::cerr << arg << " not found\n";
         }
+    }
+}
+
+auto do_run(flow::system& context, flow::instance::custom& instance,
+            const string_span& args) -> void
+{
+    const auto nargs = args.subspan(1u);
+    for (auto&& arg: nargs) {
+        if (arg == help_argument) {
+            std::cout << "runs the specified system definition.\n";
+            return;
+        }
+    }
+    const auto& custom = std::get<flow::system::custom>(context.info);
+    const auto found = find(custom.subsystems, args[1].c_str());
+    if (!found) {
+        std::cerr << "no such system as ";
+        std::cerr << std::quoted(args[1]);
+        std::cerr << '\n';
+        return;
+    }
+    auto tsys = *found;
+    const auto av = data(nargs);
+    const auto ac = size(nargs);
+    if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
+        std::copy(av, av + ac, std::back_inserter(p->arguments));
+    }
+    const auto name = std::string{av[0]} + "_" + std::to_string(sequence);
+    try {
+        instance.children[name] = instantiate(tsys, std::cerr,
+                                              flow::instantiate_options{
+            .ports = context.ports,
+            .environment = custom.environment
+        });
+    }
+    catch (const std::invalid_argument& ex) {
+        std::cerr << "cannot instantiate ";
+        std::cerr << std::quoted(av[0]);
+        std::cerr << ": ";
+        std::cerr << ex.what();
+        std::cerr << "\n";
     }
 }
 
@@ -726,7 +793,7 @@ auto do_show_instances(flow::instance& instance, const string_span& args)
             return;
         }
     }
-    if (instances.empty()) {
+    if (empty(instances)) {
         std::cout << "empty.\n";
         return;
     }
@@ -969,29 +1036,6 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
     stack.pop();
 }
 
-auto find(std::map<flow::system_name, flow::system>& map, const char* name)
-    -> flow::system*
-{
-    auto sname = flow::system_name{};
-    try {
-        sname = flow::system_name{name};
-    }
-    catch (const std::invalid_argument& ex) {
-        return nullptr;
-    }
-    const auto entry = map.find(sname);
-    if (entry == map.end()) {
-        return nullptr;
-    }
-    return &entry->second;
-}
-
-auto find(const system_stack_type& stack, const char* name) -> flow::system*
-{
-    auto& custom = std::get<flow::system::custom>(stack.top().get().info);
-    return find(custom.subsystems, name);
-}
-
 auto run(const cmd_handler& cmd, const string_span& args) -> void
 {
     try {
@@ -1048,7 +1092,6 @@ auto main(int argc, const char * argv[]) -> int
     auto instance = flow::instance{flow::instance::custom{}};
     auto do_loop = true;
     auto hist_size = 100;
-    auto sequence = std::size_t{0};
 
     // For example of using libedit, see: https://tinyurl.com/3ez9utzc
     HistEvent ev{};
@@ -1080,6 +1123,11 @@ auto main(int argc, const char * argv[]) -> int
     };
     const cmd_table sys_cmds{
         {"", show_sys_lambda},
+        {"run", [&](const string_span& args){
+            do_run(system_stack.top().get(),
+                   std::get<flow::instance::custom>(instance.info),
+                   args);
+        }},
         {"set", [&](const string_span& args){
             do_set_system(system_stack.top().get(), args);
         }},
@@ -1087,6 +1135,17 @@ auto main(int argc, const char * argv[]) -> int
         {"unset", [&](const string_span& args){
             do_unset_system(system_stack.top().get(), args);
         }},
+    };
+
+    const auto show_inst_lambda = [&](const string_span& args){
+        do_show_instances(instance, args);
+    };
+    const cmd_table inst_cmds{
+        {"", show_inst_lambda},
+        {"show", show_inst_lambda},
+        {"wait", [&](const string_span& args){
+            do_wait(instance, args);
+        }}
     };
 
     const auto show_conns_lambda = [&](const string_span& args){
@@ -1149,17 +1208,14 @@ auto main(int argc, const char * argv[]) -> int
         {"env", [&](const string_span& args){
             do_cmds(env_cmds, args.subspan(1u));
         }},
-        {"show-instances", [&](const string_span& args){
-            do_show_instances(instance, args);
+        {"instances", [&](const string_span& args){
+            do_cmds(inst_cmds, args.subspan(1u));
         }},
         {"systems", [&](const string_span& args){
             do_cmds(sys_cmds, args.subspan(1u));
         }},
         {"connections", [&](const string_span& args){
             do_cmds(conn_cmds, args.subspan(1u));
-        }},
-        {"wait", [&](const string_span& args){
-            do_wait(instance, args);
         }},
         {"push", [&](const string_span& args){
             do_push(system_stack, args);
@@ -1216,25 +1272,19 @@ auto main(int argc, const char * argv[]) -> int
             run(it->second, make_arguments(ac, av));
         }
         else if (const auto found = find(system_stack, av[0])) {
-            auto& custom = std::get<flow::system::custom>(system_stack.top().get().info);
+            const auto& custom = std::get<flow::system::custom>(system_stack.top().get().info);
             auto tsys = *found;
             if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
-                if (ac > 1) {
-                    std::copy(av, av + ac, std::back_inserter(p->arguments));
-                }
+                std::copy(av, av + ac, std::back_inserter(p->arguments));
             }
             const auto name = std::string{av[0]} + ((ac > 1)? "+": "-") +
                 std::to_string(sequence);
+            auto obj = flow::instance{};
             try {
-                auto obj = instantiate(tsys, std::cerr, flow::instantiate_options{
+                obj = instantiate(tsys, std::cerr, flow::instantiate_options{
                     .ports = system_stack.top().get().ports,
                     .environment = custom.environment
                 });
-                const auto results = wait(obj);
-                for (auto&& result: results) {
-                    std::cout << result << "\n";
-                }
-                write_diags(obj, std::cerr, name);
             }
             catch (const std::invalid_argument& ex) {
                 std::cerr << "cannot instantiate ";
@@ -1243,6 +1293,11 @@ auto main(int argc, const char * argv[]) -> int
                 std::cerr << ex.what();
                 std::cerr << "\n";
             }
+            const auto results = wait(obj);
+            for (auto&& result: results) {
+                std::cout << result << "\n";
+            }
+            write_diags(obj, std::cerr, name);
         }
         else if (el_parse(el.get(), ac, av) == -1) {
             std::cerr << "unrecognized command " << av[0] << "\n";
