@@ -48,10 +48,28 @@ constexpr auto custom_begin_token = "{";
 constexpr auto custom_end_token = "}";
 constexpr auto connection_separator = '-';
 
-auto sequence = std::size_t{0};
+auto next_sequence() -> std::size_t
+{
+    static auto sequence = std::size_t{0};
+    return ++sequence;
+}
 
+auto bg_job_name(const std::string_view& cmd) -> std::string
+{
+    auto result = std::string{cmd};
+    result += '_';
+    result += std::to_string(next_sequence());
+    return result;
+}
+
+/// @brief Makes the stated return type from given argument count and vector.
+/// @param[in] ac Argument count of 1 or more.
+/// @param[in] av Non-null argument vector.
+/// @pre @c ac is 1 or greater and @c av is non-null.
 auto make_arguments(int ac, const char*av[]) -> arguments
 {
+    assert(ac > 0);
+    assert(av != nullptr);
     auto args = arguments{};
     for (auto i = 0; i < ac; ++i) {
         args.emplace_back(av[i]);
@@ -116,7 +134,7 @@ char *prompt([[maybe_unused]] EditLine *el)
 }
 
 auto find(const std::map<flow::system_name, flow::system>& map,
-          const char* name) -> const flow::system*
+          const std::string_view& name) -> const flow::system*
 {
     auto sname = flow::system_name{};
     try {
@@ -132,11 +150,21 @@ auto find(const std::map<flow::system_name, flow::system>& map,
     return &entry->second;
 }
 
-auto find(const system_stack_type& stack, const char* name)
+auto find(const system_stack_type& stack, const std::string_view& name)
     -> const flow::system*
 {
     const auto& custom = std::get<flow::system::custom>(stack.top().get().info);
     return find(custom.subsystems, name);
+}
+
+auto update(const flow::system& system, const string_span& args) -> flow::system
+{
+    flow::system tsys = system;
+    if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
+        std::copy(data(args), data(args) + size(args),
+                  std::back_inserter(p->arguments));
+    }
+    return tsys;
 }
 
 auto to_int(const std::string_view& view)
@@ -293,45 +321,76 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto do_run(flow::system& context, flow::instance::custom& instance,
-            const string_span& args) -> void
+auto get_instantiate_options(const flow::system& context)
 {
-    const auto nargs = args.subspan(1u);
-    for (auto&& arg: nargs) {
-        if (arg == help_argument) {
-            std::cout << "runs the specified system definition.\n";
-            return;
-        }
-    }
-    const auto& custom = std::get<flow::system::custom>(context.info);
-    const auto found = find(custom.subsystems, args[1].c_str());
-    if (!found) {
-        std::cerr << "no such system as ";
-        std::cerr << std::quoted(args[1]);
-        std::cerr << '\n';
-        return;
-    }
-    auto tsys = *found;
-    const auto av = data(nargs);
-    const auto ac = size(nargs);
-    if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
-        std::copy(av, av + ac, std::back_inserter(p->arguments));
-    }
-    const auto name = std::string{av[0]} + "_" + std::to_string(sequence);
+    return flow::instantiate_options{
+        .ports = context.ports,
+        .environment = std::get<flow::system::custom>(context.info).environment
+    };
+}
+
+auto background(const std::string_view& cmd,
+                flow::instance::custom& instance,
+                const flow::system& tsys,
+                const flow::instantiate_options& opts)
+{
     try {
-        instance.children[name] = instantiate(tsys, std::cerr,
-                                              flow::instantiate_options{
-            .ports = context.ports,
-            .environment = custom.environment
-        });
+        instance.children[cmd] = instantiate(tsys, std::cerr, opts);
     }
     catch (const std::invalid_argument& ex) {
         std::cerr << "cannot instantiate ";
-        std::cerr << std::quoted(av[0]);
+        std::cerr << std::quoted(cmd);
         std::cerr << ": ";
         std::cerr << ex.what();
         std::cerr << "\n";
     }
+}
+
+auto foreground(const std::string_view& cmd,
+                const flow::system& tsys,
+                const flow::instantiate_options& opts)
+{
+    auto obj = flow::instance{};
+    try {
+        obj = instantiate(tsys, std::cerr, opts);
+    }
+    catch (const std::invalid_argument& ex) {
+        std::cerr << "cannot instantiate ";
+        std::cerr << std::quoted(cmd);
+        std::cerr << ": ";
+        std::cerr << ex.what();
+        std::cerr << "\n";
+    }
+    const auto results = wait(obj);
+    for (auto&& result: results) {
+        std::cout << result << "\n";
+    }
+    write_diags(obj, std::cerr, cmd);
+}
+
+auto do_foreground(const flow::system& context,
+                   const string_span& args)
+{
+    const auto nargs = args.subspan(1u);
+    for (auto&& arg: nargs) {
+        if (arg == help_argument) {
+            std::cout << "runs specified system definition in foreground.\n";
+            return;
+        }
+    }
+    const auto& custom = std::get<flow::system::custom>(context.info);
+    const auto found = find(custom.subsystems, nargs[0].c_str());
+    if (!found) {
+        std::cerr << "no such system as ";
+        std::cerr << std::quoted(nargs[0]);
+        std::cerr << '\n';
+        return;
+    }
+    const auto tsys = update(*found, nargs);
+    foreground(nargs[0], tsys, {
+        .ports = context.ports,
+        .environment = custom.environment
+    });
 }
 
 auto do_set_system(flow::system& context, const string_span& args) -> void
@@ -1124,9 +1183,7 @@ auto main(int argc, const char * argv[]) -> int
     const cmd_table sys_cmds{
         {"", show_sys_lambda},
         {"run", [&](const string_span& args){
-            do_run(system_stack.top().get(),
-                   std::get<flow::instance::custom>(instance.info),
-                   args);
+            do_foreground(system_stack.top().get(), args);
         }},
         {"set", [&](const string_span& args){
             do_set_system(system_stack.top().get(), args);
@@ -1268,36 +1325,26 @@ auto main(int argc, const char * argv[]) -> int
             std::cerr << "unexpected argument count of " << ac << "\n";
             continue;
         }
-        if (const auto it = cmds.find(av[0]); it != cmds.end()) {
-            run(it->second, make_arguments(ac, av));
+        if (!av) {
+            std::cerr << "unexpected null argument vector\n";
+            continue;
         }
-        else if (const auto found = find(system_stack, av[0])) {
-            const auto& custom = std::get<flow::system::custom>(system_stack.top().get().info);
-            auto tsys = *found;
-            if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
-                std::copy(av, av + ac, std::back_inserter(p->arguments));
+        auto args = make_arguments(ac, av);
+        if (const auto it = cmds.find(args[0]); it != cmds.end()) {
+            run(it->second, args);
+        }
+        else if (const auto found = find(system_stack, args[0])) {
+            const auto opts = get_instantiate_options(system_stack.top().get());
+            if (args.back() == "&") {
+                args.pop_back();
+                background(bg_job_name(args[0]),
+                           std::get<flow::instance::custom>(instance.info),
+                           update(*found, args),
+                           opts);
             }
-            const auto name = std::string{av[0]} + ((ac > 1)? "+": "-") +
-                std::to_string(sequence);
-            auto obj = flow::instance{};
-            try {
-                obj = instantiate(tsys, std::cerr, flow::instantiate_options{
-                    .ports = system_stack.top().get().ports,
-                    .environment = custom.environment
-                });
+            else {
+                foreground(args[0], update(*found, args), opts);
             }
-            catch (const std::invalid_argument& ex) {
-                std::cerr << "cannot instantiate ";
-                std::cerr << std::quoted(av[0]);
-                std::cerr << ": ";
-                std::cerr << ex.what();
-                std::cerr << "\n";
-            }
-            const auto results = wait(obj);
-            for (auto&& result: results) {
-                std::cout << result << "\n";
-            }
-            write_diags(obj, std::cerr, name);
         }
         else if (el_parse(el.get(), ac, av) == -1) {
             std::cerr << "unrecognized command " << av[0] << "\n";
