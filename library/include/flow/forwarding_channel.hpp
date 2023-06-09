@@ -52,6 +52,8 @@ inline auto operator==(const forwarding_channel& lhs,
            (lhs.destination() == rhs.destination());
 }
 
+auto operator<<(std::ostream& os, const forwarding_channel::counters& value)
+    -> std::ostream&;
 auto operator<<(std::ostream& os, const forwarding_channel& value)
     -> std::ostream&;
 
