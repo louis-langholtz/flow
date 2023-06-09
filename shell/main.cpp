@@ -40,6 +40,7 @@ const auto src_prefix = std::string{"--src="};
 const auto dst_prefix = std::string{"--dst="};
 const auto help_argument = std::string{"--help"};
 const auto usage_argument = std::string{"--usage"};
+const auto background_argument = std::string{"&"};
 
 constexpr auto emacs_editor_str = "emacs";
 constexpr auto vi_editor_str = "vi";
@@ -63,13 +64,12 @@ auto bg_job_name(const std::string_view& cmd) -> std::string
 }
 
 /// @brief Makes the stated return type from given argument count and vector.
-/// @param[in] ac Argument count of 1 or more.
-/// @param[in] av Non-null argument vector.
-/// @pre @c ac is 1 or greater and @c av is non-null.
+/// @param[in] ac Argument count.
+/// @param[in] av Argument vector.
+/// @pre @c av is non-null if @c ac is 1 or more.
 auto make_arguments(int ac, const char*av[]) -> arguments
 {
-    assert(ac > 0);
-    assert(av != nullptr);
+    assert(ac <= 0 || av);
     auto args = arguments{};
     for (auto i = 0; i < ac; ++i) {
         args.emplace_back(av[i]);
@@ -825,7 +825,15 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
             std::cout << "waits for an instance.\n";
             return;
         }
-        const auto name = flow::system_name{arg};
+        auto name = flow::system_name{};
+        try {
+            name = flow::system_name{arg};
+        }
+        catch (const std::invalid_argument& ex) {
+            std::cerr << std::quoted(arg);
+            std::cerr << ": not a valid system name, skipping.";
+            continue;
+        }
         const auto it = instances.find(name);
         if (it == instances.end()) {
             std::cerr << "no such instance as ";
@@ -845,19 +853,38 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
 auto do_show_instances(flow::instance& instance, const string_span& args)
     -> void
 {
-    auto& instances = std::get<flow::instance::custom>(instance.info).children;
+    const auto& custom = std::get<flow::instance::custom>(instance.info);
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "shows a listing of instantiations.\n";
             return;
         }
     }
-    if (empty(instances)) {
-        std::cout << "empty.\n";
-        return;
+    if (empty(custom.children)) {
+        std::cout << "no instances.\n";
     }
-    for (auto&& entry: instances) {
-        std::cout << entry.first << assignment_token << entry.second << "\n";
+    else {
+        std::cout << size(custom.children) << " instances:\n";
+        const auto opts = flow::detail::indenting_ostreambuf_options{
+            .indent = 2
+        };
+        const flow::detail::indenting_ostreambuf indent{std::cout, opts};
+        for (auto&& entry: custom.children) {
+            std::cout << entry.first << assignment_token << entry.second << "\n";
+        }
+    }
+    if (empty(custom.channels)) {
+        std::cout << "no channels.\n";
+    }
+    else {
+        std::cout << size(custom.channels) << " channels:\n";
+        const auto opts = flow::detail::indenting_ostreambuf_options{
+            .indent = 2
+        };
+        const flow::detail::indenting_ostreambuf indent{std::cout, opts};
+        for (auto&& channel: custom.channels) {
+            std::cout << channel << "\n";
+        }
     }
 }
 
@@ -1335,7 +1362,7 @@ auto main(int argc, const char * argv[]) -> int
         }
         else if (const auto found = find(system_stack, args[0])) {
             const auto opts = get_instantiate_options(system_stack.top().get());
-            if (args.back() == "&") {
+            if (args.back() == background_argument) {
                 args.pop_back();
                 background(bg_job_name(args[0]),
                            std::get<flow::instance::custom>(instance.info),
