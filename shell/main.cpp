@@ -150,19 +150,39 @@ auto find(const std::map<flow::system_name, flow::system>& map,
     return &entry->second;
 }
 
-auto find(const system_stack_type& stack, const std::string_view& name)
+auto find(const system_stack_type& stack, const arguments& args)
     -> const flow::system*
 {
     const auto& custom = std::get<flow::system::custom>(stack.top().get().info);
-    return find(custom.subsystems, name);
+    for (auto&& entry: custom.subsystems) {
+        const auto& sub = entry.second;
+        if (const auto p = std::get_if<flow::system::executable>(&sub.info)) {
+            if (p->arguments == args) {
+                return &sub;
+            }
+        }
+    }
+    if (const auto found = find(custom.subsystems, args[0])) {
+        return found;
+    }
+    return nullptr;
 }
 
 auto update(const flow::system& system, const string_span& args) -> flow::system
 {
     flow::system tsys = system;
     if (const auto p = std::get_if<flow::system::executable>(&tsys.info)) {
-        std::copy(data(args), data(args) + size(args),
-                  std::back_inserter(p->arguments));
+        if (size(args) > 1u) {
+            const auto cmd = empty(p->arguments)
+                ? p->file.native()
+                : p->arguments[0];
+            p->arguments.clear();
+            std::copy(data(args), data(args) + size(args),
+                      std::back_inserter(p->arguments));
+            if (!empty(cmd)) {
+                p->arguments[0] = cmd;
+            }
+        }
     }
     return tsys;
 }
@@ -329,13 +349,13 @@ auto get_instantiate_options(const flow::system& context)
     };
 }
 
-auto background(const std::string_view& cmd,
-                flow::instance::custom& instance,
-                const flow::system& tsys,
-                const flow::instantiate_options& opts)
+auto instantiate(const std::string_view& cmd,
+                 const flow::system& tsys,
+                 const flow::instantiate_options& opts)
+    -> std::optional<flow::instance>
 {
     try {
-        instance.children[cmd] = instantiate(tsys, std::cerr, opts);
+        return {instantiate(tsys, std::cerr, opts)};
     }
     catch (const std::invalid_argument& ex) {
         std::cerr << "cannot instantiate ";
@@ -344,32 +364,24 @@ auto background(const std::string_view& cmd,
         std::cerr << ex.what();
         std::cerr << "\n";
     }
+    return {};
 }
 
 auto foreground(const std::string_view& cmd,
                 const flow::system& tsys,
                 const flow::instantiate_options& opts)
 {
-    auto obj = flow::instance{};
-    try {
-        obj = instantiate(tsys, std::cerr, opts);
+    if (auto obj = instantiate(cmd, tsys, opts)) {
+        const auto results = wait(*obj);
+        for (auto&& result: results) {
+            std::cout << result << "\n";
+        }
+        write_diags(*obj, std::cerr, cmd);
     }
-    catch (const std::invalid_argument& ex) {
-        std::cerr << "cannot instantiate ";
-        std::cerr << std::quoted(cmd);
-        std::cerr << ": ";
-        std::cerr << ex.what();
-        std::cerr << "\n";
-    }
-    const auto results = wait(obj);
-    for (auto&& result: results) {
-        std::cout << result << "\n";
-    }
-    write_diags(obj, std::cerr, cmd);
 }
 
-auto do_foreground(const flow::system& context,
-                   const string_span& args)
+auto do_foreground(const flow::system& context, const string_span& args)
+    -> void
 {
     const auto nargs = args.subspan(1u);
     for (auto&& arg: nargs) {
@@ -386,11 +398,64 @@ auto do_foreground(const flow::system& context,
         std::cerr << '\n';
         return;
     }
-    const auto tsys = update(*found, nargs);
-    foreground(nargs[0], tsys, {
+    foreground(nargs[0], update(*found, nargs), {
         .ports = context.ports,
         .environment = custom.environment
     });
+}
+
+auto do_rename(flow::system& context, const string_span& args) -> void
+{
+    const auto nargs = args.subspan(1u);
+    for (auto&& arg: nargs) {
+        if (arg == help_argument) {
+            std::cout << "renames specified system definition to new name.\n";
+            return;
+        }
+    }
+    if (size(nargs) != 2u) {
+        std::cerr << "usage: ";
+        std::cerr << args[0];
+        std::cerr << " [" << help_argument;
+        std::cerr << "] <old-name> <new-name>\n";
+        return;
+    }
+    auto old_name = flow::system_name{};
+    try {
+        old_name = flow::system_name{nargs[0]};
+    }
+    catch (const std::invalid_argument& ex) {
+        std::cerr << std::quoted(nargs[0]);
+        std::cerr << " invalid: " << ex.what();
+        return;
+    }
+    auto new_name = flow::system_name{};
+    try {
+        new_name = flow::system_name{nargs[1]};
+    }
+    catch (const std::invalid_argument& ex) {
+        std::cerr << std::quoted(nargs[1]);
+        std::cerr << " invalid: " << ex.what();
+        return;
+    }
+    auto& custom = std::get<flow::system::custom>(context.info);
+    auto subsystems = custom.subsystems;
+    auto nh = subsystems.extract(old_name);
+    if (nh.empty()) {
+        std::cerr << "no such subsystem as ";
+        std::cerr << old_name;
+        std::cerr << '\n';
+        return;
+    }
+    nh.key() = new_name;
+    const auto result = subsystems.insert(std::move(nh));
+    if (!result.inserted) {
+        std::cerr << "unable to rename system to ";
+        std::cerr << new_name;
+        std::cerr << "\n";
+        return;
+    }
+    custom.subsystems = std::move(subsystems);
 }
 
 auto do_set_system(flow::system& context, const string_span& args) -> void
@@ -1209,6 +1274,9 @@ auto main(int argc, const char * argv[]) -> int
     };
     const cmd_table sys_cmds{
         {"", show_sys_lambda},
+        {"rename", [&](const string_span& args){
+            do_rename(system_stack.top().get(), args);
+        }},
         {"run", [&](const string_span& args){
             do_foreground(system_stack.top().get(), args);
         }},
@@ -1357,20 +1425,32 @@ auto main(int argc, const char * argv[]) -> int
             continue;
         }
         auto args = make_arguments(ac, av);
+        const auto bg_requested = args.back() == background_argument;
+        if (bg_requested) {
+            args.pop_back();
+        }
         if (const auto it = cmds.find(args[0]); it != cmds.end()) {
             run(it->second, args);
         }
-        else if (const auto found = find(system_stack, args[0])) {
-            const auto opts = get_instantiate_options(system_stack.top().get());
-            if (args.back() == background_argument) {
-                args.pop_back();
-                background(bg_job_name(args[0]),
-                           std::get<flow::instance::custom>(instance.info),
-                           update(*found, args),
-                           opts);
+        else if (const auto found = find(system_stack, args)) {
+            const auto system_name = std::string{args[0]};
+            auto& context = system_stack.top().get();
+            const auto opts = get_instantiate_options(context);
+            auto derived_name = system_name;
+            const auto tsys = update(*found, args);
+            if (tsys != *found) {
+                auto& custom = std::get<flow::system::custom>(context.info);
+                derived_name = bg_job_name(args[0]);
+                custom.subsystems.emplace(derived_name, tsys);
+            }
+            if (bg_requested) {
+                if (auto obj = instantiate(derived_name, tsys, opts)) {
+                    auto& ci = std::get<flow::instance::custom>(instance.info);
+                    ci.children.emplace(derived_name, std::move(*obj));
+                }
             }
             else {
-                foreground(args[0], update(*found, args), opts);
+                foreground(derived_name, tsys, opts);
             }
         }
         else if (el_parse(el.get(), ac, av) == -1) {
