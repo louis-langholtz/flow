@@ -118,13 +118,24 @@ auto forwarding_channel::get_result() -> counters
     return pimpl? pimpl->forwarder.get(): counters{};
 }
 
+auto operator<<(std::ostream& os, const forwarding_channel::counters& value)
+    -> std::ostream&
+{
+    os << "{";
+    os << "reads=" << value.reads;
+    os << ",writes=" << value.writes;
+    os << ",bytes=" << value.bytes;
+    os << "}";
+    return os;
+}
+
 auto operator<<(std::ostream& os, const forwarding_channel& value)
     -> std::ostream&
 {
     os << "forwarding_channel{";
-    os << value.source();
-    os << ",";
-    os << value.destination();
+    os << "from=" << value.source();
+    os << ",to=" << value.destination();
+    os << ",progress=" << value.get_progress();
     os << "}";
     return os;
 }
