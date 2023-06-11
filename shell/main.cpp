@@ -367,15 +367,36 @@ auto instantiate(const std::string_view& cmd,
     return {};
 }
 
+auto print(const std::span<const flow::wait_result>& results,
+           bool verbose = false) -> void
+{
+    for (auto&& result: results) {
+        if (!std::holds_alternative<flow::info_wait_result>(result)) {
+            std::cerr << result << "\n";
+            continue;
+        }
+        const auto& info = std::get<flow::info_wait_result>(result);
+        if (!std::holds_alternative<flow::wait_exit_status>(info.status)) {
+            std::cerr << result << "\n";
+            continue;
+        }
+        const auto& stat = std::get<flow::wait_exit_status>(info.status);
+        if (stat.value != 0) {
+            std::cerr << result << "\n";
+            continue;
+        }
+        if (verbose) {
+            std::cout << result << "\n";
+        }
+    }
+}
+
 auto foreground(const std::string_view& cmd,
                 const flow::system& tsys,
                 const flow::instantiate_options& opts)
 {
     if (auto obj = instantiate(cmd, tsys, opts)) {
-        const auto results = wait(*obj);
-        for (auto&& result: results) {
-            std::cout << result << "\n";
-        }
+        print(wait(*obj));
         write_diags(*obj, std::cerr, cmd);
     }
 }
@@ -907,9 +928,7 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
             continue;
         }
         const auto results = wait(it->second);
-        for (auto&& result: results) {
-            std::cout << result << "\n";
-        }
+        print(results, true);
         write_diags(it->second, std::cerr, arg);
         instances.erase(it);
     }

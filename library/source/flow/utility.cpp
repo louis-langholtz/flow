@@ -52,7 +52,9 @@ auto show_diags(std::ostream& os, const std::string_view& name,
         os << "\n";
         return;
     case 0:
+#if 0
         os << "Diags are empty for " << std::quoted(name) << "\n";
+#endif
         return;
     default:
         break;
@@ -81,14 +83,16 @@ auto sigsafe_sigset() noexcept -> volatile std::atomic<std::uint64_t>&
     return value;
 }
 
-auto sigaction_cb(int sig, siginfo_t *info, void * /*ucontext*/) -> void
+auto sigaction_cb(int sig, siginfo_t* /*info*/, void* /*ucontext*/) -> void
 {
     ++sigsafe_counter();
     sigsafe_sigset_put(sig);
     // TODO: remove the following...
+#if 0
     const auto sender_pid = info? info->si_pid: -1;
     std::cerr << ::getpid();
     std::cerr << " caught " << sig << ", from " << sender_pid << "\n";
+#endif
 }
 
 auto kill(const reference_process_id& pid, signal sig) -> int
