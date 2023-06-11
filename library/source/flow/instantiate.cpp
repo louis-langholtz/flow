@@ -785,7 +785,10 @@ auto instantiate(const system& system,
         for (auto&& entry: system.ports) {
             const auto look_for = system_endpoint{{}, entry.first};
             if (!find_index(p->connections, look_for)) {
-                throw invalid_port_map{"enclosing endpoint not connected"};
+                std::ostringstream os;
+                os << look_for;
+                os << ": enclosing endpoint not connected";
+                throw invalid_port_map{os.str()};
             }
         }
         info.channels.reserve(size(p->connections));
