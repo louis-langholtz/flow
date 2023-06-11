@@ -11,19 +11,22 @@ the focus is on data moving through them.
 
 See the references section below to find out more about data-flow in general.
 
-At present, the project uses POSIX descriptors and signals to implement the flow of data,
-and applications having well known descriptors and signals to implement underlying leaf execution units.
-As abstractions, these conveniently fit the data flow model and when instantiated execution is _asynchronous_.
-See the [system.hpp](library/include/flow/system.hpp) header file for specifics on how systems can be designed in C++.
+At present, the project uses POSIX descriptors and signals to implement the flow
+of data, and applications having well known descriptors and signals to implement
+underlying leaf execution units. As abstractions, these conveniently fit the
+data flow model and when instantiated execution is _asynchronous_.
+See the [system.hpp](library/include/flow/system.hpp) header file for specifics
+on how systems can be designed in C++.
 
-At a conceptual design level, there are three types of things to think about: ports, connections, and systems.
-Ports define data inputs or outputs. Connections define the binding together of output ports with input ports.
-Systems meanwhile encapsulate implementations taking the data from its input ports,
-processing that data, and then outputting resulting data to its output ports.
-These implementations can be executable programs,
-or recursively definable containers of subsystems connected via connections to each other's ports.
-When systems are run, or _instantiated_, they're transformed into: instances, and channels.
-Instances and channels exist until the instances exit.
+At a conceptual design level, there are three types of things to think about:
+ports, connections, and systems. Ports define data inputs or outputs.
+Connections define the binding together of output ports with input ports.
+Systems meanwhile encapsulate implementations taking the data from its input
+ports, processing that data, and then outputting resulting data to its output
+ports. These implementations can be executable programs, or recursively
+definable containers of subsystems connected via connections to each other's
+ports. When systems are run, or _instantiated_, they're transformed into:
+instances, and channels. Instances and channels exist until the instances exit.
 
 ## Why?
 
@@ -34,8 +37,8 @@ Additionally, it has benefits that are more attractive than ever, like:
 
 ## How?
 
-Exactly how the project can be acquired, built, and run will depend on things like
-having requirements and which components specifically you want to use.
+Exactly how the project can be acquired, built, and run will depend on things
+like having requirements and which components specifically you want to use.
 Generally speaking, the following instructions hopefully suffice...
 
 ### Have Requirements
@@ -44,15 +47,18 @@ Generally speaking, the following instructions hopefully suffice...
 - `git` command line tool.
 - Compiler supporting the C++20 standard (or newer).
 - CMake version 3.16.3 or newer command line tool.
-- For the *shell* application, access to the _editline_ "line editor and history library".
+- For the *shell* application, access to the _editline_
+  "line editor and history library".
 - For the *tests* application, access to https://github.com/google/googletest.
 
 ### Download Project Code
 
 Assuming:
-- You want to use the project's name of `flow` as the directory name under which to store the project.
+- You want to use the project's name of `flow` as the directory name under which
+  to store the project.
 
-From a terminal that's in the directory you want the `flow` sub-directory to appear in, run the following:
+From a terminal that's in the directory you want the `flow` sub-directory to
+appear in, run the following:
 1. `git clone https://github.com/louis-langholtz/flow.git`
 
 ### Build It
@@ -63,7 +69,8 @@ From a terminal that's in the directory you want the `flow` sub-directory to app
   cmake -S flow -B flow-build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DFLOW_BUILD_SHELL=ON -DFLOW_BUILD_UNITTESTS=ON
   cmake --build flow-build
   ```
-- Alternatively, or to find out more about each component (including some usage suggestions), see:
+- Alternatively, or to find out more about each component (including some usage
+  suggestions), see:
   - [The library component README.md](library/README.md).
   - [The shell application component README.md](shell/README.md).
   - [The tests application component README.md](tests/README.md).
