@@ -1046,7 +1046,7 @@ auto do_ports(flow::port_map& map, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "prints the I/O ports table.\n";
+            std::cout << "prints the I/O ports of the current custom system.\n";
             return;
         }
     }
@@ -1103,13 +1103,25 @@ auto do_editor(edit_line_ptr& el, const string_span& args) -> void
 
 auto do_help(const cmd_table& cmds, const string_span& args) -> void
 {
-    if (!empty(args)) {
+    using strings = std::vector<std::string>;
+    if (size(args) > 1u) {
         for (auto&& arg: args.subspan(1u)) {
             if (arg == help_argument) {
                 std::cout << "provides help on builtin flow commands.\n";
                 return;
             }
+            const auto found = cmds.find(arg);
+            if (found == cmds.end()) {
+                std::cerr << std::quoted(arg);
+                std::cerr << ": unknown command, skipping\n";
+                continue;
+            }
+            std::cout << found->first;
+            std::cout << ": ";
+            const auto cargs = strings{found->first, help_argument};
+            found->second(cargs);
         }
+        return;
     }
     auto default_hash_code = std::size_t{};
     for (auto&& entry: cmds) {
@@ -1122,9 +1134,8 @@ auto do_help(const cmd_table& cmds, const string_span& args) -> void
             std::cout << " (default)";
         }
         std::cout << ": ";
-        using strings = std::vector<std::string>;
         const auto cargs = strings{entry.first, help_argument};
-        (cmds.at(entry.first))(cargs);
+        entry.second(cargs);
     }
 }
 
@@ -1227,7 +1238,7 @@ auto run(const cmd_handler& cmd, const string_span& args) -> void
 
 auto do_cmds(const cmd_table& cmds, const string_span& args) -> void
 {
-    if (!empty(args) && args[0] == help_argument) {
+    if (!empty(args) && (args[0] == help_argument)) {
         std::cout << "\n";
         auto opts = flow::detail::indenting_ostreambuf_options{
             .indent = 2
