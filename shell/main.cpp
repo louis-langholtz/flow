@@ -669,13 +669,27 @@ auto do_show_connections(const flow::system& context, const string_span& args)
     }
 }
 
-auto do_remove_connection(flow::system& context, const string_span& args) -> void
+auto do_remove_connections(flow::system& context, const string_span& args)
+    -> void
 {
     auto src_str = std::string{};
     auto dst_str = std::string{};
+    auto nconnects = 0;
+    const auto usage = [&](std::ostream& os){
+        os << "  usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument << "|" << usage_argument << "|";
+        os << "<lhs_endpoint>-<rhs_endpoint>...";
+        os << '\n';
+    };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "removes connections between endpoints within a system.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
         if (arg.starts_with(src_prefix)) {
@@ -686,6 +700,54 @@ auto do_remove_connection(flow::system& context, const string_span& args) -> voi
             dst_str = arg.substr(dst_prefix.size());
             continue;
         }
+        if (arg.starts_with("-")) {
+            std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
+            continue;
+        }
+        const auto found = arg.find(connection_separator);
+        if (found == arg.npos) {
+            std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
+            continue;
+        }
+        const auto lhs = arg.substr(0u, found);
+        const auto rhs = arg.substr(found + 1u);
+        if (empty(lhs)) {
+            std::cerr << std::quoted(arg);
+            std::cerr << ": left-hand-side endpoint must be specified\n";
+            continue;
+        }
+        if (empty(rhs)) {
+            std::cerr << std::quoted(arg);
+            std::cerr << ": right-hand-side endpoint must be specified\n";
+            continue;
+        }
+        auto lhs_endpoint = flow::endpoint{};
+        if (!parse(lhs_endpoint, lhs)) {
+            std::cerr << std::quoted(lhs);
+            std::cerr << ": can't parse left-hand-side endpoint\n";
+            continue;
+        }
+        auto rhs_endpoint = flow::endpoint{};
+        if (!parse(rhs_endpoint, rhs)) {
+            std::cerr << std::quoted(rhs);
+            std::cerr << ": can't parse right-hand-side endpoint\n";
+            continue;
+        }
+        auto& custom = std::get<flow::system::custom>(context.info);
+        const auto conn = flow::unidirectional_connection{
+            lhs_endpoint, rhs_endpoint
+        };
+        std::cout << std::quoted(arg);
+        std::cout << ": found and removed ";
+        std::cout << erase(custom.connections, flow::connection{conn});
+        std::cout << " matching connection(s)\n";
+        ++nconnects;
+    }
+    if (empty(src_str) && empty(dst_str)) {
+        if (nconnects < 1) {
+            usage(std::cerr);
+        }
+        return;
     }
     auto abort = [](std::ostream& os,
                     const std::string& src,
@@ -1339,7 +1401,7 @@ auto main(int argc, const char * argv[]) -> int
             do_add_connections(system_stack.top().get(), args);
         }},
         {"remove", [&](const string_span& args){
-            do_remove_connection(system_stack.top().get(), args);
+            do_remove_connections(system_stack.top().get(), args);
         }},
         {"show", show_conns_lambda},
     };
