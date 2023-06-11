@@ -25,3 +25,36 @@ This is just a work in progress at the moment.
 - POSIX-compliant operating system (like Linux or macOS 10.5+).
 - Access to the _editline_ "line editor and history library".
 
+## Build It
+
+Assuming:
+- You have downloaded the project code and it's in the directory named `flow`.
+  If not, follow the Download Project Code instructions in the top-level
+  [README.md](../README.md) file, then return here.
+- You're in the directory containing the `flow` directory.
+- You want to build this component in a separate directory named `flow-build`.
+
+From a terminal that's in the directory you want `flow-build` to appear in, run the following:
+1. `cmake -S flow -B flow-build -DFLOW_BUILD_SHELL=ON`
+1. `cmake --build flow-build`
+
+## Startup Command Line Shell And Get Help
+
+From a terminal that's in the directory containing `flow-build`, run:
+1. `./flow-build/bin/shell`
+1. `help`
+
+This shows the various builtin flow commands that the shell knows about and that you can run.
+It also leaves you in the shell and ready to run other commands like the following.
+If you don't want to run other commands, just enter `exit`.
+
+## Run Hello World And Exit
+
+From within the command line shell,
+define a system for echoing "hello world",
+instantiate it in the foreground,
+and then exit:
+1. `systems set echo_hello_world --file=echo -- echo "hello world"`
+1. `echo_hello_world`
+1. `exit`
+

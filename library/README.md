@@ -18,3 +18,16 @@ As is conventional:
       facilities available.
 - [ ] Defining a widely supportable machine model that all
       components of this project are based upon.
+
+## Build It
+
+Assuming:
+- You have downloaded the project code and it's in the directory named `flow`.
+  If not, follow the Download Project Code instructions in the top-level
+  [README.md](../README.md) file, then return here.
+- You're in the directory containing the `flow` directory.
+- You want to build this component in a separate directory named `flow-build`.
+
+From a terminal that's in the directory you want `flow-build` to appear in, run the following:
+1. `cmake -S flow -B flow-build`
+1. `cmake --build flow-build`

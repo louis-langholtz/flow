@@ -34,42 +34,45 @@ Additionally, it has benefits that are more attractive than ever, like:
 
 ## How?
 
-### Build Library And Command Line Shell
+Exactly how the project can be acquired, built, and run will depend on things like
+having requirements and which components specifically you want to use.
+Generally speaking, the following instructions hopefully suffice...
+
+### Have Requirements
+
+- POSIX-compliant operating system (like Linux or macOS 10.5+).
+- `git` command line tool.
+- Compiler supporting the C++20 standard (or newer).
+- CMake version 3.16.3 or newer command line tool.
+- For the *shell* application, access to the _editline_ "line editor and history library".
+- For the *tests* application, access to https://github.com/google/googletest.
+
+### Download Project Code
 
 Assuming:
 - You want to use the project's name of `flow` as the directory name under which to store the project.
-- You want to build the project in a separate directory named `flow-build`.
 
-From a terminal that's in the directory you want `flow` and `flow-build` to appear in, run the following:
+From a terminal that's in the directory you want the `flow` sub-directory to appear in, run the following:
 1. `git clone https://github.com/louis-langholtz/flow.git`
-1. `cmake -S flow -B flow-build -DFLOW_BUILD_SHELL=ON`
-1. `cmake --build flow-build`
 
-### Startup Command Line Shell And Get Help
+### Build It
 
-From a terminal that's in the directory containing `flow-build`, run:
-1. `./flow-build/bin/shell`
-1. `help`
-
-This shows the various builtin flow commands that the shell knows about and that you can run.
-
-### Run Hello World And Exit
-
-From within the command line shell, define a system for echoing "hello world", instantiate it in the foreground, and then exit:
-1. `systems set echo_hello_world --file=echo -- echo "hello world"`
-1. `echo_hello_world`
-1. `exit`
+- To build all components into a separate sub-directory named `flow-build`
+  (including compile commands for tools like `clang-tidy`), run:
+  ```
+  cmake -S flow -B flow-build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DFLOW_BUILD_SHELL=ON -DFLOW_BUILD_UNITTESTS=ON
+  cmake --build flow-build
+  ```
+- Alternatively, or to find out more about each component (including some usage suggestions), see:
+  - [The library component README.md](library/README.md).
+  - [The shell application component README.md](shell/README.md).
+  - [The tests application component README.md](tests/README.md).
 
 ## Status
 
 [![linux](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml/badge.svg)](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml)
 
 This is just a work in progress at the moment.
-
-## Requirements
-
-- Compiler supporting C++20.
-- POSIX-compliant operating system (like Linux or macOS 10.5+).
 
 ## References
 
