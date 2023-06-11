@@ -240,6 +240,7 @@
 		99A88D4D2A16BB3600AFD76F /* system_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_name.cpp; sourceTree = "<group>"; };
 		99A88D502A17D4E500AFD76F /* tcstring.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = tcstring.hpp; sourceTree = "<group>"; };
 		99A88D532A17F93A00AFD76F /* channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = channel.cpp; sourceTree = "<group>"; };
+		99BD75072A36822C00186221 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		99C1937929F4D70F00C3F53F /* system_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_endpoint.cpp; sourceTree = "<group>"; };
 		99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
@@ -304,6 +305,7 @@
 		99940BC429F1644400A77461 = {
 			isa = PBXGroup;
 			children = (
+				99BD75072A36822C00186221 /* README.md */,
 				99940BD729F1BC5900A77461 /* library */,
 				99940BCF29F1644400A77461 /* shell */,
 				99A88D272A0EF52400AFD76F /* tests */,
