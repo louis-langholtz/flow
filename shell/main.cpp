@@ -14,6 +14,7 @@
 #include <histedit.h>
 
 #include "flow/channel.hpp"
+#include "flow/charset_checker.hpp"
 #include "flow/connection.hpp"
 #include "flow/reference_descriptor.hpp"
 #include "flow/environment_map.hpp"
@@ -140,7 +141,7 @@ auto find(const std::map<flow::system_name, flow::system>& map,
     try {
         sname = flow::system_name{name};
     }
-    catch (const std::invalid_argument& ex) {
+    catch (const flow::charset_validator_error& ex) {
         return nullptr;
     }
     const auto entry = map.find(sname);
@@ -329,7 +330,7 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
         try {
             sys_names = flow::to_system_names(arg);
         }
-        catch (const std::invalid_argument& ex) {
+        catch (const flow::charset_validator_error& ex) {
             std::cerr << "invalid name ";
             std::cerr << arg;
             std::cerr << ": ";
@@ -484,7 +485,8 @@ auto do_rename(flow::system& context, const string_span& args) -> void
     try {
         old_name = flow::system_name{nargs[0]};
     }
-    catch (const std::invalid_argument& ex) {
+    catch (const flow::charset_validator_error& ex) {
+        std::cerr << "old system name ";
         std::cerr << std::quoted(nargs[0]);
         std::cerr << " invalid: " << ex.what();
         return;
@@ -493,7 +495,8 @@ auto do_rename(flow::system& context, const string_span& args) -> void
     try {
         new_name = flow::system_name{nargs[1]};
     }
-    catch (const std::invalid_argument& ex) {
+    catch (const flow::charset_validator_error& ex) {
+        std::cerr << "new system name ";
         std::cerr << std::quoted(nargs[1]);
         std::cerr << " invalid: " << ex.what();
         return;
@@ -626,10 +629,11 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
     try {
         parent_names = flow::to_system_names(parent);
     }
-    catch (const std::invalid_argument& ex) {
-        std::ostringstream os;
-        os << ex.what() << "\n";
-        abort(std::cerr, parent, os.str());
+    catch (const flow::charset_validator_error& ex) {
+        std::cerr << "aborting: parent name(s) ";
+        std::cerr << std::quoted(parent);
+        std::cerr << " invalid: " << ex.what();
+        std::cerr << "\n";
         return;
     }
     const auto parent_basis = parse({{}, parent_names, &context});
@@ -642,11 +646,12 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
         try {
             base_names = flow::to_system_names(name);
         }
-        catch (const std::invalid_argument& ex) {
-            std::ostringstream os;
-            os << ex.what() << "\n";
-            abort(std::cerr, parent, os.str());
-            return;
+        catch (const flow::charset_validator_error& ex) {
+            std::cerr << "skipping invalid system name(s) ";
+            std::cerr << std::quoted(name);
+            std::cerr << ": " << ex.what();
+            std::cerr << "\n";
+            continue;
         }
         const auto name_basis = parse({
             parent_basis.names, base_names, parent_basis.psystem
@@ -865,7 +870,7 @@ auto do_add_connections(flow::system& context, const string_span& args) -> void
             try {
                 parent_names = flow::to_system_names(parent);
             }
-            catch (const std::invalid_argument& ex) {
+            catch (const flow::charset_validator_error& ex) {
                 std::cerr << "can't parse parent name " << std::quoted(parent);
                 std::cerr << ": " << ex.what() << "\n";
                 return;
@@ -906,7 +911,7 @@ auto do_add_connections(flow::system& context, const string_span& args) -> void
         try {
             names = flow::to_system_names(name);
         }
-        catch (const std::invalid_argument& ex) {
+        catch (const flow::charset_validator_error& ex) {
             std::cerr << "can't parse name " << std::quoted(name);
             std::cerr << ": " << ex.what() << "\n";
             return;
@@ -1059,7 +1064,7 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
         try {
             name = flow::system_name{arg};
         }
-        catch (const std::invalid_argument& ex) {
+        catch (const flow::charset_validator_error& ex) {
             std::cerr << std::quoted(arg);
             std::cerr << ": not a valid system name, skipping.";
             continue;
@@ -1498,9 +1503,9 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
     try {
         names = flow::to_system_names(args[1]);
     }
-    catch (const std::invalid_argument& ex) {
+    catch (const flow::charset_validator_error& ex) {
         std::cerr << std::quoted(args[1]);
-        std::cerr << " not sequence of valid system names:s ";
+        std::cerr << " not sequence of valid system names: ";
         std::cerr << ex.what();
         std::cerr << "\n";
         return;
@@ -1711,7 +1716,7 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"help", [&](const string_span& args){
             if (size(args) == 1u) {
-                std::cout << "Builtin flow commands:\n\n";
+                std::cout << "Builtin flow commands (and their sub-commands):\n\n";
             }
             do_help(cmds, args);
         }},
