@@ -2,21 +2,45 @@
 #define reserved_chars_checker_hpp
 
 #include <array>
+#include <stdexcept> // for std::invalid_argument
 #include <string>
 #include <string_view>
 
 #include "flow/tcstring.hpp"
 
-namespace flow::detail {
+namespace flow {
 
 enum class char_list { deny, allow };
+
+struct charset_validator_error: public std::invalid_argument
+{
+    using invalid_argument::invalid_argument;
+
+    charset_validator_error(char badc,
+                            std::string chars,
+                            char_list acc,
+                            const std::string& what_arg = {});
+
+    [[nodiscard]] auto badchar() const noexcept -> char;
+    [[nodiscard]] auto access() const noexcept -> char_list;
+    [[nodiscard]] auto charset() const -> std::string;
+
+private:
+    std::string chars_;
+    char_list access_{char_list::deny};
+    char badchar_{};
+};
+
+}
+
+namespace flow::detail {
 
 /// @brief Character set validator function.
 /// @param[in] v Value to validate.
 /// @param[in] access Whether validation is to deny or allow finding of a
 ///   charactaer from @chars.
 /// @param[in] chars Characters which @v should be assessed for having or not.
-/// @throws std::invalid_argument if @v is invalid.
+/// @throws charset_validator_error if @v is invalid.
 auto charset_validator(std::string v,
                        char_list access,
                        const std::string& chars)
@@ -129,7 +153,7 @@ using alphanum_charset = char_template_joiner<
 >::type;
 
 using name_charset = char_template_joiner<
-    alphanum_charset, tcstring<'_','#'>
+    alphanum_charset, tcstring<'_'>
 >::type;
 
 }

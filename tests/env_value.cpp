@@ -17,13 +17,13 @@ TEST(env_value, construction)
     EXPECT_NO_THROW(flow::env_value("=OK"));
 
     EXPECT_THROW(flow::env_value(std::string{'\0'}),
-                 std::invalid_argument);
+                 flow::charset_validator_error);
     EXPECT_THROW(flow::env_value(std::string{'\0', '\0'}),
-                 std::invalid_argument);
+                 flow::charset_validator_error);
     EXPECT_THROW(flow::env_value(std::string{'A', '\0'}),
-                 std::invalid_argument);
+                 flow::charset_validator_error);
     EXPECT_THROW(flow::env_value(std::string{'\0', 'c'}),
-                 std::invalid_argument);
+                 flow::charset_validator_error);
     EXPECT_THROW(flow::env_value(std::string{'a', '\0', 'b'}),
-                 std::invalid_argument);
+                 flow::charset_validator_error);
 }

@@ -21,7 +21,7 @@ struct system_name_checker: detail::allowed_chars_checker<detail::name_charset>
 /// @details A lexical token for identifying a <code>system</code>.
 /// @note This is a strongly typed <code>std::string</code> that can be
 ///   constructed from strings containing only characters from its allowed
-///   character set. An <code>std::invalid_argument</code> exception is
+///   character set. An <code>charset_validator_error</code> exception is
 ///   thrown otherwise.
 /// @see system.
 using system_name = detail::checked<std::string, system_name_checker>;
@@ -50,7 +50,7 @@ auto operator<<(std::ostream& os, const T& names) -> std::ostream&
 }
 
 /// @brief Splits the given string by the specified separator.
-/// @throws std::invalid_argument if any component is an invalid
+/// @throws charset_validator_error if any component is an invalid
 ///   <code>system_name</code>.
 auto to_system_names(std::string_view string,
                      const std::string_view& separator =
