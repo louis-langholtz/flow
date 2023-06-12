@@ -307,9 +307,22 @@ auto parse(flow::endpoint& value, const std::string& string) -> bool
 
 auto do_unset_system(flow::system& context, const string_span& args) -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument;
+        os << "|";
+        os << usage_argument;
+        os << "|<existing-system-name>...\n";
+    };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "removes system definitions.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
         auto sys_names = std::deque<flow::system_name>{};
@@ -404,10 +417,23 @@ auto foreground(const std::string_view& cmd,
 auto do_foreground(const flow::system& context, const string_span& args)
     -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument;
+        os << "|";
+        os << usage_argument;
+        os << "|<existing-system-name>\n";
+    };
     const auto nargs = args.subspan(1u);
     for (auto&& arg: nargs) {
         if (arg == help_argument) {
             std::cout << "runs specified system definition in foreground.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
     }
@@ -427,10 +453,23 @@ auto do_foreground(const flow::system& context, const string_span& args)
 
 auto do_rename(flow::system& context, const string_span& args) -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument;
+        os << "|";
+        os << usage_argument;
+        os << "|<old-system-name> <new-system-name>\n";
+    };
     const auto nargs = args.subspan(1u);
     for (auto&& arg: nargs) {
         if (arg == help_argument) {
             std::cout << "renames specified system definition to new name.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
     }
@@ -489,7 +528,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
     auto file = std::string{};
     auto port_map_entries = std::vector<flow::port_map_entry>{};
     auto usage = [&](std::ostream& os){
-        os << "  usage: ";
+        os << "usage: ";
         os << args[0];
         os << " ";
         os << help_argument << "|" << usage_argument;
@@ -656,6 +695,16 @@ auto do_show_connections(const flow::system& context, const string_span& args)
                 std::cout << "shows connections within a system.\n";
                 return;
             }
+            if (arg == usage_argument) {
+                std::cout << "usage: ";
+                std::cout << args[0];
+                std::cout << " [";
+                std::cout << help_argument;
+                std::cout << "|";
+                std::cout << usage_argument;
+                std::cout << "]\n";
+                return;
+            }
         }
     }
     const auto& custom = std::get<flow::system::custom>(context.info);
@@ -676,7 +725,7 @@ auto do_remove_connections(flow::system& context, const string_span& args)
     auto dst_str = std::string{};
     auto nconnects = 0;
     const auto usage = [&](std::ostream& os){
-        os << "  usage: ";
+        os << "usage: ";
         os << args[0];
         os << " ";
         os << help_argument << "|" << usage_argument << "|";
@@ -791,7 +840,7 @@ auto do_add_connections(flow::system& context, const string_span& args) -> void
 {
     auto name = std::string{};
     const auto usage = [&](std::ostream& os){
-        os << "  usage: ";
+        os << "usage: ";
         os << args[0];
         os << " ";
         os << help_argument << "|" << usage_argument << "|";
@@ -912,6 +961,22 @@ auto print(std::ostream& os, const flow::port_map& ports) -> void
 
 auto do_show_systems(const flow::system& context, const string_span& args) -> void
 {
+    constexpr auto show_info_argument = "--show-info";
+    constexpr auto recursive_argument = "--recursive";
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " [";
+        os << help_argument;
+        os << "|";
+        os << usage_argument;
+        os << "|";
+        os << "[";
+        os << show_info_argument;
+        os << "][";
+        os << recursive_argument;
+        os << "]\n";
+    };
     auto show_info = true;
     auto show_recursive = false;
     for (auto&& arg: args.subspan(1u)) {
@@ -919,11 +984,15 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
             std::cout << "shows information about systems that have been added.\n";
             return;
         }
-        if (arg == "--show-info") {
+        if (arg == usage_argument) {
+            usage(std::cout);
+            return;
+        }
+        if (arg == show_info_argument) {
             show_info = !show_info;
             continue;
         }
-        if (arg == "--recursive") {
+        if (arg == recursive_argument) {
             show_recursive = !show_recursive;
             continue;
         }
@@ -967,10 +1036,23 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
 
 auto do_wait(flow::instance& instance, const string_span& args) -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << ' ';
+        os << help_argument;
+        os << '|';
+        os << usage_argument;
+        os << "|<instance-name>...\n";
+    };
     auto& instances = std::get<flow::instance::custom>(instance.info).children;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "waits for an instance.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
         auto name = flow::system_name{};
@@ -999,10 +1081,23 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
 auto do_show_instances(flow::instance& instance, const string_span& args)
     -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " [";
+        os << help_argument;
+        os << '|';
+        os << usage_argument;
+        os << "\n";
+    };
     const auto& custom = std::get<flow::instance::custom>(instance.info);
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "shows a listing of instantiations.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
     }
@@ -1039,6 +1134,16 @@ auto do_env(const flow::system& context, const string_span& args) -> void
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "prints the current environment variables.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            std::cout << "usage: ";
+            std::cout << args[0];
+            std::cout << " [";
+            std::cout << help_argument;
+            std::cout << "|";
+            std::cout << usage_argument;
+            std::cout << "]\n";
             return;
         }
     }
@@ -1086,13 +1191,31 @@ auto do_setenv(flow::system& context, const string_span& args) -> void
 
 auto do_unsetenv(flow::system& context, const string_span& args) -> void
 {
+    constexpr auto all_argument = "--all";
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << ' ';
+        os << help_argument;
+        os << '|';
+        os << usage_argument;
+        os << '|';
+        os << all_argument;
+        os << '|';
+        os << "<environment-variable-name>...";
+        os << '\n';
+    };
     auto& map = std::get<flow::system::custom>(context.info).environment;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "unsets environment variables.\n";
             return;
         }
-        if (arg == "--all") {
+        if (arg == usage_argument) {
+            usage(std::cout);
+            return;
+        }
+        if (arg == all_argument) {
             map.clear();
             continue;
         }
@@ -1106,9 +1229,22 @@ auto do_unsetenv(flow::system& context, const string_span& args) -> void
 
 auto do_ports(flow::port_map& map, const string_span& args) -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " [";
+        os << help_argument;
+        os << '|';
+        os << usage_argument;
+        os << "]\n";
+    };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "prints the I/O ports of the current custom system.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
     }
@@ -1119,10 +1255,23 @@ auto do_ports(flow::port_map& map, const string_span& args) -> void
 auto do_history(history_ptr& hist, int& hist_size, const string_span& args)
     -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " [";
+        os << help_argument;
+        os << '|';
+        os << usage_argument;
+        os << "]\n";
+    };
     HistEvent ev{};
     for (auto&& arg: args) {
         if (arg == help_argument) {
             std::cout << "shows the history of commands entered.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
         if (arg == "clear") {
@@ -1143,6 +1292,22 @@ auto do_editor(edit_line_ptr& el, const string_span& args) -> void
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "shows or sets the shell editor.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            std::cout << "usage: ";
+            std::cout << args[0];
+            std::cout << ' ';
+            std::cout << '[';
+            std::cout << help_argument;
+            std::cout << '|';
+            std::cout << usage_argument;
+            std::cout << '|';
+            std::cout << vi_editor_str;
+            std::cout << '|';
+            std::cout << emacs_editor_str;
+            std::cout << ']';
+            std::cout << "\n";
             return;
         }
         if ((arg == vi_editor_str) || (arg == emacs_editor_str)) {
@@ -1170,6 +1335,17 @@ auto do_help(const cmd_table& cmds, const string_span& args) -> void
         for (auto&& arg: args.subspan(1u)) {
             if (arg == help_argument) {
                 std::cout << "provides help on builtin flow commands.\n";
+                return;
+            }
+            if (arg == usage_argument) {
+                std::cout << "usage: ";
+                std::cout << args[0];
+                std::cout << ' ';
+                std::cout << help_argument;
+                std::cout << '|';
+                std::cout << usage_argument;
+                std::cout << '|';
+                std::cout << "<builtin-command-name>...\n";
                 return;
             }
             const auto found = cmds.find(arg);
@@ -1201,17 +1377,80 @@ auto do_help(const cmd_table& cmds, const string_span& args) -> void
     }
 }
 
+auto do_usage(const cmd_table& cmds, const string_span& args) -> void
+{
+    using strings = std::vector<std::string>;
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << ' ';
+        os << help_argument << "|";
+        os << usage_argument << "|";
+        os << "<builtin-command-name>...\n";
+    };
+    if (size(args) > 1u) {
+        for (auto&& arg: args.subspan(1u)) {
+            if (arg == help_argument) {
+                std::cout << "provides usage syntax of builtin flow commands.\n";
+                return;
+            }
+            if (arg == usage_argument) {
+                usage(std::cout);
+                return;
+            }
+            const auto found = cmds.find(arg);
+            if (found == cmds.end()) {
+                std::cerr << std::quoted(arg);
+                std::cerr << ": unknown command, skipping\n";
+                continue;
+            }
+            std::cout << found->first;
+            std::cout << ' ';
+            found->second(strings{found->first, usage_argument});
+        }
+        return;
+    }
+    if (!empty(args)) {
+        usage(std::cout);
+        return;
+    }
+    for (auto&& entry: cmds) {
+        if (empty(entry.first)) {
+            continue;
+        }
+        std::cout << entry.first;
+        std::cout << ' ';
+        entry.second(strings{entry.first, usage_argument});
+    }
+}
+
 auto do_chdir(flow::system& context, const string_span& args) -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument;
+        os << "|";
+        os << usage_argument;
+        os << "|";
+        os << "<directory>";
+        os << "\n";
+    };
     auto& map = std::get<flow::system::custom>(context.info).environment;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "changes the current working directory.\n";
             return;
         }
+        if (arg == usage_argument) {
+            usage(std::cout);
+            return;
+        }
     }
     if (args.size() != 2u) {
         std::cerr << "specify new working directory and only that\n";
+        usage(std::cerr);
         return;
     }
     auto ec = std::error_code{};
@@ -1229,9 +1468,24 @@ auto do_chdir(flow::system& context, const string_span& args) -> void
 
 auto do_push(system_stack_type& stack, const string_span& args) -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " ";
+        os << help_argument;
+        os << "|";
+        os << usage_argument;
+        os << "|";
+        os << "<system-name>";
+        os << "\n";
+    };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "pushes specified custom system onto stack.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
     }
@@ -1266,9 +1520,22 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
 
 auto do_pop(system_stack_type& stack, const string_span& args) -> void
 {
+    auto usage = [&](std::ostream& os){
+        os << "usage: ";
+        os << args[0];
+        os << " [";
+        os << help_argument;
+        os << "|";
+        os << usage_argument;
+        os << "]\n";
+    };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "pops the current custom system off the stack.\n";
+            return;
+        }
+        if (arg == usage_argument) {
+            usage(std::cout);
             return;
         }
     }
@@ -1300,14 +1567,25 @@ auto run(const cmd_handler& cmd, const string_span& args) -> void
 
 auto do_cmds(const cmd_table& cmds, const string_span& args) -> void
 {
-    if (!empty(args) && (args[0] == help_argument)) {
-        std::cout << "\n";
-        auto opts = flow::detail::indenting_ostreambuf_options{
-            .indent = 2
-        };
-        const flow::detail::indenting_ostreambuf indent{std::cout, opts};
-        do_help(cmds, args.subspan(1u));
-        return;
+    if (!empty(args)) {
+        if (args[0] == help_argument) {
+            std::cout << "\n";
+            auto opts = flow::detail::indenting_ostreambuf_options{
+                .indent = 2
+            };
+            const flow::detail::indenting_ostreambuf indent{std::cout, opts};
+            do_help(cmds, args.subspan(1u));
+            return;
+        }
+        if (args[0] == usage_argument) {
+            std::cout << "\n";
+            auto opts = flow::detail::indenting_ostreambuf_options{
+                .indent = 2
+            };
+            const flow::detail::indenting_ostreambuf indent{std::cout, opts};
+            do_usage(cmds, args.subspan(1u));
+            return;
+        }
     }
     const auto cmd = empty(args)? std::string{}: args[0];
     if (const auto it = cmds.find(cmd); it != cmds.end()) {
@@ -1425,7 +1703,7 @@ auto main(int argc, const char * argv[]) -> int
         {"exit", [&](const string_span& args){
             for (auto&& arg: args.subspan(1u)) {
                 if (arg == help_argument) {
-                    std::cout << "exits the shell.\n";
+                    std::cout << "exits this shell.\n";
                     return;
                 }
             }
@@ -1466,6 +1744,9 @@ auto main(int argc, const char * argv[]) -> int
         }},
         {"pop", [&](const string_span& args){
             do_pop(system_stack, args);
+        }},
+        {"usage", [&](const string_span& args){
+            do_usage(cmds, args);
         }},
     };
 
