@@ -2,6 +2,12 @@
 
 A data-flow library and environment in C++.
 
+## Status
+
+[![linux](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml/badge.svg)](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml)
+
+This is just a work in progress at the moment.
+
 ## What?
 
 I'm using the phrase "data-flow" in terms of machines, programming, and systems.
@@ -74,12 +80,6 @@ appear in, run the following:
   - [The library component README.md](library/README.md).
   - [The shell application component README.md](shell/README.md).
   - [The tests application component README.md](tests/README.md).
-
-## Status
-
-[![linux](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml/badge.svg)](https://github.com/louis-langholtz/flow/actions/workflows/linux.yml)
-
-This is just a work in progress at the moment.
 
 ## References
 
