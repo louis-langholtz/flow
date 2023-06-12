@@ -3,6 +3,35 @@
 
 #include "flow/charset_checker.hpp"
 
+namespace flow {
+
+charset_validator_error::charset_validator_error(char c,
+                                                 std::string chars,
+                                                 char_list acc,
+                                                 const std::string& what_arg):
+    invalid_argument(what_arg),
+    chars_(std::move(chars)), access_(acc), badchar_(c)
+{
+    // Intentionally empty.
+}
+
+auto charset_validator_error::access() const noexcept -> char_list
+{
+    return access_;
+}
+
+auto charset_validator_error::charset() const -> std::string
+{
+    return chars_;
+}
+
+auto charset_validator_error::badchar() const noexcept -> char
+{
+    return badchar_;
+}
+
+}
+
 namespace flow::detail {
 
 auto charset_validator(std::string v,
@@ -24,7 +53,13 @@ auto charset_validator(std::string v,
             os << "\\" << std::oct << int(c);
         }
         os << "'";
-        throw std::invalid_argument{os.str()};
+        if (access == char_list::deny) {
+            os << ", character denied";
+        }
+        else {
+            os << ", character not allowed";
+        }
+        throw charset_validator_error{c, chars, access, os.str()};
     }
     return v;
 }
