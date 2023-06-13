@@ -82,6 +82,7 @@
 		99A88D522A17D4E500AFD76F /* tcstring.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D502A17D4E500AFD76F /* tcstring.hpp */; };
 		99A88D542A17F93A00AFD76F /* channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D532A17F93A00AFD76F /* channel.cpp */; };
 		99BD75092A3799DB00186221 /* charset_checker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD75082A3799DB00186221 /* charset_checker.cpp */; };
+		99BD750D2A38E0B700186221 /* char_template_joiner.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99BD750B2A38E0B700186221 /* char_template_joiner.hpp */; };
 		99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* system_endpoint.cpp */; };
 		99C1937C29F4D70F00C3F53F /* system_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */; };
 		99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938129F506C200C3F53F /* file_endpoint.cpp */; };
@@ -243,6 +244,7 @@
 		99A88D532A17F93A00AFD76F /* channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = channel.cpp; sourceTree = "<group>"; };
 		99BD75072A36822C00186221 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		99BD75082A3799DB00186221 /* charset_checker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = charset_checker.cpp; sourceTree = "<group>"; };
+		99BD750B2A38E0B700186221 /* char_template_joiner.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = char_template_joiner.hpp; sourceTree = "<group>"; };
 		99C1937929F4D70F00C3F53F /* system_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_endpoint.cpp; sourceTree = "<group>"; };
 		99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
@@ -371,6 +373,7 @@
 			isa = PBXGroup;
 			children = (
 				99C1938E29F50EFD00C3F53F /* channel.hpp */,
+				99BD750B2A38E0B700186221 /* char_template_joiner.hpp */,
 				99A88D4A2A15903A00AFD76F /* charset_checker.hpp */,
 				9943E8B52A06F6ED002F4C26 /* checked.hpp */,
 				99C1939229F511B700C3F53F /* connection.hpp */,
@@ -487,6 +490,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				99F29E2C2A269A9C00D861B0 /* port_id.hpp in Headers */,
+				99BD750D2A38E0B700186221 /* char_template_joiner.hpp in Headers */,
 				9943E8B62A06F6ED002F4C26 /* checked.hpp in Headers */,
 				9943E8982A021E98002F4C26 /* user_endpoint.hpp in Headers */,
 				99940BEF29F1C9A500A77461 /* io_type.hpp in Headers */,

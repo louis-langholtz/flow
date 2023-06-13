@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 
+#include "flow/char_template_joiner.hpp"
 #include "flow/tcstring.hpp"
 
 namespace flow {
@@ -46,34 +47,6 @@ auto charset_validator(std::string v,
                        char_list access,
                        const std::string& chars)
     -> std::string;
-
-template <typename...> struct char_template_joiner;
-
-template <
-    template<char...> class Tpl,
-    char ...Args1>
-struct char_template_joiner<Tpl<Args1...>>
-{
-    using type = Tpl<Args1...>;
-};
-
-template <
-    template<char...> class Tpl,
-    char ...Args1,
-    char ...Args2>
-struct char_template_joiner<Tpl<Args1...>, Tpl<Args2...>>
-{
-    using type = Tpl<Args1..., Args2...>;
-};
-
-template <template <char...> class Tpl,
-          char ...Args1,
-          char ...Args2,
-          typename ...Tail>
-struct char_template_joiner<Tpl<Args1...>, Tpl<Args2...>, Tail...>
-{
-     using type = typename char_template_joiner<Tpl<Args1..., Args2...>, Tail...>::type;
-};
 
 template <class T>
 concept is_stringable = std::convertible_to<T, std::string>;
