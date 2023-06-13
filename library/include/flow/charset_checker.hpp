@@ -2,6 +2,7 @@
 #define reserved_chars_checker_hpp
 
 #include <array>
+#include <set>
 #include <stdexcept> // for std::invalid_argument
 #include <string>
 #include <string_view>
@@ -77,10 +78,8 @@ struct char_template_joiner<Tpl<Args1...>, Tpl<Args2...>, Tail...>
 template <class T>
 concept is_stringable = std::convertible_to<T, std::string>;
 
-static_assert(is_stringable<tcstring<>>);
-
 template <is_stringable... Args>
-auto concatenate(Args const&... args) -> std::string
+auto make_concatenated_string(Args const&... args) -> std::string
 {
     // Using a fold expression like: return (std::string{args} + ...);
     // is more succinct, but adding string that way is less inefficient.
@@ -91,10 +90,37 @@ auto concatenate(Args const&... args) -> std::string
     return result;
 }
 
-template <char_list access, is_stringable... Charsets>
+template <class T, class U>
+concept is_iterable_of = requires(T t)
+{
+    requires std::convertible_to<decltype(*std::begin(t)), U>;
+    requires std::convertible_to<decltype(*std::end(t)), U>;
+};
+
+static_assert(is_iterable_of<tcstring<>, char>);
+
+template <is_iterable_of<char>... Args>
+auto make_charset(Args const&... args) -> std::set<char>
+{
+    std::set<char> set;
+    using std::begin, std::end;
+    (void) std::to_array({
+        0, (static_cast<void>(set.insert(begin(args), end(args))), 0)...
+    });
+    return set;
+}
+
+template <is_iterable_of<char> T>
+auto to_string(const T& t) -> std::string
+{
+    using std::begin, std::end;
+    return {begin(t), end(t)};
+}
+
+template <char_list access, is_iterable_of<char>... Charsets>
 struct charset_checker
 {
-    static inline const auto charset = concatenate(Charsets{}...);
+    static inline const auto charset = to_string(make_charset(Charsets{}...));
 
     auto operator()() const noexcept // NOLINT(bugprone-exception-escape)
         -> std::string
@@ -124,10 +150,10 @@ struct charset_checker
     }
 };
 
-template <is_stringable... Charsets>
+template <is_iterable_of<char>... Charsets>
 using denied_chars_checker = charset_checker<char_list::deny, Charsets...>;
 
-template <is_stringable... Charsets>
+template <is_iterable_of<char>... Charsets>
 using allowed_chars_checker = charset_checker<char_list::allow, Charsets...>;
 
 using upper_charset = tcstring<
