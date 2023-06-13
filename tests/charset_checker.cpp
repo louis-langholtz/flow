@@ -26,6 +26,9 @@ TEST(charset_checker, charset)
     EXPECT_EQ((charset_checker<char_list::deny,
                upper_charset, lower_charset>::charset),
               expected);
+    EXPECT_EQ((charset_checker<char_list::deny,
+               upper_charset, upper_charset, lower_charset>::charset),
+              expected);
 }
 
 TEST(denied_chars_checker, check)
