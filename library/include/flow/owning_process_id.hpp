@@ -10,6 +10,13 @@
 
 namespace flow {
 
+/// @brief Owning process identifier.
+/// @note Provides some RAII-styled ownership handling for spawning processes.
+/// @note Implementation of this was based on POSIX process handling.
+///   There has been at least one proposal for bring process handling into the
+///   the C++ standard which may provide ideas for improving this code.
+/// @todo Consider C++ standards proposals for updating this code.
+/// @see https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1750r1.pdf.
 struct owning_process_id
 {
     struct impl;
