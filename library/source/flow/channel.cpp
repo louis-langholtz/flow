@@ -102,7 +102,7 @@ auto validate(const system_endpoint& end,
 {
     if (end.address == system_name{}) {
         for (auto&& d: end.ports) {
-            const auto& d_info = at(system.ports, d, end.address);
+            const auto& d_info = at(system.interface, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
                 std::ostringstream os;
                 os << "bad custom system endpoint io: expected=";
@@ -132,7 +132,7 @@ auto validate(const system_endpoint& end,
         }
         const auto& subsys = found->second;
         for (auto&& d: end.ports) {
-            const auto& d_info = at(subsys.ports, d, end.address);
+            const auto& d_info = at(subsys.interface, d, end.address);
             if (d_info.direction != expected_io) {
                 throw invalid_connection{"bad subsys endpoint io"};
             }

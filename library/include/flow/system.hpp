@@ -63,7 +63,7 @@ struct system
 
     system(custom type_info,
            port_map des_map = {})
-        : ports{std::move(des_map)},
+        : interface{std::move(des_map)},
           implementation{std::move(type_info)}
     {
         // Intentionally empty.
@@ -71,7 +71,7 @@ struct system
 
     system(executable type_info,
            port_map des_map = std_ports)
-        : ports{std::move(des_map)},
+        : interface{std::move(des_map)},
           implementation{std::move(type_info)}
     {
         // Intentionally empty.
@@ -79,7 +79,7 @@ struct system
 
     /// @brief Ports of the <code>system</code>.
     /// @note This is considered an _interface_ component of this type.
-    port_map ports;
+    port_map interface;
 
     /// @brief System type specific information.
     /// @note This is considered an _internal_ component of this type.
@@ -111,7 +111,7 @@ inline auto operator==(const system::executable& lhs,
 inline auto operator==(const system& lhs,
                        const system& rhs) noexcept -> bool
 {
-    return (lhs.ports == rhs.ports)
+    return (lhs.interface == rhs.interface)
         && (lhs.implementation == rhs.implementation);
 }
 

@@ -359,7 +359,7 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
 auto get_instantiate_options(const flow::system& context)
 {
     return flow::instantiate_options{
-        .ports = context.ports,
+        .ports = context.interface,
         .environment = std::get<flow::system::custom>(context.implementation).environment
     };
 }
@@ -448,7 +448,7 @@ auto do_foreground(const flow::system& context, const string_span& args)
         return;
     }
     foreground(nargs[0], update(*found, nargs), {
-        .ports = context.ports,
+        .ports = context.interface,
         .environment = custom.environment
     });
 }
@@ -677,16 +677,16 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
                 .file = file,
                 .arguments = arguments
             };
-            system.ports = flow::std_ports;
+            system.interface = flow::std_ports;
         }
         else {
             system.implementation = flow::system::custom{
                 .environment = psys->environment
             };
-            system.ports = name_basis.psystem->ports;
+            system.interface = name_basis.psystem->interface;
         }
         for (auto&& entry: port_map_entries) {
-            update(system.ports, entry);
+            update(system.interface, entry);
         }
         psys->subsystems.insert_or_assign(name_basis.remaining.front(), system);
     }
@@ -1021,7 +1021,7 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
     const auto& custom = std::get<flow::system::custom>(context.implementation);
     for (auto&& entry: custom.subsystems) {
         std::cout << entry.first;
-        print(std::cout, entry.second.ports);
+        print(std::cout, entry.second.interface);
         if (show_info) {
             if (const auto p = std::get_if<flow::system::executable>(&entry.second.implementation)) {
                 if (!p->file.empty()) {
@@ -1675,7 +1675,7 @@ auto main(int argc, const char * argv[]) -> int
         if (arg.starts_with(des_prefix)) {
             if (const auto p =
                 parse_port_map_entry(arg.substr(size(des_prefix)))) {
-                update(system_stack.top().get().ports, *p);
+                update(system_stack.top().get().interface, *p);
             }
             continue;
         }
@@ -1764,7 +1764,7 @@ auto main(int argc, const char * argv[]) -> int
             do_history(hist, hist_size, args);
         }},
         {"ports", [&](const string_span& args){
-            do_ports(system_stack.top().get().ports, args);
+            do_ports(system_stack.top().get().interface, args);
         }},
         {"cd", [&](const string_span& args){
             do_chdir(system_stack.top().get(), args);

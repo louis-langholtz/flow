@@ -11,8 +11,8 @@ auto operator<<(std::ostream& os, const system& value)
 {
     os << "system{";
     auto top_prefix = "";
-    if (!empty(value.ports)) {
-        os << top_prefix << ".ports=" << value.ports;
+    if (!empty(value.interface)) {
+        os << top_prefix << ".ports=" << value.interface;
         top_prefix = ",";
     }
     os << top_prefix << ".info=";
@@ -64,10 +64,10 @@ auto pretty_print(std::ostream& os, const system& value) -> void
 {
     os << "{\n";
     auto top_prefix = "";
-    if (!empty(value.ports)) {
+    if (!empty(value.interface)) {
         os << top_prefix;
         os << "  .ports={";
-        os << value.ports;
+        os << value.interface;
         os << "}";
         top_prefix = ",\n";
     }
@@ -154,7 +154,7 @@ auto pretty_print(std::ostream& os, const system& value) -> void
 auto get_matching_set(const system& sys, io_type io)
     -> std::set<port_id>
 {
-    return get_matching_set(sys.ports, io);
+    return get_matching_set(sys.interface, io);
 }
 
 auto connect_with_user(const system_name& name,

@@ -401,7 +401,7 @@ auto make_child(instance& parent,
                 const port_map& ports) -> instance
 {
     instance result;
-    const auto all_closed = confirm_closed(name, system.ports,
+    const auto all_closed = confirm_closed(name, system.interface,
                                            connections, ports);
     if (const auto p = std::get_if<system::executable>(&system.implementation)) {
         if (!p->file.has_filename()) {
@@ -658,7 +658,7 @@ auto fork_child(const system_name& name,
         // Also:
         // Close file descriptors inherited by child that it's not using.
         // See: https://stackoverflow.com/a/7976880/7410358
-        setup(root, name, sys.ports, connections, channels, child);
+        setup(root, name, sys.interface, connections, channels, child);
         // NOTE: child.diags streams opened close-on-exec, so no need
         //   to close them.
         if (!exe.working_directory.empty()) {
@@ -765,7 +765,7 @@ auto instantiate(const system& system,
             throw_has_no_filename(p->file, "executable file path ");
         }
         const auto all_closed =
-            confirm_closed({}, system.ports, {}, opts.ports);
+            confirm_closed({}, system.interface, {}, opts.ports);
         result.info = instance::forked{};
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();
@@ -775,14 +775,14 @@ auto instantiate(const system& system,
     }
     else if (const auto p = std::get_if<system::custom>(&system.implementation)) {
         const auto all_closed =
-            confirm_closed({}, system.ports,
+            confirm_closed({}, system.interface,
                            p->connections, opts.ports);
         result.info = instance::custom{};
         auto& info = std::get<instance::custom>(result.info);
         if (!all_closed) {
             info.pgrp = current_process_id();
         }
-        for (auto&& entry: system.ports) {
+        for (auto&& entry: system.interface) {
             const auto look_for = system_endpoint{{}, entry.first};
             if (!find_index(p->connections, look_for)) {
                 std::ostringstream os;
