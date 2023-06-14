@@ -58,3 +58,16 @@ and then exit:
 1. `echo_hello_world`
 1. `exit`
 
+## Bigger Example
+
+```
+systems set cat_system {}
+systems set xargs_system {}
+connections add :1@cat_system-:0@xargs_system
+connections add :2@cat_system-%/dev/null
+connections add :2@xargs_system-%/dev/null
+connections add ^stdin-:0@cat_system
+connections add :1@xargs_system-^stdout
+pop --rebase=sys
+sys &
+```
