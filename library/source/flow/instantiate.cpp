@@ -403,7 +403,7 @@ auto make_child(instance& parent,
     instance result;
     const auto all_closed = confirm_closed(name, system.ports,
                                            connections, ports);
-    if (const auto p = std::get_if<system::executable>(&system.info)) {
+    if (const auto p = std::get_if<system::executable>(&system.implementation)) {
         if (!p->file.has_filename()) {
             std::ostringstream os;
             os << "cannot instantiate " << name << ": executable file path ";
@@ -413,7 +413,7 @@ auto make_child(instance& parent,
         info.diags = ext::temporary_fstream();
         result.info = std::move(info);
     }
-    else if (const auto p = std::get_if<system::custom>(&system.info)) {
+    else if (const auto p = std::get_if<system::custom>(&system.implementation)) {
         result.info = instance::custom{};
         auto& parent_info = std::get<instance::custom>(parent.info);
         auto& info = std::get<instance::custom>(result.info);
@@ -594,7 +594,7 @@ auto fork_child(const system_name& name,
                 instance& root,
                 std::ostream& diags) -> void
 {
-    const auto& exe = std::get<system::executable>(sys.info);
+    const auto& exe = std::get<system::executable>(sys.implementation);
     auto exe_path = exe.file;
     if (exe_path.empty()) {
         diags << "no file specified to execute\n";
@@ -691,13 +691,13 @@ auto fork_executables(const system::custom& system,
             diags << "can't find child instance for " << name << "!\n";
             continue;
         }
-        if (const auto p = std::get_if<system::executable>(&subsystem.info)) {
+        if (const auto p = std::get_if<system::executable>(&subsystem.implementation)) {
             fork_child(name, subsystem, system.environment, found->second,
                        info.pgrp, system.connections, info.channels, root,
                        diags);
             continue;
         }
-        if (const auto p = std::get_if<system::custom>(&subsystem.info)) {
+        if (const auto p = std::get_if<system::custom>(&subsystem.implementation)) {
             fork_executables(*p, found->second, root, diags);
             continue;
         }
@@ -746,7 +746,7 @@ auto close_all_internal_ends(instance::custom& instance,
         if (custom) {
             const auto& sub_system = system.subsystems.at(sub_name);
             close_all_internal_ends(*custom,
-                                    std::get<system::custom>(sub_system.info),
+                                    std::get<system::custom>(sub_system.implementation),
                                     diags);
         }
     }
@@ -760,7 +760,7 @@ auto instantiate(const system& system,
     -> instance
 {
     instance result;
-    if (const auto p = std::get_if<system::executable>(&system.info)) {
+    if (const auto p = std::get_if<system::executable>(&system.implementation)) {
         if (!p->file.has_filename()) {
             throw_has_no_filename(p->file, "executable file path ");
         }
@@ -773,7 +773,7 @@ auto instantiate(const system& system,
         fork_child({}, system, opts.environment, result, pgrp, {}, {}, result,
                    diags);
     }
-    else if (const auto p = std::get_if<system::custom>(&system.info)) {
+    else if (const auto p = std::get_if<system::custom>(&system.implementation)) {
         const auto all_closed =
             confirm_closed({}, system.ports,
                            p->connections, opts.ports);

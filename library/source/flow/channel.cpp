@@ -121,7 +121,7 @@ auto validate(const system_endpoint& end,
         }
         return get_port_type(counts);
     }
-    if (const auto p = std::get_if<system::custom>(&(system.info))) {
+    if (const auto p = std::get_if<system::custom>(&(system.implementation))) {
         const auto found = p->subsystems.find(end.address);
         if (found == p->subsystems.end()) {
             std::ostringstream os;
@@ -146,7 +146,7 @@ auto validate(const system_endpoint& end,
         }
         return get_port_type(counts);
     }
-    if (const auto p = std::get_if<system::executable>(&(system.info))) {
+    if (const auto p = std::get_if<system::executable>(&(system.implementation))) {
         return port_type::unknown;
     }
     throw std::logic_error{"validate: unknown system type"};
@@ -291,7 +291,7 @@ auto make_channel(const unidirectional_connection& conn,
     const auto dst_user = std::get_if<user_endpoint>(&conn.dst);
     if (src_user && dst_user) {
         return make_channel(*src_user, *dst_user,
-                            std::get<system::custom>(system.info).connections,
+                            std::get<system::custom>(system.implementation).connections,
                             channels);
     }
     const auto src_system = std::get_if<system_endpoint>(&conn.src);
