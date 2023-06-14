@@ -428,7 +428,7 @@ auto make_child(instance& parent,
             }
             info.channels.emplace_back(std::move(channel));
         }
-        for (auto&& entry: p->subsystems) {
+        for (auto&& entry: p->nodes) {
             auto kid = make_child(result, entry.first, entry.second,
                                   p->links, ports);
             info.children.emplace(entry.first, std::move(kid));
@@ -683,7 +683,7 @@ auto fork_executables(const system::custom& system,
                       std::ostream& diags) -> void
 {
     auto& info = std::get<instance::custom>(object.info);
-    for (auto&& entry: system.subsystems) {
+    for (auto&& entry: system.nodes) {
         const auto& name = entry.first;
         const auto& subsystem = entry.second;
         const auto found = info.children.find(name);
@@ -744,7 +744,7 @@ auto close_all_internal_ends(instance::custom& instance,
         const auto& sub_name = entry.first;
         const auto custom = std::get_if<instance::custom>(&(entry.second.info));
         if (custom) {
-            const auto& sub_system = system.subsystems.at(sub_name);
+            const auto& sub_system = system.nodes.at(sub_name);
             close_all_internal_ends(*custom,
                                     std::get<system::custom>(sub_system.implementation),
                                     diags);
@@ -797,7 +797,7 @@ auto instantiate(const system& system,
                                                  info.channels, {}, {}));
         }
         // Create all the subsystem instances before forking any!
-        for (auto&& entry: p->subsystems) {
+        for (auto&& entry: p->nodes) {
             const auto& sub_name = entry.first;
             const auto& sub_system = entry.second;
             auto kid = make_child(result, sub_name, sub_system, p->links,

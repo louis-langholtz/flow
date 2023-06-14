@@ -156,7 +156,7 @@ auto find(const system_stack_type& stack, const arguments& args)
     -> const flow::system*
 {
     const auto& custom = std::get<flow::system::custom>(stack.top().get().implementation);
-    for (auto&& entry: custom.subsystems) {
+    for (auto&& entry: custom.nodes) {
         const auto& sub = entry.second;
         if (const auto p = std::get_if<flow::system::executable>(&sub.implementation)) {
             if (p->arguments == args) {
@@ -164,7 +164,7 @@ auto find(const system_stack_type& stack, const arguments& args)
             }
         }
     }
-    if (const auto found = find(custom.subsystems, args[0])) {
+    if (const auto found = find(custom.nodes, args[0])) {
         return found;
     }
     return nullptr;
@@ -288,8 +288,8 @@ auto parse(system_basis from, std::size_t n_remain = 0u) -> system_basis
         if (!p) {
             break;
         }
-        const auto found = p->subsystems.find(from.remaining.front());
-        if (found == p->subsystems.end()) {
+        const auto found = p->nodes.find(from.remaining.front());
+        if (found == p->nodes.end()) {
             break;
         }
         from.psystem = &found->second;
@@ -350,7 +350,7 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
             std::cerr << "no such system as " << arg << "\n";
             continue;
         }
-        if (p->subsystems.erase(arg_basis.remaining.front()) == 0) {
+        if (p->nodes.erase(arg_basis.remaining.front()) == 0) {
             std::cerr << arg << " not found\n";
         }
     }
@@ -440,7 +440,7 @@ auto do_foreground(const flow::system& context, const string_span& args)
         }
     }
     const auto& custom = std::get<flow::system::custom>(context.implementation);
-    const auto found = find(custom.subsystems, nargs[0].c_str());
+    const auto found = find(custom.nodes, nargs[0].c_str());
     if (!found) {
         std::cerr << "no such system as ";
         std::cerr << std::quoted(nargs[0]);
@@ -503,7 +503,7 @@ auto do_rename(flow::system& context, const string_span& args) -> void
         return;
     }
     auto& custom = std::get<flow::system::custom>(context.implementation);
-    auto subsystems = custom.subsystems;
+    auto subsystems = custom.nodes;
     auto nh = subsystems.extract(old_name);
     if (nh.empty()) {
         std::cerr << "no such subsystem as ";
@@ -519,7 +519,7 @@ auto do_rename(flow::system& context, const string_span& args) -> void
         std::cerr << "\n";
         return;
     }
-    custom.subsystems = std::move(subsystems);
+    custom.nodes = std::move(subsystems);
 }
 
 auto do_set_system(flow::system& context, const string_span& args) -> void
@@ -688,7 +688,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
         for (auto&& entry: port_map_entries) {
             update(system.interface, entry);
         }
-        psys->subsystems.insert_or_assign(name_basis.remaining.front(), system);
+        psys->nodes.insert_or_assign(name_basis.remaining.front(), system);
     }
 }
 
@@ -1019,7 +1019,7 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
         }
     }
     const auto& custom = std::get<flow::system::custom>(context.implementation);
-    for (auto&& entry: custom.subsystems) {
+    for (auto&& entry: custom.nodes) {
         std::cout << entry.first;
         print(std::cout, entry.second.interface);
         if (show_info) {
@@ -1040,7 +1040,7 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
             else if (const auto p = std::get_if<flow::system::custom>(&entry.second.implementation)) {
                 std::cout << ' ';
                 std::cout << custom_begin_token;
-                if (show_recursive && !empty(p->subsystems)) {
+                if (show_recursive && !empty(p->nodes)) {
                     std::cout << '\n';
                     auto opts = flow::detail::indenting_ostreambuf_options{
                         .indent = 2
@@ -1584,7 +1584,7 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
     }
     const auto copy_of_top = stack.top().get();
     stack.top().get() = flow::system::custom{
-        .subsystems = {{rebase_name, copy_of_top}}
+        .nodes = {{rebase_name, copy_of_top}}
     };
 }
 
@@ -1856,7 +1856,7 @@ auto main(int argc, const char * argv[]) -> int
             if (tsys != *found) {
                 auto& custom = std::get<flow::system::custom>(context.implementation);
                 derived_name = bg_job_name(args[0]);
-                custom.subsystems.emplace(derived_name, tsys);
+                custom.nodes.emplace(derived_name, tsys);
             }
             if (bg_requested) {
                 if (auto obj = instantiate(derived_name, tsys, opts)) {

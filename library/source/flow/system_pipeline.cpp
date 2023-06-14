@@ -33,7 +33,7 @@ auto system_pipeline::append(const system& sys) -> system_pipeline&
         throw std::invalid_argument{"append system after dst end not allowed"};
     }
     auto sys_inputs = get_matching_set(sys, io_type::in);
-    const auto count = size(info.subsystems);
+    const auto count = size(info.nodes);
     const auto sys_name = system_name{std::to_string(count)};
     if (count == 0u) {
         if (std::holds_alternative<unset_endpoint>(src_end)) {
@@ -52,7 +52,7 @@ auto system_pipeline::append(const system& sys) -> system_pipeline&
     }
     else {
         const auto last_name = system_name{std::to_string(count - 1u)};
-        auto &last = info.subsystems.at(last_name);
+        auto &last = info.nodes.at(last_name);
         auto last_outputs = get_matching_set(last, io_type::out);
         if (empty(last_outputs)) {
             throw std::invalid_argument{"last system must have outputs"};
@@ -65,7 +65,7 @@ auto system_pipeline::append(const system& sys) -> system_pipeline&
             system_endpoint{sys_name, sys_inputs},
         });
     }
-    info.subsystems.emplace(sys_name, sys);
+    info.nodes.emplace(sys_name, sys);
     return *this;
 }
 
@@ -80,7 +80,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
     if (std::holds_alternative<unset_endpoint>(end)) {
         throw std::invalid_argument{"appending unset endpoint not allowed"};
     }
-    const auto count = size(info.subsystems);
+    const auto count = size(info.nodes);
     if (count == 0) {
         if (!std::holds_alternative<unset_endpoint>(src_end)) {
             throw std::invalid_argument{"already have source endpoint"};
@@ -93,7 +93,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
         }
         dst_end = end;
         const auto last_name = system_name{std::to_string(count - 1u)};
-        auto &last = info.subsystems.at(last_name);
+        auto &last = info.nodes.at(last_name);
         auto last_outputs = get_matching_set(last, io_type::out);
         if (empty(last_outputs)) {
             throw std::invalid_argument{"last system must have outputs"};

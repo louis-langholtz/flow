@@ -56,14 +56,14 @@ TEST(instantiate, ls_system)
     const auto cat_process_name = system_name{"cat"};
     system::executable cat_executable;
     cat_executable.file = "/bin/cat";
-    system.subsystems.emplace(cat_process_name, cat_executable);
+    system.nodes.emplace(cat_process_name, cat_executable);
 
     const auto xargs_process_name = system_name{"xargs"};
     system::executable xargs_executable;
     xargs_executable.file = "/usr/bin/xargs";
     xargs_executable.working_directory = no_such_path;
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
-    system.subsystems.emplace(xargs_process_name, xargs_executable);
+    system.nodes.emplace(xargs_process_name, xargs_executable);
 
     const auto cat_stdin = unidirectional_connection{
         user_endpoint{},
@@ -200,7 +200,7 @@ TEST(instantiate, ls_outerr_system)
         user_endpoint{},
     };
     system::custom custom;
-    custom.subsystems = {{ls_exe_name, ls_exe_sys}};
+    custom.nodes = {{ls_exe_name, ls_exe_sys}};
     custom.links = {ls_in, ls_outerr};
     {
         std::ostringstream os;
@@ -261,12 +261,12 @@ TEST(instantiate, env_system)
     };
     auto overriding_system = flow::system{system::custom{
         .environment = {{base_env_name, derived_env_val}},
-        .subsystems = {{env_exe_name, env_exe_sys}},
+        .nodes = {{env_exe_name, env_exe_sys}},
         .links = {env_out},
     }};
     auto base = flow::system{system::custom{
         .environment = {{base_env_name, base_env_val}},
-        .subsystems = {{"overrider", overriding_system}},
+        .nodes = {{"overrider", overriding_system}},
     }};
     {
         std::ostringstream os;
@@ -344,7 +344,7 @@ TEST(instantiate, lsof_system)
 
     flow::system::custom custom;
     custom.environment = get_environ();
-    custom.subsystems.emplace(lsof_name, flow::system{flow::system::executable{
+    custom.nodes.emplace(lsof_name, flow::system{flow::system::executable{
         .file = "lsof",
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
@@ -419,10 +419,10 @@ TEST(instantiate, nested_system)
     const auto xargs_system_name = system_name{"xargs_system"};
     const auto xargs_process_name = system_name{"xargs_process"};
     const system::custom system{
-        .subsystems = {
+        .nodes = {
             {
                 cat_system_name, flow::system{system::custom{
-                    .subsystems = {
+                    .nodes = {
                         {cat_process_name, system::executable{
                             .file = "/bin/cat"
                         }}
@@ -445,7 +445,7 @@ TEST(instantiate, nested_system)
             },
             {
                 xargs_system_name, flow::system{system::custom{
-                    .subsystems = {
+                    .nodes = {
                         {xargs_process_name, system::executable{
                             .file = "/usr/bin/xargs",
                             .arguments = {"xargs", "ls", "-alF"}
@@ -557,7 +557,7 @@ TEST(instantiate, bin_dd)
 {
     const auto exe_name = system_name{"dd"};
     auto sys = flow::system{system::custom{
-        .subsystems = {{exe_name, {
+        .nodes = {{exe_name, {
             system::executable{
                 .file = "/bin/dd",
                 .arguments = {

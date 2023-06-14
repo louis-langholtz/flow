@@ -36,10 +36,10 @@ auto operator<<(std::ostream& os, const system& value)
             os << sub_prefix << ".environment=" << p->environment;
             sub_prefix = ",";
         }
-        if (!empty(p->subsystems)) {
+        if (!empty(p->nodes)) {
             os << ".subsystems={";
             auto prefix = "";
-            for (auto&& entry: p->subsystems) {
+            for (auto&& entry: p->nodes) {
                 os << prefix << "{";
                 os << entry.first;
                 os << "=";
@@ -88,11 +88,11 @@ auto pretty_print(std::ostream& os, const system& value) -> void
             }
             os << "  }";
         }
-        if (!empty(p->subsystems)) {
+        if (!empty(p->nodes)) {
             os << info_prefix;
             os << "\n";
             os << "    .subsystems={\n";
-            for (auto&& entry: p->subsystems) {
+            for (auto&& entry: p->nodes) {
                 os << "      {\n";
                 os << "        .first=" << entry.first << ",\n";
                 os << "        .second=";
