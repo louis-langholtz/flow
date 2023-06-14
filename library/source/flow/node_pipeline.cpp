@@ -1,10 +1,10 @@
 #include "flow/instantiate.hpp"
-#include "flow/system_pipeline.hpp"
+#include "flow/node_pipeline.hpp"
 #include "flow/wait_result.hpp"
 
 namespace flow {
 
-system_pipeline::~system_pipeline()
+node_pipeline::~node_pipeline()
 {
     try {
         switch (current_state) {
@@ -24,7 +24,7 @@ system_pipeline::~system_pipeline()
     }
 }
 
-auto system_pipeline::append(const node& sys) -> system_pipeline&
+auto node_pipeline::append(const node& sys) -> node_pipeline&
 {
     if (current_state != state::setup) {
         throw std::logic_error{"append only supported during setup"};
@@ -69,7 +69,7 @@ auto system_pipeline::append(const node& sys) -> system_pipeline&
     return *this;
 }
 
-auto system_pipeline::append(const endpoint& end) -> system_pipeline&
+auto node_pipeline::append(const endpoint& end) -> node_pipeline&
 {
     if (current_state != state::setup) {
         throw std::logic_error{"append only supported during setup"};
@@ -107,7 +107,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
 
 static_assert(std::is_move_assignable_v<instance::custom>);
 
-auto system_pipeline::instantiate() -> system_pipeline&
+auto node_pipeline::instantiate() -> node_pipeline&
 {
     if (current_state != state::setup) {
         throw std::logic_error{"run only supported during setup"};
@@ -118,7 +118,7 @@ auto system_pipeline::instantiate() -> system_pipeline&
     return *this;
 }
 
-auto system_pipeline::wait() -> std::vector<wait_result>
+auto node_pipeline::wait() -> std::vector<wait_result>
 {
     switch (current_state) {
     case state::waiting:
@@ -138,37 +138,37 @@ auto system_pipeline::wait() -> std::vector<wait_result>
 }
 
 auto operator|(const endpoint& lhs, const node& rhs)
-    -> system_pipeline
+    -> node_pipeline
 {
-    auto pipeline = system_pipeline();
+    auto pipeline = node_pipeline();
     pipeline.append(lhs).append(rhs);
     return pipeline;
 }
 
 auto operator|(const node& lhs, const node& rhs)
-    -> system_pipeline
+    -> node_pipeline
 {
-    auto pipeline = system_pipeline();
+    auto pipeline = node_pipeline();
     pipeline.append(lhs).append(rhs);
     return pipeline;
 }
 
 auto operator|(const node& lhs, const endpoint& rhs)
-    -> system_pipeline
+    -> node_pipeline
 {
-    auto pipeline = system_pipeline();
+    auto pipeline = node_pipeline();
     pipeline.append(lhs).append(rhs);
     return pipeline;
 }
 
-auto operator|(system_pipeline& lhs, const node& rhs)
-    -> system_pipeline&
+auto operator|(node_pipeline& lhs, const node& rhs)
+    -> node_pipeline&
 {
     return lhs.append(rhs);
 }
 
-auto operator|(system_pipeline& lhs, const endpoint& rhs)
-    -> system_pipeline&
+auto operator|(node_pipeline& lhs, const endpoint& rhs)
+    -> node_pipeline&
 {
     return lhs.append(rhs);
 }
