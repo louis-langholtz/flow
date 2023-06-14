@@ -52,9 +52,9 @@ auto operator<<(std::ostream& os, const T& names) -> std::ostream&
 /// @brief Splits the given string by the specified separator.
 /// @throws charset_validator_error if any component is an invalid
 ///   <code>node_name</code>.
-auto to_system_names(std::string_view string,
-                     const std::string_view& separator =
-                     std::string{reserved::system_name_separator})
+auto to_node_names(std::string_view string,
+                   const std::string_view& separator =
+                   std::string{reserved::system_name_separator})
     -> std::deque<node_name>;
 
 }
