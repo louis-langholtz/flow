@@ -15,7 +15,7 @@ TEST(channel, default_construction)
 TEST(make_channel, with_defaulted_args)
 {
     using flow::link; // disambiguate link
-    EXPECT_THROW(make_channel(link{}, system_name{}, flow::node{}, {},
+    EXPECT_THROW(make_channel(link{}, node_name{}, flow::node{}, {},
                               {}, {}), invalid_connection);
 }
 
@@ -25,7 +25,7 @@ TEST(make_channel, with_diff_system_endpoints)
         node_endpoint{"a"},
         node_endpoint{"b"},
     };
-    EXPECT_THROW(make_channel(conn, system_name{}, flow::node{}, {},
+    EXPECT_THROW(make_channel(conn, node_name{}, flow::node{}, {},
                               {}, {}), invalid_connection);
 }
 
@@ -37,7 +37,7 @@ TEST(make_channel, with_diff_sizes)
             {}, {reference_descriptor{1}}
         }}
     };
-    EXPECT_THROW(make_channel(link{}, system_name{}, flow::node{}, {},
+    EXPECT_THROW(make_channel(link{}, node_name{}, flow::node{}, {},
                               pconns, {}), std::logic_error);
 }
 
@@ -45,7 +45,7 @@ TEST(make_channel, for_subsys_to_file)
 {
     using flow::link; // disambiguate link
     auto chan = channel{};
-    const auto name = system_name{};
+    const auto name = node_name{};
     const auto sys = flow::custom{
         .nodes = {
             {"subsys", flow::node{}},
@@ -65,7 +65,7 @@ TEST(make_channel, for_file_to_subsys)
 {
     using flow::link; // disambiguate link
     auto chan = channel{};
-    const auto name = system_name{};
+    const auto name = node_name{};
     const auto sys = flow::custom{
         .nodes = {
             {"subsys", flow::node{}},
@@ -85,7 +85,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
 {
     using flow::link; // disambiguate link
     auto chan = channel{};
-    const auto name = system_name{};
+    const auto name = node_name{};
     const auto sys = flow::custom{
         .nodes = {
             {"subsys_a", flow::node{}},
@@ -106,7 +106,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
 {
     using flow::link; // disambiguate link
     auto chan = channel{};
-    const auto name = system_name{};
+    const auto name = node_name{};
     const auto sys = flow::node{
         flow::custom{
             .nodes = {
@@ -133,9 +133,9 @@ TEST(make_channel, for_exe_subsys_to_sys)
 TEST(make_channel, signal_channel)
 {
     using flow::link; // disambiguate link
-    const auto exe_name = system_name{"exe"};
+    const auto exe_name = node_name{"exe"};
     const auto sig = flow::signals::winch();
-    auto name = flow::system_name{};
+    auto name = flow::node_name{};
     auto sys = flow::node{
         custom{
             .nodes = {{exe_name, {

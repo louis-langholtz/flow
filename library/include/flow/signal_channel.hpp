@@ -5,14 +5,14 @@
 #include <set>
 
 #include "flow/signal.hpp"
-#include "flow/system_name.hpp"
+#include "flow/node_name.hpp"
 
 namespace flow {
 
 struct signal_channel
 {
     std::set<signal> signals{};
-    system_name address;
+    node_name address;
 };
 
 auto operator<<(std::ostream& os, const signal_channel& value)

@@ -137,7 +137,7 @@ auto is_channel_for(const std::span<const channel>& channels,
 }
 
 auto close(pipe_channel& p, pipe_channel::io side,
-           const system_name& name, const link& c,
+           const node_name& name, const link& c,
            std::ostream& diags)
     -> void
 {
@@ -150,7 +150,7 @@ auto close(pipe_channel& p, pipe_channel::io side,
 }
 
 auto dup2(pipe_channel& p, pipe_channel::io side, reference_descriptor id,
-          const system_name& name, const link& c,
+          const node_name& name, const link& c,
           std::ostream& diags)
     -> void
 {
@@ -166,7 +166,7 @@ auto dup2(pipe_channel& p, pipe_channel::io side, reference_descriptor id,
 auto dup2(pipe_channel& pc,
           pipe_channel::io side,
           const std::set<port_id>& ports,
-          const system_name& name,
+          const node_name& name,
           const link& conn,
           std::ostream& diags)
     -> void
@@ -179,7 +179,7 @@ auto dup2(pipe_channel& pc,
     }
 }
 
-auto setup(const system_name& name,
+auto setup(const node_name& name,
            const link& conn,
            pipe_channel& p,
            std::ostream& diags) -> void
@@ -224,7 +224,7 @@ auto to_open_flags(io_type direction)
     return unexpected<std::string>{"unrecognized io_type value"};
 }
 
-auto setup(const system_name& name,
+auto setup(const node_name& name,
            const bidirectional_link& c,
            file_channel& p,
            std::ostream& diags) -> void
@@ -276,7 +276,7 @@ auto setup(const system_name& name,
     }
 }
 
-auto setup(const system_name& name,
+auto setup(const node_name& name,
            const unidirectional_link& conn,
            file_channel& chan,
            std::ostream& diags) -> void
@@ -330,7 +330,7 @@ auto setup(const system_name& name,
     }
 }
 
-auto setup(const system_name& name,
+auto setup(const node_name& name,
            const link& conn,
            file_channel& fchan,
            std::ostream& diags) -> void
@@ -357,7 +357,7 @@ auto exec_child(const std::filesystem::path& path,
     exit(exit_failure_code);
 }
 
-auto confirm_closed(const system_name& name,
+auto confirm_closed(const node_name& name,
                     const port_map& ports,
                     const std::span<const link>& connections,
                     const port_map& available) -> bool
@@ -395,7 +395,7 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 }
 
 auto make_child(instance& parent,
-                const system_name& name,
+                const node_name& name,
                 const node& system,
                 const std::span<const link>& connections,
                 const port_map& ports) -> instance
@@ -483,7 +483,7 @@ auto set_found(const std::span<bool>& found, const port_map& ports)
     }
 }
 
-auto close_unused_ports(const system_name& name,
+auto close_unused_ports(const node_name& name,
                         const std::span<const link>& conns,
                         const port_map& ports)
     -> void
@@ -520,7 +520,7 @@ auto close_pipes_except(instance& root,
     }
 }
 
-auto setup(const system_name& name,
+auto setup(const node_name& name,
            const link& conn,
            channel& chan,
            std::ostream& diags) -> void
@@ -539,7 +539,7 @@ auto setup(const system_name& name,
 }
 
 auto setup(instance& root,
-           const system_name& name,
+           const node_name& name,
            const port_map& ports,
            const std::span<const link>& connections,
            const std::span<channel>& channels,
@@ -584,7 +584,7 @@ auto find_file(const std::filesystem::path& file,
     return {};
 }
 
-auto fork_child(const system_name& name,
+auto fork_child(const node_name& name,
                 const node& sys,
                 const environment_map& env,
                 instance& child,
@@ -711,14 +711,14 @@ auto close_internal_ends(const link& link,
 {
     static constexpr auto iowidth = 5;
     const auto ends = make_endpoints<node_endpoint>(link);
-    if (ends[0] && (ends[0]->address != system_name{})) {
+    if (ends[0] && (ends[0]->address != node_name{})) {
         const auto pio = pipe_channel::io::write;
         diags << "parent: closing ";
         diags << std::setw(iowidth) << pio << " side of ";
         diags << link << " " << channel << "\n";
         channel.close(pio, diags);
     }
-    if (ends[1] && (ends[1]->address != system_name{})) {
+    if (ends[1] && (ends[1]->address != node_name{})) {
         const auto pio = pipe_channel::io::read;
         diags << "parent: closing ";
         diags << std::setw(iowidth) << pio << " side of ";

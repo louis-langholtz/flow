@@ -17,7 +17,7 @@ namespace {
 
 enum class port_type { unknown, descriptor, signal };
 
-auto at(const port_map& ports, const port_id& key, const system_name& name)
+auto at(const port_map& ports, const port_id& key, const node_name& name)
     -> const port_info&
 {
     try {
@@ -26,7 +26,7 @@ auto at(const port_map& ports, const port_id& key, const system_name& name)
     catch (const std::out_of_range& ex) {
         std::ostringstream os;
         os << "can't find " << key << " in ";
-        if (name == system_name{}) {
+        if (name == node_name{}) {
             os << "system's";
         }
         else {
@@ -100,7 +100,7 @@ auto validate(const node_endpoint& end,
               const node& system,
               io_type expected_io) -> port_type
 {
-    if (end.address == system_name{}) {
+    if (end.address == node_name{}) {
         for (auto&& d: end.ports) {
             const auto& d_info = at(system.interface, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
@@ -191,7 +191,7 @@ auto make_channel(const pipe_channel& src, const pipe_channel& dst)
 }
 
 auto make_channel(const std::set<port_id>& dset,
-                  const system_name& name,
+                  const node_name& name,
                   const std::span<const link>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> reference_channel
@@ -248,7 +248,7 @@ auto make_signal_channel(const node_endpoint& src,
         os << "link between different signal sets not supported";
         throw invalid_connection{os.str()};
     }
-    if (src.address != system_name{}) {
+    if (src.address != node_name{}) {
         std::ostringstream os;
         os << "link src system endpoint for signal(s) must be";
         os << " empty address; not ";
@@ -264,11 +264,11 @@ auto make_signal_channel(const node_endpoint& src,
 auto get_interface_ports(const node_endpoint* end)
     -> const std::set<port_id>*
 {
-    return (end && (end->address == system_name{}))? &(end->ports): nullptr;
+    return (end && (end->address == node_name{}))? &(end->ports): nullptr;
 }
 
 auto make_channel(const unidirectional_link& conn,
-                  const system_name& name,
+                  const node_name& name,
                   const node& system,
                   const std::span<channel>& channels,
                   const std::span<const link>& parent_connections,
@@ -348,7 +348,7 @@ auto make_channel(const unidirectional_link& conn,
 }
 
 auto make_channel(const link& conn,
-                  const system_name& name,
+                  const node_name& name,
                   const node& system,
                   const std::span<channel>& channels,
                   const std::span<const link>& parent_connections,

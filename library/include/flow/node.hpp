@@ -13,7 +13,7 @@
 #include "flow/port_map.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/io_type.hpp"
-#include "flow/system_name.hpp"
+#include "flow/node_name.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
@@ -29,7 +29,7 @@ struct custom
     /// @brief Subsystems.
     /// @note The identifying key of a subsystem is considered an _external_
     ///   component of that subsystems.
-    std::map<system_name, node> nodes;
+    std::map<node_name, node> nodes;
 
     /// @brief Connections.
     /// @note The connections of this system are considered _internal_
@@ -129,7 +129,7 @@ auto get_matching_set(const node& sys, io_type io)
 /// @throws std::invalid_argument if a port map entry has a direction
 ///   other than <code>io_type::in</code>, <code>io_type::out</code> or
 ///   <code>io_type::bidir</code>.
-auto connect_with_user(const system_name& name,
+auto connect_with_user(const node_name& name,
                        const port_map& ports)
     -> std::vector<link>;
 

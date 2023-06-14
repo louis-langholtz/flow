@@ -24,9 +24,9 @@ struct node_name_checker: detail::allowed_chars_checker<detail::name_charset>
 ///   character set. An <code>charset_validator_error</code> exception is
 ///   thrown otherwise.
 /// @see system.
-using system_name = detail::checked<std::string, node_name_checker>;
+using node_name = detail::checked<std::string, node_name_checker>;
 
-auto operator<<(std::ostream& os, const system_name& name) -> std::ostream&;
+auto operator<<(std::ostream& os, const node_name& name) -> std::ostream&;
 
 template <class T, class V>
 concept is_iterable = requires(T x)
@@ -35,7 +35,7 @@ concept is_iterable = requires(T x)
     {*end(x)} -> std::same_as<V&>;
 };
 
-template <is_iterable<system_name> T>
+template <is_iterable<node_name> T>
 auto operator<<(std::ostream& os, const T& names) -> std::ostream&
 {
     auto add_separator = false;
@@ -51,11 +51,11 @@ auto operator<<(std::ostream& os, const T& names) -> std::ostream&
 
 /// @brief Splits the given string by the specified separator.
 /// @throws charset_validator_error if any component is an invalid
-///   <code>system_name</code>.
+///   <code>node_name</code>.
 auto to_system_names(std::string_view string,
                      const std::string_view& separator =
                      std::string{reserved::system_name_separator})
-    -> std::deque<system_name>;
+    -> std::deque<node_name>;
 
 }
 

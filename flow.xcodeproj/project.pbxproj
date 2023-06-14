@@ -56,8 +56,8 @@
 		99940BF729F1DAE800A77461 /* reference_descriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BF529F1DAE800A77461 /* reference_descriptor.cpp */; };
 		99940BF829F1DAE800A77461 /* reference_descriptor.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BF629F1DAE800A77461 /* reference_descriptor.hpp */; };
 		99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BFA29F1F49F00A77461 /* process_id.hpp */; };
-		99940BFF29F1F73900A77461 /* system_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BFD29F1F73900A77461 /* system_name.cpp */; };
-		99940C0029F1F73900A77461 /* system_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BFE29F1F73900A77461 /* system_name.hpp */; };
+		99940BFF29F1F73900A77461 /* node_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99940BFD29F1F73900A77461 /* node_name.cpp */; };
+		99940C0029F1F73900A77461 /* node_name.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99940BFE29F1F73900A77461 /* node_name.hpp */; };
 		99A88D182A0B1BC500AFD76F /* port_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D162A0B1BC500AFD76F /* port_info.cpp */; };
 		99A88D192A0B1BC500AFD76F /* port_info.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D172A0B1BC500AFD76F /* port_info.hpp */; };
 		99A88D1C2A0B1D8600AFD76F /* port_map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D1A2A0B1D8600AFD76F /* port_map.cpp */; };
@@ -78,7 +78,7 @@
 		99A88D482A1426CE00AFD76F /* instantiate.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D462A1426CE00AFD76F /* instantiate.hpp */; };
 		99A88D4B2A15903A00AFD76F /* charset_checker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D492A15903A00AFD76F /* charset_checker.cpp */; };
 		99A88D4C2A15903A00AFD76F /* charset_checker.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D4A2A15903A00AFD76F /* charset_checker.hpp */; };
-		99A88D4E2A16BB3600AFD76F /* system_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D4D2A16BB3600AFD76F /* system_name.cpp */; };
+		99A88D4E2A16BB3600AFD76F /* node_name.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D4D2A16BB3600AFD76F /* node_name.cpp */; };
 		99A88D522A17D4E500AFD76F /* tcstring.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D502A17D4E500AFD76F /* tcstring.hpp */; };
 		99A88D542A17F93A00AFD76F /* channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D532A17F93A00AFD76F /* channel.cpp */; };
 		99BD75092A3799DB00186221 /* charset_checker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD75082A3799DB00186221 /* charset_checker.cpp */; };
@@ -219,8 +219,8 @@
 		99940BF529F1DAE800A77461 /* reference_descriptor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = reference_descriptor.cpp; sourceTree = "<group>"; };
 		99940BF629F1DAE800A77461 /* reference_descriptor.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = reference_descriptor.hpp; sourceTree = "<group>"; };
 		99940BFA29F1F49F00A77461 /* process_id.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = process_id.hpp; sourceTree = "<group>"; };
-		99940BFD29F1F73900A77461 /* system_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_name.cpp; sourceTree = "<group>"; };
-		99940BFE29F1F73900A77461 /* system_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_name.hpp; sourceTree = "<group>"; };
+		99940BFD29F1F73900A77461 /* node_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node_name.cpp; sourceTree = "<group>"; };
+		99940BFE29F1F73900A77461 /* node_name.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = node_name.hpp; sourceTree = "<group>"; };
 		99A88D162A0B1BC500AFD76F /* port_info.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = port_info.cpp; sourceTree = "<group>"; };
 		99A88D172A0B1BC500AFD76F /* port_info.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = port_info.hpp; sourceTree = "<group>"; };
 		99A88D1A2A0B1D8600AFD76F /* port_map.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = port_map.cpp; sourceTree = "<group>"; };
@@ -240,7 +240,7 @@
 		99A88D462A1426CE00AFD76F /* instantiate.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = instantiate.hpp; sourceTree = "<group>"; };
 		99A88D492A15903A00AFD76F /* charset_checker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = charset_checker.cpp; sourceTree = "<group>"; };
 		99A88D4A2A15903A00AFD76F /* charset_checker.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = charset_checker.hpp; sourceTree = "<group>"; };
-		99A88D4D2A16BB3600AFD76F /* system_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_name.cpp; sourceTree = "<group>"; };
+		99A88D4D2A16BB3600AFD76F /* node_name.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node_name.cpp; sourceTree = "<group>"; };
 		99A88D502A17D4E500AFD76F /* tcstring.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = tcstring.hpp; sourceTree = "<group>"; };
 		99A88D532A17F93A00AFD76F /* channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = channel.cpp; sourceTree = "<group>"; };
 		99BD75072A36822C00186221 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -379,7 +379,6 @@
 				99BD750B2A38E0B700186221 /* char_template_joiner.hpp */,
 				99A88D4A2A15903A00AFD76F /* charset_checker.hpp */,
 				9943E8B52A06F6ED002F4C26 /* checked.hpp */,
-				99C1939229F511B700C3F53F /* link.hpp */,
 				9986C7A12A19102E006B2095 /* descriptor.hpp */,
 				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
 				9943E88B2A005069002F4C26 /* endpoint.hpp */,
@@ -393,6 +392,10 @@
 				99C1939A29F5774600C3F53F /* instance.hpp */,
 				99A88D462A1426CE00AFD76F /* instantiate.hpp */,
 				99940BED29F1C9A500A77461 /* io_type.hpp */,
+				99C1939229F511B700C3F53F /* link.hpp */,
+				99C1939629F5136100C3F53F /* node.hpp */,
+				99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */,
+				99940BFE29F1F73900A77461 /* node_name.hpp */,
 				9943E87529FB444F002F4C26 /* os_error_code.hpp */,
 				9986C7A52A19105A006B2095 /* owning_descriptor.hpp */,
 				9943E89E2A04A63F002F4C26 /* owning_process_id.hpp */,
@@ -406,9 +409,6 @@
 				9986C7B52A20F990006B2095 /* reserved.hpp */,
 				992A247C2A2BB6540074248B /* signal.hpp */,
 				992A24802A2D16280074248B /* signal_channel.hpp */,
-				99C1939629F5136100C3F53F /* node.hpp */,
-				99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */,
-				99940BFE29F1F73900A77461 /* system_name.hpp */,
 				99A88D1F2A0B431300AFD76F /* system_pipeline.hpp */,
 				99A88D502A17D4E500AFD76F /* tcstring.hpp */,
 				99A88D232A0C229400AFD76F /* unset_endpoint.hpp */,
@@ -427,7 +427,6 @@
 			children = (
 				99C1938D29F50EFD00C3F53F /* channel.cpp */,
 				99A88D492A15903A00AFD76F /* charset_checker.cpp */,
-				99C1939129F511B700C3F53F /* link.cpp */,
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
 				9986C7B02A1C455C006B2095 /* endpoint.cpp */,
 				9943E89B2A0453F3002F4C26 /* environment_map.cpp */,
@@ -438,6 +437,10 @@
 				99C1939929F5774600C3F53F /* instance.cpp */,
 				99A88D452A1426CE00AFD76F /* instantiate.cpp */,
 				99940BEC29F1C9A500A77461 /* io_type.cpp */,
+				99C1939129F511B700C3F53F /* link.cpp */,
+				99C1939529F5136100C3F53F /* node.cpp */,
+				99C1937929F4D70F00C3F53F /* node_endpoint.cpp */,
+				99940BFD29F1F73900A77461 /* node_name.cpp */,
 				9943E87429FB444F002F4C26 /* os_error_code.cpp */,
 				9986C7A42A19105A006B2095 /* owning_descriptor.cpp */,
 				9943E89D2A04A63F002F4C26 /* owning_process_id.cpp */,
@@ -451,9 +454,6 @@
 				9943E8A12A04A783002F4C26 /* reference_process_id.cpp */,
 				992A247B2A2BB6540074248B /* signal.cpp */,
 				992A247F2A2D16280074248B /* signal_channel.cpp */,
-				99C1939529F5136100C3F53F /* node.cpp */,
-				99C1937929F4D70F00C3F53F /* node_endpoint.cpp */,
-				99940BFD29F1F73900A77461 /* system_name.cpp */,
 				99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */,
 				99A88D222A0C229400AFD76F /* unset_endpoint.cpp */,
 				9943E8952A021E98002F4C26 /* user_endpoint.cpp */,
@@ -478,9 +478,9 @@
 				99A88D3D2A1003DC00AFD76F /* fstream.cpp */,
 				99A88D3B2A0FB2B100AFD76F /* instance.cpp */,
 				99A88D3F2A115E5D00AFD76F /* instantiate.cpp */,
-				9986C7A82A19139A006B2095 /* owning_descriptor.cpp */,
 				99A88D292A0EF52400AFD76F /* node.cpp */,
-				99A88D4D2A16BB3600AFD76F /* system_name.cpp */,
+				99A88D4D2A16BB3600AFD76F /* node_name.cpp */,
+				9986C7A82A19139A006B2095 /* owning_descriptor.cpp */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -526,7 +526,7 @@
 				99A88D522A17D4E500AFD76F /* tcstring.hpp in Headers */,
 				9943E8902A0068C6002F4C26 /* indenting_ostreambuf.hpp in Headers */,
 				9943E8B02A06F10F002F4C26 /* env_name.hpp in Headers */,
-				99940C0029F1F73900A77461 /* system_name.hpp in Headers */,
+				99940C0029F1F73900A77461 /* node_name.hpp in Headers */,
 				99C193A029F5819A00C3F53F /* utility.hpp in Headers */,
 				9986C7AF2A19220A006B2095 /* forwarding_channel.hpp in Headers */,
 				99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */,
@@ -673,7 +673,7 @@
 				99C1939329F511B700C3F53F /* link.cpp in Sources */,
 				99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */,
 				9943E8A32A04A783002F4C26 /* reference_process_id.cpp in Sources */,
-				99940BFF29F1F73900A77461 /* system_name.cpp in Sources */,
+				99940BFF29F1F73900A77461 /* node_name.cpp in Sources */,
 				99BD75102A3A66C400186221 /* fstream.cpp in Sources */,
 				99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */,
 				99F29E2B2A269A9C00D861B0 /* port_id.cpp in Sources */,
@@ -708,7 +708,7 @@
 				99FE1CAE2A25697B00D24AE3 /* forwarding_channel.cpp in Sources */,
 				99A88D402A115E5D00AFD76F /* instantiate.cpp in Sources */,
 				9986C7A92A19139A006B2095 /* owning_descriptor.cpp in Sources */,
-				99A88D4E2A16BB3600AFD76F /* system_name.cpp in Sources */,
+				99A88D4E2A16BB3600AFD76F /* node_name.cpp in Sources */,
 				99A88D3C2A0FB2B100AFD76F /* instance.cpp in Sources */,
 				99A88D542A17F93A00AFD76F /* channel.cpp in Sources */,
 				99A88D3A2A0EF73800AFD76F /* node.cpp in Sources */,
