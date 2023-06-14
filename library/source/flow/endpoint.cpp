@@ -28,7 +28,7 @@ auto operator>>(std::istream& is, endpoint& value) -> std::istream&
     }
     is.clear();
     {
-        auto tmp = system_endpoint{};
+        auto tmp = node_endpoint{};
         is >> tmp;
         if (!is.fail()) {
             value = tmp;

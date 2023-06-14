@@ -14,14 +14,14 @@
 
 namespace flow {
 
-struct system_endpoint
+struct node_endpoint
 {
-    explicit system_endpoint(system_name a = {}): address{std::move(a)} {}
+    explicit node_endpoint(system_name a = {}): address{std::move(a)} {}
 
-    system_endpoint(system_name a, std::set<port_id> d):
+    node_endpoint(system_name a, std::set<port_id> d):
         address{std::move(a)}, ports{std::move(d)} {}
 
-    system_endpoint(system_name a,
+    node_endpoint(system_name a,
                     std::convertible_to<port_id> auto&& ...d):
         address{std::move(a)}, ports{std::move(d)...} {}
 
@@ -33,34 +33,34 @@ struct system_endpoint
 };
 
 // Ensure regularity in terms of special member functions supported...
-static_assert(std::is_default_constructible_v<system_endpoint>);
-static_assert(std::is_copy_constructible_v<system_endpoint>);
-static_assert(std::is_move_constructible_v<system_endpoint>);
-static_assert(std::is_copy_assignable_v<system_endpoint>);
-static_assert(std::is_move_assignable_v<system_endpoint>);
+static_assert(std::is_default_constructible_v<node_endpoint>);
+static_assert(std::is_copy_constructible_v<node_endpoint>);
+static_assert(std::is_move_constructible_v<node_endpoint>);
+static_assert(std::is_copy_assignable_v<node_endpoint>);
+static_assert(std::is_move_assignable_v<node_endpoint>);
 
 // Ensure initializing construction supported for contained types...
-static_assert(std::is_constructible_v<system_endpoint,
+static_assert(std::is_constructible_v<node_endpoint,
               system_name>);
-static_assert(std::is_constructible_v<system_endpoint,
+static_assert(std::is_constructible_v<node_endpoint,
               system_name, std::set<port_id>>);
 
 // Ensure pack-expansion constructor works for descriptor_id's...
-static_assert(std::is_constructible_v<system_endpoint,
+static_assert(std::is_constructible_v<node_endpoint,
               system_name, reference_descriptor>);
-static_assert(std::is_constructible_v<system_endpoint,
+static_assert(std::is_constructible_v<node_endpoint,
               system_name, reference_descriptor, reference_descriptor>);
 
-inline auto operator==(const system_endpoint& lhs,
-                       const system_endpoint& rhs) -> bool
+inline auto operator==(const node_endpoint& lhs,
+                       const node_endpoint& rhs) -> bool
 {
     return (lhs.address == rhs.address)
         && (lhs.ports == rhs.ports);
 }
 
-auto operator<<(std::ostream& os, const system_endpoint& value)
+auto operator<<(std::ostream& os, const node_endpoint& value)
     -> std::ostream&;
-auto operator>>(std::istream& is, system_endpoint& value) -> std::istream&;
+auto operator>>(std::istream& is, node_endpoint& value) -> std::istream&;
 
 auto to_ports(std::string_view string) -> std::set<port_id>;
 

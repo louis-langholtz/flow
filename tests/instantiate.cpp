@@ -67,23 +67,23 @@ TEST(instantiate, ls_system)
 
     const auto cat_stdin = unidirectional_link{
         user_endpoint{},
-        system_endpoint{cat_process_name, reference_descriptor{0}}
+        node_endpoint{cat_process_name, reference_descriptor{0}}
     };
     const auto xargs_stdout = unidirectional_link{
-        system_endpoint{xargs_process_name, reference_descriptor{1}},
+        node_endpoint{xargs_process_name, reference_descriptor{1}},
         user_endpoint{},
     };
     system.links.push_back(cat_stdin);
     system.links.push_back(unidirectional_link{
-        system_endpoint{cat_process_name, reference_descriptor{1}},
-        system_endpoint{xargs_process_name, reference_descriptor{0}},
+        node_endpoint{cat_process_name, reference_descriptor{1}},
+        node_endpoint{xargs_process_name, reference_descriptor{0}},
     });
     system.links.push_back(unidirectional_link{
-        system_endpoint{cat_process_name, reference_descriptor{2}},
+        node_endpoint{cat_process_name, reference_descriptor{2}},
         file_endpoint::dev_null,
     });
     system.links.push_back(unidirectional_link{
-        system_endpoint{xargs_process_name, reference_descriptor{2}},
+        node_endpoint{xargs_process_name, reference_descriptor{2}},
         file_endpoint::dev_null,
     });
     system.links.push_back(xargs_stdout);
@@ -193,10 +193,10 @@ TEST(instantiate, ls_outerr_system)
     };
     const auto ls_in = unidirectional_link{
         file_endpoint::dev_null,
-        system_endpoint{ls_exe_name, stdin_id},
+        node_endpoint{ls_exe_name, stdin_id},
     };
     const auto ls_outerr = unidirectional_link{
-        system_endpoint{ls_exe_name, stdout_id, stderr_id},
+        node_endpoint{ls_exe_name, stdout_id, stderr_id},
         user_endpoint{},
     };
     custom custom;
@@ -252,7 +252,7 @@ TEST(instantiate, env_system)
     const auto derived_env_val = env_value{"derived value"};
     const auto env_exe_name = system_name{"env_exe"};
     const auto env_out = unidirectional_link{
-        system_endpoint{env_exe_name, stdout_id},
+        node_endpoint{env_exe_name, stdout_id},
         user_endpoint{},
     };
     const auto env_exe_sys = flow::node{
@@ -339,7 +339,7 @@ TEST(instantiate, lsof_system)
 {
     const auto lsof_name = system_name{"lsof"};
     const auto lsof_stdout = unidirectional_link{
-        system_endpoint{lsof_name, stdout_id}, user_endpoint{},
+        node_endpoint{lsof_name, stdout_id}, user_endpoint{},
     };
 
     flow::custom custom;
@@ -350,11 +350,11 @@ TEST(instantiate, lsof_system)
         .working_directory = "/usr/local",
     }, std_ports});
     custom.links.push_back(unidirectional_link{
-        file_endpoint::dev_null, system_endpoint{lsof_name, stdin_id},
+        file_endpoint::dev_null, node_endpoint{lsof_name, stdin_id},
     });
     custom.links.push_back(lsof_stdout);
     custom.links.push_back(unidirectional_link{
-        system_endpoint{lsof_name, stderr_id}, file_endpoint::dev_null,
+        node_endpoint{lsof_name, stderr_id}, file_endpoint::dev_null,
     });
     {
         std::stringstream os;
@@ -429,16 +429,16 @@ TEST(instantiate, nested_system)
                     },
                     .links = {
                         unidirectional_link{
-                            system_endpoint{system_name{}, reference_descriptor{0}},
-                            system_endpoint{cat_process_name, reference_descriptor{0}}
+                            node_endpoint{system_name{}, reference_descriptor{0}},
+                            node_endpoint{cat_process_name, reference_descriptor{0}}
                         },
                         unidirectional_link{
-                            system_endpoint{cat_process_name, reference_descriptor{1}},
-                            system_endpoint{system_name{}, reference_descriptor{1}},
+                            node_endpoint{cat_process_name, reference_descriptor{1}},
+                            node_endpoint{system_name{}, reference_descriptor{1}},
                         },
                         unidirectional_link{
-                            system_endpoint{cat_process_name, reference_descriptor{2}},
-                            system_endpoint{system_name{}, reference_descriptor{2}},
+                            node_endpoint{cat_process_name, reference_descriptor{2}},
+                            node_endpoint{system_name{}, reference_descriptor{2}},
                         }
                     }
                 }, std_ports}
@@ -453,16 +453,16 @@ TEST(instantiate, nested_system)
                     },
                     .links = {
                         unidirectional_link{
-                            system_endpoint{system_name{}, reference_descriptor{0}},
-                            system_endpoint{xargs_process_name, reference_descriptor{0}}
+                            node_endpoint{system_name{}, reference_descriptor{0}},
+                            node_endpoint{xargs_process_name, reference_descriptor{0}}
                         },
                         unidirectional_link{
-                            system_endpoint{xargs_process_name, reference_descriptor{1}},
-                            system_endpoint{system_name{}, reference_descriptor{1}},
+                            node_endpoint{xargs_process_name, reference_descriptor{1}},
+                            node_endpoint{system_name{}, reference_descriptor{1}},
                         },
                         unidirectional_link{
-                            system_endpoint{xargs_process_name, reference_descriptor{2}},
-                            system_endpoint{system_name{}, reference_descriptor{2}},
+                            node_endpoint{xargs_process_name, reference_descriptor{2}},
+                            node_endpoint{system_name{}, reference_descriptor{2}},
                         }
                     }
                 }, std_ports}
@@ -471,22 +471,22 @@ TEST(instantiate, nested_system)
         .links = {
             unidirectional_link{
                 user_endpoint{},
-                system_endpoint{cat_system_name, reference_descriptor{0}},
+                node_endpoint{cat_system_name, reference_descriptor{0}},
             },
             unidirectional_link{
-                system_endpoint{cat_system_name, reference_descriptor{1}},
-                system_endpoint{xargs_system_name, reference_descriptor{0}},
+                node_endpoint{cat_system_name, reference_descriptor{1}},
+                node_endpoint{xargs_system_name, reference_descriptor{0}},
             },
             unidirectional_link{
-                system_endpoint{cat_system_name, reference_descriptor{2}},
+                node_endpoint{cat_system_name, reference_descriptor{2}},
                 file_endpoint::dev_null,
             },
             unidirectional_link{
-                system_endpoint{xargs_system_name, reference_descriptor{2}},
+                node_endpoint{xargs_system_name, reference_descriptor{2}},
                 file_endpoint::dev_null,
             },
             unidirectional_link{
-                system_endpoint{xargs_system_name, reference_descriptor{1}},
+                node_endpoint{xargs_system_name, reference_descriptor{1}},
                 user_endpoint{},
             }
         }
@@ -581,7 +581,7 @@ TEST(instantiate, bin_dd)
             }
         }}},
         .links = {unidirectional_link{
-            system_endpoint{exe_name, reference_descriptor{2}},
+            node_endpoint{exe_name, reference_descriptor{2}},
             user_endpoint{},
         }},
     }};

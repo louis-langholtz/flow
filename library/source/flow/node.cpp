@@ -168,18 +168,18 @@ auto connect_with_user(const system_name& name,
         case io_type::in:
             result.emplace_back(unidirectional_link{
                 user_endpoint{user_ep_name},
-                system_endpoint{name, entry.first},
+                node_endpoint{name, entry.first},
             });
             break;
         case io_type::out:
             result.emplace_back(unidirectional_link{
-                system_endpoint{name, entry.first},
+                node_endpoint{name, entry.first},
                 user_endpoint{user_ep_name},
             });
             break;
         case io_type::bidir:
             result.emplace_back(bidirectional_link{
-                system_endpoint{name, entry.first},
+                node_endpoint{name, entry.first},
                 user_endpoint{user_ep_name},
             });
             break;

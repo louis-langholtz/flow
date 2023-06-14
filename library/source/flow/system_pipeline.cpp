@@ -46,7 +46,7 @@ auto system_pipeline::append(const node& sys) -> system_pipeline&
                 throw std::invalid_argument{"current system must have inputs"};
             }
             info.links.emplace_back(unidirectional_link{
-                src_end, system_endpoint{sys_name, sys_inputs},
+                src_end, node_endpoint{sys_name, sys_inputs},
             });
         }
     }
@@ -61,8 +61,8 @@ auto system_pipeline::append(const node& sys) -> system_pipeline&
             throw std::invalid_argument{"current system must have inputs"};
         }
         info.links.emplace_back(unidirectional_link{
-            system_endpoint{last_name, std::move(last_outputs)},
-            system_endpoint{sys_name, sys_inputs},
+            node_endpoint{last_name, std::move(last_outputs)},
+            node_endpoint{sys_name, sys_inputs},
         });
     }
     info.nodes.emplace(sys_name, sys);
@@ -74,7 +74,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
     if (current_state != state::setup) {
         throw std::logic_error{"append only supported during setup"};
     }
-    if (std::holds_alternative<system_endpoint>(end)) {
+    if (std::holds_alternative<node_endpoint>(end)) {
         throw std::invalid_argument{"appending system endpoint not allowed"};
     }
     if (std::holds_alternative<unset_endpoint>(end)) {
@@ -99,7 +99,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
             throw std::invalid_argument{"last system must have outputs"};
         }
         info.links.emplace_back(unidirectional_link{
-            system_endpoint{last_name, std::move(last_outputs)}, dst_end,
+            node_endpoint{last_name, std::move(last_outputs)}, dst_end,
         });
     }
     return *this;

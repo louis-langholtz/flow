@@ -4,7 +4,7 @@
 #include <istream>
 
 #include "flow/file_endpoint.hpp"
-#include "flow/system_endpoint.hpp"
+#include "flow/node_endpoint.hpp"
 #include "flow/unset_endpoint.hpp"
 #include "flow/user_endpoint.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
@@ -19,7 +19,7 @@ namespace flow {
 using endpoint = variant<
     unset_endpoint,
     user_endpoint,
-    system_endpoint,
+    node_endpoint,
     file_endpoint
 >;
 

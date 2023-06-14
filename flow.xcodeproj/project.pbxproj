@@ -83,8 +83,8 @@
 		99A88D542A17F93A00AFD76F /* channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D532A17F93A00AFD76F /* channel.cpp */; };
 		99BD75092A3799DB00186221 /* charset_checker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD75082A3799DB00186221 /* charset_checker.cpp */; };
 		99BD750D2A38E0B700186221 /* char_template_joiner.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99BD750B2A38E0B700186221 /* char_template_joiner.hpp */; };
-		99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* system_endpoint.cpp */; };
-		99C1937C29F4D70F00C3F53F /* system_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */; };
+		99C1937B29F4D70F00C3F53F /* node_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* node_endpoint.cpp */; };
+		99C1937C29F4D70F00C3F53F /* node_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */; };
 		99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938129F506C200C3F53F /* file_endpoint.cpp */; };
 		99C1938429F506C200C3F53F /* file_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1938229F506C200C3F53F /* file_endpoint.hpp */; };
 		99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938D29F50EFD00C3F53F /* channel.cpp */; };
@@ -245,8 +245,8 @@
 		99BD75072A36822C00186221 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		99BD75082A3799DB00186221 /* charset_checker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = charset_checker.cpp; sourceTree = "<group>"; };
 		99BD750B2A38E0B700186221 /* char_template_joiner.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = char_template_joiner.hpp; sourceTree = "<group>"; };
-		99C1937929F4D70F00C3F53F /* system_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system_endpoint.cpp; sourceTree = "<group>"; };
-		99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_endpoint.hpp; sourceTree = "<group>"; };
+		99C1937929F4D70F00C3F53F /* node_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node_endpoint.cpp; sourceTree = "<group>"; };
+		99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = node_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
 		99C1938229F506C200C3F53F /* file_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = file_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938D29F50EFD00C3F53F /* channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = channel.cpp; sourceTree = "<group>"; };
@@ -404,7 +404,7 @@
 				992A247C2A2BB6540074248B /* signal.hpp */,
 				992A24802A2D16280074248B /* signal_channel.hpp */,
 				99C1939629F5136100C3F53F /* node.hpp */,
-				99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */,
+				99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */,
 				99940BFE29F1F73900A77461 /* system_name.hpp */,
 				99A88D1F2A0B431300AFD76F /* system_pipeline.hpp */,
 				99A88D502A17D4E500AFD76F /* tcstring.hpp */,
@@ -449,7 +449,7 @@
 				992A247B2A2BB6540074248B /* signal.cpp */,
 				992A247F2A2D16280074248B /* signal_channel.cpp */,
 				99C1939529F5136100C3F53F /* node.cpp */,
-				99C1937929F4D70F00C3F53F /* system_endpoint.cpp */,
+				99C1937929F4D70F00C3F53F /* node_endpoint.cpp */,
 				99940BFD29F1F73900A77461 /* system_name.cpp */,
 				99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */,
 				99A88D222A0C229400AFD76F /* unset_endpoint.cpp */,
@@ -528,7 +528,7 @@
 				9943E87729FB444F002F4C26 /* os_error_code.hpp in Headers */,
 				9943E8A42A04A783002F4C26 /* reference_process_id.hpp in Headers */,
 				99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */,
-				99C1937C29F4D70F00C3F53F /* system_endpoint.hpp in Headers */,
+				99C1937C29F4D70F00C3F53F /* node_endpoint.hpp in Headers */,
 				9943E87B29FBF418002F4C26 /* wait_status.hpp in Headers */,
 				9943E88C2A005069002F4C26 /* endpoint.hpp in Headers */,
 				9986C7B72A20F990006B2095 /* reserved.hpp in Headers */,
@@ -678,7 +678,7 @@
 				99A88D4B2A15903A00AFD76F /* charset_checker.cpp in Sources */,
 				99A88D1C2A0B1D8600AFD76F /* port_map.cpp in Sources */,
 				99C1939F29F5819A00C3F53F /* utility.cpp in Sources */,
-				99C1937B29F4D70F00C3F53F /* system_endpoint.cpp in Sources */,
+				99C1937B29F4D70F00C3F53F /* node_endpoint.cpp in Sources */,
 				9943E89C2A0453F3002F4C26 /* environment_map.cpp in Sources */,
 				99A88D472A1426CE00AFD76F /* instantiate.cpp in Sources */,
 				99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */,
