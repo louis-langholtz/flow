@@ -13,7 +13,7 @@
 
 namespace flow {
 
-struct system_name_checker: detail::allowed_chars_checker<detail::name_charset>
+struct node_name_checker: detail::allowed_chars_checker<detail::name_charset>
 {
 };
 
@@ -24,7 +24,7 @@ struct system_name_checker: detail::allowed_chars_checker<detail::name_charset>
 ///   character set. An <code>charset_validator_error</code> exception is
 ///   thrown otherwise.
 /// @see system.
-using system_name = detail::checked<std::string, system_name_checker>;
+using system_name = detail::checked<std::string, node_name_checker>;
 
 auto operator<<(std::ostream& os, const system_name& name) -> std::ostream&;
 
