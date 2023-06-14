@@ -26,14 +26,13 @@ struct custom
     /// @note This is considered an _internal_ component of this type.
     environment_map environment;
 
-    /// @brief Subsystems.
-    /// @note The identifying key of a subsystem is considered an _external_
-    ///   component of that subsystems.
+    /// @brief Nodes.
+    /// @note The identifying key of a node is considered an _external_
+    ///   component of that node.
     std::map<node_name, node> nodes;
 
-    /// @brief Connections.
-    /// @note The connections of this system are considered _internal_
-    ///   components.
+    /// @brief Links.
+    /// @note The links of a system are considered _internal_ components.
     std::vector<link> links;
 };
 
@@ -124,7 +123,7 @@ auto pretty_print(std::ostream& os, const node& value) -> void;
 auto get_matching_set(const node& sys, io_type io)
     -> std::set<port_id>;
 
-/// @brief Makes connections for each of the specified ports with
+/// @brief Makes links for each of the specified ports with
 ///   <code>user_endpoint</code> on the other end.
 /// @throws std::invalid_argument if a port map entry has a direction
 ///   other than <code>io_type::in</code>, <code>io_type::out</code> or

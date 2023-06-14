@@ -97,12 +97,12 @@ auto get_port_type(const port_size_array& counts) -> port_type
 }
 
 auto validate(const node_endpoint& end,
-              const node& system,
+              const node& node,
               io_type expected_io) -> port_type
 {
     if (end.address == node_name{}) {
         for (auto&& d: end.ports) {
-            const auto& d_info = at(system.interface, d, end.address);
+            const auto& d_info = at(node.interface, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
                 std::ostringstream os;
                 os << "bad custom system endpoint io: expected=";
@@ -121,7 +121,7 @@ auto validate(const node_endpoint& end,
         }
         return get_port_type(counts);
     }
-    if (const auto p = std::get_if<custom>(&(system.implementation))) {
+    if (const auto p = std::get_if<custom>(&(node.implementation))) {
         const auto found = p->nodes.find(end.address);
         if (found == p->nodes.end()) {
             std::ostringstream os;
@@ -146,7 +146,7 @@ auto validate(const node_endpoint& end,
         }
         return get_port_type(counts);
     }
-    if (const auto p = std::get_if<executable>(&(system.implementation))) {
+    if (const auto p = std::get_if<executable>(&(node.implementation))) {
         return port_type::unknown;
     }
     throw std::logic_error{"validate: unknown system type"};
@@ -192,12 +192,12 @@ auto make_channel(const pipe_channel& src, const pipe_channel& dst)
 
 auto make_channel(const std::set<port_id>& dset,
                   const node_name& name,
-                  const std::span<const link>& parent_connections,
+                  const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
     -> reference_channel
 {
     const auto look_for = node_endpoint{name, dset};
-    const auto found = find_index(parent_connections, look_for);
+    const auto found = find_index(parent_links, look_for);
     if (!found) {
         std::ostringstream os;
         os << "can't find parent link with ";
@@ -209,18 +209,18 @@ auto make_channel(const std::set<port_id>& dset,
 }
 
 auto make_channel(const user_endpoint& src, const user_endpoint& dst,
-                  const std::span<const link>& connections,
+                  const std::span<const link>& links,
                   const std::span<channel>& channels)
     -> forwarding_channel
 {
-    const auto src_conn = find_index(connections, src);
+    const auto src_conn = find_index(links, src);
     if (!src_conn) {
         std::ostringstream os;
         os << "can't find source link with endpoint ";
         os << src;
         throw invalid_connection{os.str()};
     }
-    const auto dst_conn = find_index(connections, dst);
+    const auto dst_conn = find_index(links, dst);
     if (!dst_conn) {
         std::ostringstream os;
         os << "can't find destination link with endpoint ";
@@ -269,9 +269,9 @@ auto get_interface_ports(const node_endpoint* end)
 
 auto make_channel(const unidirectional_link& conn,
                   const node_name& name,
-                  const node& system,
+                  const node& node,
                   const std::span<channel>& channels,
-                  const std::span<const link>& parent_connections,
+                  const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
     -> channel
 {
@@ -291,7 +291,7 @@ auto make_channel(const unidirectional_link& conn,
     const auto dst_user = std::get_if<user_endpoint>(&conn.dst);
     if (src_user && dst_user) {
         return make_channel(*src_user, *dst_user,
-                            std::get<custom>(system.implementation).links,
+                            std::get<custom>(node.implementation).links,
                             channels);
     }
     const auto src_system = std::get_if<node_endpoint>(&conn.src);
@@ -300,10 +300,10 @@ auto make_channel(const unidirectional_link& conn,
         throw invalid_connection{no_system_end_error};
     }
     const auto src_port_type = src_system
-        ? validate(*src_system, system, io_type::out)
+        ? validate(*src_system, node, io_type::out)
         : port_type::unknown;
     const auto dst_port_type = dst_system
-        ? validate(*dst_system, system, io_type::in)
+        ? validate(*dst_system, node, io_type::in)
         : port_type::unknown;
     const auto src_dset = get_interface_ports(src_system);
     const auto dst_dset = get_interface_ports(dst_system);
@@ -336,39 +336,39 @@ auto make_channel(const unidirectional_link& conn,
     }
     if (src_dset) {
         return make_channel(*src_dset, name,
-                            parent_connections, parent_channels);
+                            parent_links, parent_channels);
     }
     if (dst_dset) {
         return make_channel(*dst_dset, name,
-                            parent_connections, parent_channels);
+                            parent_links, parent_channels);
     }
     return pipe_channel{};
 }
 
 }
 
-auto make_channel(const link& conn,
+auto make_channel(const link& for_link,
                   const node_name& name,
-                  const node& system,
+                  const node& node,
                   const std::span<channel>& channels,
-                  const std::span<const link>& parent_connections,
+                  const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
     -> channel
 {
-    if (size(parent_connections) != size(parent_channels)) {
+    if (size(parent_links) != size(parent_channels)) {
         std::ostringstream os;
-        os << "size of parent connections (";
-        os << size(parent_connections);
+        os << "size of parent links (";
+        os << size(parent_links);
         os << "), not equal size of parent channels (";
         os << size(parent_channels);
         os << ")";
         throw std::logic_error{os.str()};
     }
-    if (const auto p = std::get_if<unidirectional_link>(&conn)) {
-        return make_channel(*p, name, system, channels,
-                            parent_connections, parent_channels);
+    if (const auto p = std::get_if<unidirectional_link>(&for_link)) {
+        return make_channel(*p, name, node, channels,
+                            parent_links, parent_channels);
     }
-    throw invalid_connection{"only unidirectional_connection supported"};
+    throw invalid_connection{"only unidirectional_link supported"};
 }
 
 auto operator<<(std::ostream& os, const reference_channel& value)

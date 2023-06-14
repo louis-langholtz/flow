@@ -55,11 +55,11 @@ auto write_diags(instance& object,
                  std::ostream& os,
                  const std::string_view& name = {}) -> void;
 
-auto find_index(const std::span<const link>& connections,
+auto find_index(const std::span<const link>& links,
                 const link& look_for)
     -> std::optional<std::size_t>;
 
-auto find_index(const std::span<const link>& connections,
+auto find_index(const std::span<const link>& links,
                 const endpoint& look_for) -> std::optional<std::size_t>;
 
 auto touch(const file_endpoint& file) -> void;

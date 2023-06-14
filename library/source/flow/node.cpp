@@ -37,7 +37,7 @@ auto operator<<(std::ostream& os, const node& value)
             sub_prefix = ",";
         }
         if (!empty(p->nodes)) {
-            os << ".subsystems={";
+            os << ".nodes={";
             auto prefix = "";
             for (auto&& entry: p->nodes) {
                 os << prefix << "{";
@@ -51,7 +51,7 @@ auto operator<<(std::ostream& os, const node& value)
             sub_prefix = ",";
         }
         if (!empty(p->links)) {
-            os << sub_prefix << ".connections={";
+            os << sub_prefix << ".links={";
             os << "}";
         }
         os << "}";
@@ -91,7 +91,7 @@ auto pretty_print(std::ostream& os, const node& value) -> void
         if (!empty(p->nodes)) {
             os << info_prefix;
             os << "\n";
-            os << "    .subsystems={\n";
+            os << "    .nodes={\n";
             for (auto&& entry: p->nodes) {
                 os << "      {\n";
                 os << "        .first=" << entry.first << ",\n";
@@ -111,7 +111,7 @@ auto pretty_print(std::ostream& os, const node& value) -> void
         if (!empty(p->links)) {
             os << info_prefix;
             os << "\n";
-            os << "    .connections={\n";
+            os << "    .links={\n";
             for (auto&& link: p->links) {
                 os << "      " << link << ",\n";
             }
