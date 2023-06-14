@@ -18,7 +18,7 @@ struct system_name_checker: detail::allowed_chars_checker<detail::name_charset>
 };
 
 /// @brief System name.
-/// @details A lexical token for identifying a <code>system</code>.
+/// @details A lexical token for identifying a <code>node</code>.
 /// @note This is a strongly typed <code>std::string</code> that can be
 ///   constructed from strings containing only characters from its allowed
 ///   character set. An <code>charset_validator_error</code> exception is

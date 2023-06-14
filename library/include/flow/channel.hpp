@@ -15,7 +15,7 @@
 
 namespace flow {
 
-struct system;
+struct node;
 struct instance;
 
 struct reference_channel
@@ -59,7 +59,7 @@ struct invalid_connection: std::invalid_argument
 /// @see channel.
 auto make_channel(const connection& conn,
                   const system_name& name,
-                  const system& system,
+                  const node& system,
                   const std::span<channel>& channels,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)

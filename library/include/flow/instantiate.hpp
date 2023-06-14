@@ -4,7 +4,7 @@
 #include <ostream>
 #include <stdexcept> // for std::invalid_argument
 
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 #include "flow/instance.hpp"
 
 namespace flow {
@@ -31,7 +31,7 @@ struct invalid_port_map: std::invalid_argument
     using std::invalid_argument::invalid_argument;
 };
 
-/// @brief Instantiates the given system.
+/// @brief Instantiates the given node.
 /// @param[in] sys System to attempt to instantiate.
 /// @param[out] diags Diagnostic information and warnings that don't by
 ///   themselves prevent instantiation.
@@ -45,7 +45,7 @@ struct invalid_port_map: std::invalid_argument
 ///   by @sys (or any of its sub-systems) is invalid such that an
 ///   <code>instance</code> cannot be made for it.
 /// @see instance.
-auto instantiate(const system& sys, std::ostream& diags,
+auto instantiate(const node& sys, std::ostream& diags,
                  const instantiate_options& opts = {})
     -> instance;
 

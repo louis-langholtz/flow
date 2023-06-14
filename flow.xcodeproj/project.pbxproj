@@ -68,7 +68,7 @@
 		99A88D252A0C229400AFD76F /* unset_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99A88D232A0C229400AFD76F /* unset_endpoint.hpp */; };
 		99A88D352A0EF5C300AFD76F /* libflow.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; };
 		99A88D362A0EF5C300AFD76F /* libflow.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 99940BDE29F1BD4000A77461 /* libflow.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		99A88D3A2A0EF73800AFD76F /* system.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D292A0EF52400AFD76F /* system.cpp */; };
+		99A88D3A2A0EF73800AFD76F /* node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D292A0EF52400AFD76F /* node.cpp */; };
 		99A88D3C2A0FB2B100AFD76F /* instance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D3B2A0FB2B100AFD76F /* instance.cpp */; };
 		99A88D3E2A1003DC00AFD76F /* fstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D3D2A1003DC00AFD76F /* fstream.cpp */; };
 		99A88D402A115E5D00AFD76F /* instantiate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D3F2A115E5D00AFD76F /* instantiate.cpp */; };
@@ -91,8 +91,8 @@
 		99C1939029F50EFD00C3F53F /* channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1938E29F50EFD00C3F53F /* channel.hpp */; };
 		99C1939329F511B700C3F53F /* connection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939129F511B700C3F53F /* connection.cpp */; };
 		99C1939429F511B700C3F53F /* connection.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939229F511B700C3F53F /* connection.hpp */; };
-		99C1939729F5136100C3F53F /* system.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939529F5136100C3F53F /* system.cpp */; };
-		99C1939829F5136100C3F53F /* system.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939629F5136100C3F53F /* system.hpp */; };
+		99C1939729F5136100C3F53F /* node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939529F5136100C3F53F /* node.cpp */; };
+		99C1939829F5136100C3F53F /* node.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939629F5136100C3F53F /* node.hpp */; };
 		99C1939B29F5774600C3F53F /* instance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939929F5774600C3F53F /* instance.cpp */; };
 		99C1939C29F5774600C3F53F /* instance.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939A29F5774600C3F53F /* instance.hpp */; };
 		99C1939F29F5819A00C3F53F /* utility.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939D29F5819A00C3F53F /* utility.cpp */; };
@@ -228,7 +228,7 @@
 		99A88D1F2A0B431300AFD76F /* system_pipeline.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system_pipeline.hpp; sourceTree = "<group>"; };
 		99A88D222A0C229400AFD76F /* unset_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = unset_endpoint.cpp; sourceTree = "<group>"; };
 		99A88D232A0C229400AFD76F /* unset_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = unset_endpoint.hpp; sourceTree = "<group>"; };
-		99A88D292A0EF52400AFD76F /* system.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system.cpp; sourceTree = "<group>"; };
+		99A88D292A0EF52400AFD76F /* node.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node.cpp; sourceTree = "<group>"; };
 		99A88D2E2A0EF5A200AFD76F /* tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A88D3B2A0FB2B100AFD76F /* instance.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = instance.cpp; sourceTree = "<group>"; };
 		99A88D3D2A1003DC00AFD76F /* fstream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = fstream.cpp; sourceTree = "<group>"; };
@@ -253,8 +253,8 @@
 		99C1938E29F50EFD00C3F53F /* channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = channel.hpp; sourceTree = "<group>"; };
 		99C1939129F511B700C3F53F /* connection.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = connection.cpp; sourceTree = "<group>"; };
 		99C1939229F511B700C3F53F /* connection.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = connection.hpp; sourceTree = "<group>"; };
-		99C1939529F5136100C3F53F /* system.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system.cpp; sourceTree = "<group>"; };
-		99C1939629F5136100C3F53F /* system.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system.hpp; sourceTree = "<group>"; };
+		99C1939529F5136100C3F53F /* node.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node.cpp; sourceTree = "<group>"; };
+		99C1939629F5136100C3F53F /* node.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = node.hpp; sourceTree = "<group>"; };
 		99C1939929F5774600C3F53F /* instance.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = instance.cpp; sourceTree = "<group>"; };
 		99C1939A29F5774600C3F53F /* instance.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = instance.hpp; sourceTree = "<group>"; };
 		99C1939D29F5819A00C3F53F /* utility.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utility.cpp; sourceTree = "<group>"; };
@@ -403,7 +403,7 @@
 				9986C7B52A20F990006B2095 /* reserved.hpp */,
 				992A247C2A2BB6540074248B /* signal.hpp */,
 				992A24802A2D16280074248B /* signal_channel.hpp */,
-				99C1939629F5136100C3F53F /* system.hpp */,
+				99C1939629F5136100C3F53F /* node.hpp */,
 				99C1937A29F4D70F00C3F53F /* system_endpoint.hpp */,
 				99940BFE29F1F73900A77461 /* system_name.hpp */,
 				99A88D1F2A0B431300AFD76F /* system_pipeline.hpp */,
@@ -448,7 +448,7 @@
 				9943E8A12A04A783002F4C26 /* reference_process_id.cpp */,
 				992A247B2A2BB6540074248B /* signal.cpp */,
 				992A247F2A2D16280074248B /* signal_channel.cpp */,
-				99C1939529F5136100C3F53F /* system.cpp */,
+				99C1939529F5136100C3F53F /* node.cpp */,
 				99C1937929F4D70F00C3F53F /* system_endpoint.cpp */,
 				99940BFD29F1F73900A77461 /* system_name.cpp */,
 				99A88D1E2A0B431300AFD76F /* system_pipeline.cpp */,
@@ -476,7 +476,7 @@
 				99A88D3B2A0FB2B100AFD76F /* instance.cpp */,
 				99A88D3F2A115E5D00AFD76F /* instantiate.cpp */,
 				9986C7A82A19139A006B2095 /* owning_descriptor.cpp */,
-				99A88D292A0EF52400AFD76F /* system.cpp */,
+				99A88D292A0EF52400AFD76F /* node.cpp */,
 				99A88D4D2A16BB3600AFD76F /* system_name.cpp */,
 			);
 			path = tests;
@@ -507,7 +507,7 @@
 				9986C7A72A19105A006B2095 /* owning_descriptor.hpp in Headers */,
 				99A88D4C2A15903A00AFD76F /* charset_checker.hpp in Headers */,
 				99940BF829F1DAE800A77461 /* reference_descriptor.hpp in Headers */,
-				99C1939829F5136100C3F53F /* system.hpp in Headers */,
+				99C1939829F5136100C3F53F /* node.hpp in Headers */,
 				99A88D252A0C229400AFD76F /* unset_endpoint.hpp in Headers */,
 				99C193A229F6EB4B00C3F53F /* expected.hpp in Headers */,
 				992A24822A2D16280074248B /* signal_channel.hpp in Headers */,
@@ -671,7 +671,7 @@
 				99A88D242A0C229400AFD76F /* unset_endpoint.cpp in Sources */,
 				9943E8972A021E98002F4C26 /* user_endpoint.cpp in Sources */,
 				9986C7B12A1C455C006B2095 /* endpoint.cpp in Sources */,
-				99C1939729F5136100C3F53F /* system.cpp in Sources */,
+				99C1939729F5136100C3F53F /* node.cpp in Sources */,
 				9943E8932A021A46002F4C26 /* pipe_channel.cpp in Sources */,
 				992A247D2A2BB6540074248B /* signal.cpp in Sources */,
 				99C1939B29F5774600C3F53F /* instance.cpp in Sources */,
@@ -699,7 +699,7 @@
 				99A88D4E2A16BB3600AFD76F /* system_name.cpp in Sources */,
 				99A88D3C2A0FB2B100AFD76F /* instance.cpp in Sources */,
 				99A88D542A17F93A00AFD76F /* channel.cpp in Sources */,
-				99A88D3A2A0EF73800AFD76F /* system.cpp in Sources */,
+				99A88D3A2A0EF73800AFD76F /* node.cpp in Sources */,
 				9986C7AB2A191570006B2095 /* descriptor.cpp in Sources */,
 				9986C7B32A1D3D9E006B2095 /* endpoint.cpp in Sources */,
 				99BD75092A3799DB00186221 /* charset_checker.cpp in Sources */,

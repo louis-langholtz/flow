@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 
 TEST(system_custom, default_construction)
 {
@@ -44,7 +44,7 @@ TEST(system_executable, equality)
 
 TEST(system, default_construction)
 {
-    flow::system obj;
+    flow::node obj;
     EXPECT_TRUE(empty(obj.interface));
     EXPECT_TRUE(std::holds_alternative<flow::custom>(obj.implementation));
     if (std::holds_alternative<flow::custom>(obj.implementation)) {
@@ -56,22 +56,22 @@ TEST(system, default_construction)
 
 TEST(system, equality)
 {
-    EXPECT_TRUE(flow::system() == flow::system());
-    flow::system obj;
-    EXPECT_TRUE(obj == flow::system());
+    EXPECT_TRUE(flow::node() == flow::node());
+    flow::node obj;
+    EXPECT_TRUE(obj == flow::node());
     obj.interface = flow::std_ports;
-    EXPECT_FALSE(obj == flow::system());
+    EXPECT_FALSE(obj == flow::node());
     obj.interface = {};
-    ASSERT_TRUE(obj == flow::system());
+    ASSERT_TRUE(obj == flow::node());
     obj.implementation = flow::executable{};
-    EXPECT_FALSE(obj == flow::system());
+    EXPECT_FALSE(obj == flow::node());
     obj.implementation = flow::custom{};
-    ASSERT_TRUE(obj == flow::system());
+    ASSERT_TRUE(obj == flow::node());
 }
 
 TEST(system, executable_construction)
 {
-    flow::system obj{flow::executable{}};
+    flow::node obj{flow::executable{}};
     EXPECT_FALSE(empty(obj.interface));
     EXPECT_TRUE(std::holds_alternative<flow::executable>(obj.implementation));
     if (std::holds_alternative<flow::executable>(obj.implementation)) {

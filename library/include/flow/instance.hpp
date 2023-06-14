@@ -19,16 +19,16 @@
 
 namespace flow {
 
-/// @brief Instance of a <code>system</code>.
+/// @brief Instance of a <code>node</code>.
 /// @note This type is intended to be moveable, but not copyable.
 ///   Relatedly, it's not intended to support any kind of comparison.
 ///   This alleviates all component types from having to be copyable or
 ///   having to support comparison.
-/// @see system.
+/// @see node.
 struct instance
 {
     /// @brief Information specific to "custom" instances.
-    /// @note Instantiating a custom system, should result in a custom instance.
+    /// @note Instantiating a custom node, should result in a custom instance.
     /// @see custom.
     struct custom
     {
@@ -48,7 +48,7 @@ struct instance
     };
 
     /// @brief Information specific to "forked" instances.
-    /// @note Instantiating an executable system, should result in a forked
+    /// @note Instantiating an executable node, should result in a forked
     ///   instance.
     /// @see executable.
     struct forked

@@ -1,7 +1,7 @@
 #include "flow/indenting_ostreambuf.hpp"
 #include "flow/instance.hpp"
 #include "flow/os_error_code.hpp"
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 #include "flow/utility.hpp"
 
 namespace flow {

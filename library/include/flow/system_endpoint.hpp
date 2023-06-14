@@ -25,10 +25,10 @@ struct system_endpoint
                     std::convertible_to<port_id> auto&& ...d):
         address{std::move(a)}, ports{std::move(d)...} {}
 
-    /// @brief Well known name identifier for a system.
+    /// @brief Well known name identifier for a node.
     system_name address;
 
-    /// @brief Well known port IDs of endpoint for a system.
+    /// @brief Well known port IDs of endpoint for a node.
     std::set<port_id> ports;
 };
 

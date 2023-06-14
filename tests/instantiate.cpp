@@ -39,7 +39,7 @@ TEST(instantiate, default_executable)
 
 TEST(instantiate, empty_executable)
 {
-    const auto sys = flow::system{executable{}, {}};
+    const auto sys = flow::node{executable{}, {}};
     std::ostringstream os;
     auto obj = instance{};
     EXPECT_THROW(obj = instantiate(sys, os), invalid_executable);
@@ -255,16 +255,16 @@ TEST(instantiate, env_system)
         system_endpoint{env_exe_name, stdout_id},
         user_endpoint{},
     };
-    const auto env_exe_sys = flow::system{
+    const auto env_exe_sys = flow::node{
         executable{"/usr/bin/env"},
         {stdout_ports_entry}
     };
-    auto overriding_system = flow::system{custom{
+    auto overriding_system = flow::node{custom{
         .environment = {{base_env_name, derived_env_val}},
         .nodes = {{env_exe_name, env_exe_sys}},
         .links = {env_out},
     }};
-    auto base = flow::system{custom{
+    auto base = flow::node{custom{
         .environment = {{base_env_name, base_env_val}},
         .nodes = {{"overrider", overriding_system}},
     }};
@@ -344,7 +344,7 @@ TEST(instantiate, lsof_system)
 
     flow::custom custom;
     custom.environment = get_environ();
-    custom.nodes.emplace(lsof_name, flow::system{flow::executable{
+    custom.nodes.emplace(lsof_name, flow::node{flow::executable{
         .file = "lsof",
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
@@ -421,7 +421,7 @@ TEST(instantiate, nested_system)
     const custom system{
         .nodes = {
             {
-                cat_system_name, flow::system{custom{
+                cat_system_name, flow::node{custom{
                     .nodes = {
                         {cat_process_name, executable{
                             .file = "/bin/cat"
@@ -444,7 +444,7 @@ TEST(instantiate, nested_system)
                 }, std_ports}
             },
             {
-                xargs_system_name, flow::system{custom{
+                xargs_system_name, flow::node{custom{
                     .nodes = {
                         {xargs_process_name, executable{
                             .file = "/usr/bin/xargs",
@@ -556,7 +556,7 @@ TEST(instantiate, nested_system)
 TEST(instantiate, bin_dd)
 {
     const auto exe_name = system_name{"dd"};
-    auto sys = flow::system{custom{
+    auto sys = flow::node{custom{
         .nodes = {{exe_name, {
             executable{
                 .file = "/bin/dd",
