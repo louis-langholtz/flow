@@ -26,23 +26,23 @@ constexpr auto operator==(const unidirectional_link& lhs,
 auto operator<<(std::ostream& os, const unidirectional_link& value)
     -> std::ostream&;
 
-struct bidirectional_connection {
+struct bidirectional_link {
     std::array<endpoint, 2u> ends;
 };
 
-constexpr auto operator==(const bidirectional_connection& lhs,
-                          const bidirectional_connection& rhs) noexcept
+constexpr auto operator==(const bidirectional_link& lhs,
+                          const bidirectional_link& rhs) noexcept
     -> bool
 {
     return lhs.ends == rhs.ends;
 }
 
-auto operator<<(std::ostream& os, const bidirectional_connection& value)
+auto operator<<(std::ostream& os, const bidirectional_link& value)
     -> std::ostream&;
 
 using connection = variant<
     unidirectional_link,
-    bidirectional_connection
+    bidirectional_link
 >;
 
 static_assert(std::is_default_constructible_v<connection>);
@@ -56,7 +56,7 @@ auto make_endpoints(const unidirectional_link& c)
 }
 
 template <std::convertible_to<endpoint> T>
-auto make_endpoints(const bidirectional_connection& c)
+auto make_endpoints(const bidirectional_link& c)
     -> std::array<const T*, 2u>
 {
     return {
@@ -71,7 +71,7 @@ auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
     if (const auto p = std::get_if<unidirectional_link>(&c)) {
         return make_endpoints<T>(*p);
     }
-    if (const auto p = std::get_if<bidirectional_connection>(&c)) {
+    if (const auto p = std::get_if<bidirectional_link>(&c)) {
         return make_endpoints<T>(*p);
     }
     return std::array<const T*, 2u>{nullptr, nullptr};

@@ -283,7 +283,7 @@ auto find_index(const std::span<const connection>& connections,
             }
             return (p->src == look_for) || (p->dst == look_for);
         }
-        if (const auto p = std::get_if<bidirectional_connection>(&c)) {
+        if (const auto p = std::get_if<bidirectional_link>(&c)) {
             return (p->ends[0] == look_for) || (p->ends[1] == look_for);
         }
         return false;
