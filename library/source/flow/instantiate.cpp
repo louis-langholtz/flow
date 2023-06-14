@@ -185,7 +185,7 @@ auto setup(const system_name& name,
            std::ostream& diags) -> void
 {
     using io = pipe_channel::io;
-    const auto ends = make_endpoints<system_endpoint>(conn);
+    const auto ends = make_endpoints<node_endpoint>(conn);
     if (!ends[0] && !ends[1]) {
         diags << "connection has no system_endpoint: " << conn << "\n";
         return;
@@ -233,7 +233,7 @@ auto setup(const system_name& name,
     assert(file_ends[0] || file_ends[1]);
     const auto& file_end = file_ends[0]? file_ends[0]: file_ends[1];
     const auto& other_end = file_ends[0]? c.ends[1]: c.ends[0];
-    if (const auto op = std::get_if<system_endpoint>(&other_end)) {
+    if (const auto op = std::get_if<node_endpoint>(&other_end)) {
         if (op->address != name) {
             diags << name << " skipping " << c << "\n";
             return;
@@ -281,7 +281,7 @@ auto setup(const system_name& name,
            file_channel& chan,
            std::ostream& diags) -> void
 {
-    const auto sys_ends = make_endpoints<system_endpoint>(conn);
+    const auto sys_ends = make_endpoints<node_endpoint>(conn);
     assert(sys_ends[0] || sys_ends[1]);
     const auto op = [&sys_ends,&name](){
         for (auto&& sys_end: sys_ends) {
@@ -289,7 +289,7 @@ auto setup(const system_name& name,
                 return sys_end;
             }
         }
-        return static_cast<const system_endpoint*>(nullptr);
+        return static_cast<const node_endpoint*>(nullptr);
     }();
     if (op) {
         const auto flags = to_open_flags(chan.io);
@@ -367,7 +367,7 @@ auto confirm_closed(const system_name& name,
         if (!requires_connection(entry)) {
             continue;
         }
-        const auto look_for = system_endpoint{name, entry.first};
+        const auto look_for = node_endpoint{name, entry.first};
         if (find_index(connections, look_for)) {
             continue;
         }
@@ -490,7 +490,7 @@ auto close_unused_ports(const system_name& name,
 {
     auto using_des = std::array<bool, 3u>{};
     for (auto&& conn: conns) {
-        const auto ends = make_endpoints<system_endpoint>(conn);
+        const auto ends = make_endpoints<node_endpoint>(conn);
         for (auto&& end: ends) {
             if (end && end->address == name) {
                 set_found(using_des, end->ports);
@@ -651,8 +651,8 @@ auto fork_child(const system_name& name,
         make_substitutions(argv);
         // Deal with:
         // unidirectional_connection{
-        //   system_endpoint{ls_process_name, flow::reference_descriptor{1}},
-        //   system_endpoint{cat_process_name, flow::reference_descriptor{0}}
+        //   node_endpoint{ls_process_name, flow::reference_descriptor{1}},
+        //   node_endpoint{cat_process_name, flow::reference_descriptor{0}}
         // }
         //
         // Also:
@@ -710,7 +710,7 @@ auto close_internal_ends(const connection& connection,
                          std::ostream& diags) -> void
 {
     static constexpr auto iowidth = 5;
-    const auto ends = make_endpoints<system_endpoint>(connection);
+    const auto ends = make_endpoints<node_endpoint>(connection);
     if (ends[0] && (ends[0]->address != system_name{})) {
         const auto pio = pipe_channel::io::write;
         diags << "parent: closing ";
@@ -783,7 +783,7 @@ auto instantiate(const node& system,
             info.pgrp = current_process_id();
         }
         for (auto&& entry: system.interface) {
-            const auto look_for = system_endpoint{{}, entry.first};
+            const auto look_for = node_endpoint{{}, entry.first};
             if (!find_index(p->links, look_for)) {
                 std::ostringstream os;
                 os << look_for;

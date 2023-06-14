@@ -21,8 +21,8 @@ TEST(make_channel, with_defaulted_args)
 TEST(make_channel, with_diff_system_endpoints)
 {
     const auto conn = unidirectional_link{
-        system_endpoint{"a"},
-        system_endpoint{"b"},
+        node_endpoint{"a"},
+        node_endpoint{"b"},
     };
     EXPECT_THROW(make_channel(conn, system_name{}, flow::node{}, {},
                               {}, {}), invalid_connection);
@@ -31,7 +31,7 @@ TEST(make_channel, with_diff_system_endpoints)
 TEST(make_channel, with_diff_sizes)
 {
     const auto pconns = std::vector<connection>{
-        unidirectional_link{user_endpoint{}, system_endpoint{
+        unidirectional_link{user_endpoint{}, node_endpoint{
             {}, {reference_descriptor{1}}
         }}
     };
@@ -49,7 +49,7 @@ TEST(make_channel, for_subsys_to_file)
         }
     };
     const auto conn = unidirectional_link{
-        system_endpoint{"subsys"},
+        node_endpoint{"subsys"},
         file_endpoint{"file"},
     };
     const auto pconns = std::vector<connection>{};
@@ -69,7 +69,7 @@ TEST(make_channel, for_file_to_subsys)
     };
     const auto conn = unidirectional_link{
         file_endpoint{"file"},
-        system_endpoint{"subsys"},
+        node_endpoint{"subsys"},
     };
     const auto pconns = std::vector<connection>{};
     auto pchans = std::vector<channel>{};
@@ -88,8 +88,8 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
         }
     };
     const auto conn = unidirectional_link{
-        system_endpoint{"subsys_a"},
-        system_endpoint{"subsys_b"},
+        node_endpoint{"subsys_a"},
+        node_endpoint{"subsys_b"},
     };
     const auto pconns = std::vector<connection>{};
     auto pchans = std::vector<channel>{};
@@ -110,11 +110,11 @@ TEST(make_channel, for_exe_subsys_to_sys)
     };
     ASSERT_FALSE(empty(sys.interface));
     const auto conn = unidirectional_link{
-        system_endpoint{"subsys_a", {reference_descriptor{1}}},
-        system_endpoint{{}, {reference_descriptor{1}}},
+        node_endpoint{"subsys_a", {reference_descriptor{1}}},
+        node_endpoint{{}, {reference_descriptor{1}}},
     };
     const auto pconns = std::vector<connection>{
-        unidirectional_link{user_endpoint{}, system_endpoint{
+        unidirectional_link{user_endpoint{}, node_endpoint{
             {}, {reference_descriptor{1}}
         }}
     };
@@ -143,8 +143,8 @@ TEST(make_channel, signal_channel)
         port_map{{sig, {"", io_type::in}}}
     };
     auto conn = flow::unidirectional_link{
-        system_endpoint{{}, {sig}},
-        system_endpoint{exe_name, {sig}},
+        node_endpoint{{}, {sig}},
+        node_endpoint{exe_name, {sig}},
     };
     auto channels = std::vector<channel>{};
     auto pconns = std::vector<connection>{};

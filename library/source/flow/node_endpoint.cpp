@@ -6,7 +6,7 @@
 #include <system_error>
 
 #include "flow/reserved.hpp"
-#include "flow/system_endpoint.hpp"
+#include "flow/node_endpoint.hpp"
 
 namespace flow {
 
@@ -27,7 +27,7 @@ auto abs_sub(std::string::size_type lhs, std::string::size_type rhs)
 
 }
 
-auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
+auto operator<<(std::ostream& os, const node_endpoint& value) -> std::ostream&
 {
     using std::begin, std::end;
     // ensure separator not valid char for address
@@ -52,13 +52,13 @@ auto operator<<(std::ostream& os, const system_endpoint& value) -> std::ostream&
         os << value.address.get();
     }
     if (empty_address && empty_ports) {
-        // output something so identifiable still as system_endpoint
+        // output something so identifiable still as node_endpoint
         os << reserved::descriptors_prefix;
     }
     return os;
 }
 
-auto operator>>(std::istream& is, system_endpoint& value) -> std::istream&
+auto operator>>(std::istream& is, node_endpoint& value) -> std::istream&
 {
     const auto first_char = is.peek();
     if ((first_char != reserved::address_prefix) &&
@@ -75,7 +75,7 @@ auto operator>>(std::istream& is, system_endpoint& value) -> std::istream&
         string.substr(apos + 1u, abs_sub(dpos, apos + 1u)): std::string{};
     const auto ports = (dpos != npos)?
         string.substr(dpos + 1u, abs_sub(apos, dpos + 1u)): std::string{};
-    value = system_endpoint{system_name{address}, to_ports(ports)};
+    value = node_endpoint{system_name{address}, to_ports(ports)};
     return is;
 }
 

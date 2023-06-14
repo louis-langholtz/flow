@@ -96,7 +96,7 @@ auto get_port_type(const port_size_array& counts) -> port_type
     return port_type::unknown;
 }
 
-auto validate(const system_endpoint& end,
+auto validate(const node_endpoint& end,
               const node& system,
               io_type expected_io) -> port_type
 {
@@ -196,7 +196,7 @@ auto make_channel(const std::set<port_id>& dset,
                   const std::span<channel>& parent_channels)
     -> reference_channel
 {
-    const auto look_for = system_endpoint{name, dset};
+    const auto look_for = node_endpoint{name, dset};
     const auto found = find_index(parent_connections, look_for);
     if (!found) {
         std::ostringstream os;
@@ -240,8 +240,8 @@ auto to_signal_set(const std::set<port_id>& ports) -> std::set<signal>
     return signals;
 }
 
-auto make_signal_channel(const system_endpoint& src,
-                         const system_endpoint& dst) -> signal_channel
+auto make_signal_channel(const node_endpoint& src,
+                         const node_endpoint& dst) -> signal_channel
 {
     if (src.ports != dst.ports) {
         std::ostringstream os;
@@ -261,7 +261,7 @@ auto make_signal_channel(const system_endpoint& src,
     };
 }
 
-auto get_interface_ports(const system_endpoint* end)
+auto get_interface_ports(const node_endpoint* end)
     -> const std::set<port_id>*
 {
     return (end && (end->address == system_name{}))? &(end->ports): nullptr;
@@ -294,8 +294,8 @@ auto make_channel(const unidirectional_link& conn,
                             std::get<custom>(system.implementation).links,
                             channels);
     }
-    const auto src_system = std::get_if<system_endpoint>(&conn.src);
-    const auto dst_system = std::get_if<system_endpoint>(&conn.dst);
+    const auto src_system = std::get_if<node_endpoint>(&conn.src);
+    const auto dst_system = std::get_if<node_endpoint>(&conn.dst);
     if (!src_system && !dst_system) {
         throw invalid_connection{no_system_end_error};
     }

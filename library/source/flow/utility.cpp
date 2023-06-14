@@ -251,9 +251,9 @@ auto find_index(const std::span<const connection>& connections,
 }
 
 auto is_matching(const unidirectional_link& conn,
-                 const system_endpoint& look_for) -> bool
+                 const node_endpoint& look_for) -> bool
 {
-    const auto ends = make_endpoints<system_endpoint>(conn);
+    const auto ends = make_endpoints<node_endpoint>(conn);
     for (auto&& end: ends) {
         if (end) {
             if (end->address == look_for.address) {
@@ -276,7 +276,7 @@ auto find_index(const std::span<const connection>& connections,
     const auto first = std::begin(connections);
     const auto last = std::end(connections);
     const auto iter = std::find_if(first, last, [&look_for](const auto& c){
-        const auto look_sys = std::get_if<system_endpoint>(&look_for);
+        const auto look_sys = std::get_if<node_endpoint>(&look_for);
         if (const auto p = std::get_if<unidirectional_link>(&c)) {
             if (look_sys) {
                 return is_matching(*p, *look_sys);
