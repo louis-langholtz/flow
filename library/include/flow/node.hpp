@@ -1,5 +1,5 @@
-#ifndef system_hpp
-#define system_hpp
+#ifndef node_hpp
+#define node_hpp
 
 #include <filesystem>
 #include <map>
@@ -50,10 +50,10 @@ struct executable
     std::filesystem::path working_directory;
 };
 
-/// @brief Recursive structure for defining systems.
-/// @note Systems are conceptually made up of three categories of components:
+/// @brief Recursive structure for defining nodes.
+/// @note Nodes are conceptually made up of three categories of components:
 ///   _external_, _interface_, and _internal_.
-/// @note Systems can be instantiated through calls to <code>instantiate</code>
+/// @note Nodes can be instantiated through calls to <code>instantiate</code>
 ///   into instances of the <code>instance</code> type.
 /// @note This type is intended to be moveable, copyable, and equality
 ///   comparable.
@@ -62,16 +62,14 @@ struct node
 {
     node() = default;
 
-    node(custom type_info,
-           port_map des_map = {})
+    node(custom type_info, port_map des_map = {})
         : interface{std::move(des_map)},
           implementation{std::move(type_info)}
     {
         // Intentionally empty.
     }
 
-    node(executable type_info,
-           port_map des_map = std_ports)
+    node(executable type_info, port_map des_map = std_ports)
         : interface{std::move(des_map)},
           implementation{std::move(type_info)}
     {
@@ -82,7 +80,7 @@ struct node
     /// @note This is considered an _interface_ component of this type.
     port_map interface;
 
-    /// @brief System type specific information.
+    /// @brief Implementation specific information.
     /// @note This is considered an _internal_ component of this type.
     variant<custom, executable> implementation;
 };
@@ -134,4 +132,4 @@ auto connect_with_user(const node_name& name,
 
 }
 
-#endif /* system_hpp */
+#endif /* node_hpp */

@@ -2,7 +2,7 @@
 
 #include "flow/node.hpp"
 
-TEST(system_custom, default_construction)
+TEST(node_custom, default_construction)
 {
     flow::custom obj;
     EXPECT_TRUE(empty(obj.environment));
@@ -10,7 +10,7 @@ TEST(system_custom, default_construction)
     EXPECT_TRUE(empty(obj.links));
 }
 
-TEST(system_custom, equality)
+TEST(node_custom, equality)
 {
     flow::custom obj_a, obj_b;
     obj_b.links = {flow::link{}};
@@ -24,7 +24,7 @@ TEST(system_custom, equality)
     EXPECT_FALSE(obj_a == obj_b);
 }
 
-TEST(system_executable, default_construction)
+TEST(node_executable, default_construction)
 {
     flow::executable obj;
     EXPECT_TRUE(obj.file.empty());
@@ -32,7 +32,7 @@ TEST(system_executable, default_construction)
     EXPECT_TRUE(obj.working_directory.empty());
 }
 
-TEST(system_executable, equality)
+TEST(node_executable, equality)
 {
     flow::executable obj_a, obj_b;
     obj_b.file = "/";
@@ -42,7 +42,7 @@ TEST(system_executable, equality)
     EXPECT_FALSE(obj_a == obj_b);
 }
 
-TEST(system, default_construction)
+TEST(node, default_construction)
 {
     flow::node obj;
     EXPECT_TRUE(empty(obj.interface));
@@ -54,7 +54,7 @@ TEST(system, default_construction)
     }
 }
 
-TEST(system, equality)
+TEST(node, equality)
 {
     EXPECT_TRUE(flow::node() == flow::node());
     flow::node obj;
@@ -69,7 +69,7 @@ TEST(system, equality)
     ASSERT_TRUE(obj == flow::node());
 }
 
-TEST(system, executable_construction)
+TEST(node, executable_construction)
 {
     flow::node obj{flow::executable{}};
     EXPECT_FALSE(empty(obj.interface));

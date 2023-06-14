@@ -30,7 +30,7 @@ auto at(const port_map& ports, const port_id& key, const node_name& name)
             os << "system's";
         }
         else {
-            os << name << " subsystem's";
+            os << name << " node's";
         }
         os << " descriptor mapping: ";
         os << ex.what();
@@ -105,7 +105,7 @@ auto validate(const node_endpoint& end,
             const auto& d_info = at(node.interface, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
                 std::ostringstream os;
-                os << "bad custom system endpoint io: expected=";
+                os << "bad custom node endpoint io: expected=";
                 os << reverse(expected_io);
                 os << ", got ";
                 os << d_info.direction;
@@ -115,7 +115,7 @@ auto validate(const node_endpoint& end,
         const auto counts = count_types(end.ports);
         if (multiple_types(counts)) {
             std::ostringstream os;
-            os << "system endpoint can't specify";
+            os << "node endpoint can't specify";
             os << " both signal & descriptor ports";
             throw invalid_link{os.str()};
         }
@@ -125,7 +125,7 @@ auto validate(const node_endpoint& end,
         const auto found = p->nodes.find(end.address);
         if (found == p->nodes.end()) {
             std::ostringstream os;
-            os << "endpoint address system ";
+            os << "endpoint address node ";
             os << end.address;
             os << " not found";
             throw invalid_link{os.str()};
@@ -140,7 +140,7 @@ auto validate(const node_endpoint& end,
         const auto counts = count_types(end.ports);
         if (multiple_types(counts)) {
             std::ostringstream os;
-            os << "subsystem endpoint can't specify";
+            os << "node endpoint can't specify";
             os << " both signal & descriptor ports";
             throw invalid_link{os.str()};
         }
@@ -149,7 +149,7 @@ auto validate(const node_endpoint& end,
     if (const auto p = std::get_if<executable>(&(node.implementation))) {
         return port_type::unknown;
     }
-    throw std::logic_error{"validate: unknown system type"};
+    throw std::logic_error{"validate: unknown node implementation type"};
 }
 
 auto make_channel(const file_endpoint& src, const file_endpoint& dst)
@@ -250,7 +250,7 @@ auto make_signal_channel(const node_endpoint& src,
     }
     if (src.address != node_name{}) {
         std::ostringstream os;
-        os << "link src system endpoint for signal(s) must be";
+        os << "link src node endpoint for signal(s) must be";
         os << " empty address; not ";
         os << src.address;
         throw invalid_link{os.str()};
@@ -277,8 +277,6 @@ auto make_channel(const unidirectional_link& conn,
 {
     static constexpr auto same_endpoints_error =
         "link must have different endpoints";
-    static constexpr auto no_system_end_error =
-        "at least one end must be a system";
     if (conn.src == conn.dst) {
         throw invalid_link{same_endpoints_error};
     }
@@ -294,23 +292,23 @@ auto make_channel(const unidirectional_link& conn,
                             std::get<custom>(node.implementation).links,
                             channels);
     }
-    const auto src_system = std::get_if<node_endpoint>(&conn.src);
-    const auto dst_system = std::get_if<node_endpoint>(&conn.dst);
-    if (!src_system && !dst_system) {
-        throw invalid_link{no_system_end_error};
+    const auto src_node = std::get_if<node_endpoint>(&conn.src);
+    const auto dst_node = std::get_if<node_endpoint>(&conn.dst);
+    if (!src_node && !dst_node) {
+        throw invalid_link{"at least one end must be a node"};
     }
-    const auto src_port_type = src_system
-        ? validate(*src_system, node, io_type::out)
+    const auto src_port_type = src_node
+        ? validate(*src_node, node, io_type::out)
         : port_type::unknown;
-    const auto dst_port_type = dst_system
-        ? validate(*dst_system, node, io_type::in)
+    const auto dst_port_type = dst_node
+        ? validate(*dst_node, node, io_type::in)
         : port_type::unknown;
-    const auto src_dset = get_interface_ports(src_system);
-    const auto dst_dset = get_interface_ports(dst_system);
+    const auto src_dset = get_interface_ports(src_node);
+    const auto dst_dset = get_interface_ports(dst_node);
     if (src_dset && dst_dset) {
         // TODO: make a forwarding channel for this case
         std::ostringstream os;
-        os << "link between enclosing system endpoints not supported";
+        os << "link between enclosing node endpoints not supported";
         throw invalid_link{os.str()};
     }
     if (src_file) {
@@ -322,7 +320,7 @@ auto make_channel(const unidirectional_link& conn,
     if (src_user || dst_user) {
         return pipe_channel{};
     }
-    if (src_system && dst_system) {
+    if (src_node && dst_node) {
         if (src_port_type != dst_port_type) {
             std::ostringstream os;
             os << "link between different port types not supported";
@@ -331,7 +329,7 @@ auto make_channel(const unidirectional_link& conn,
             throw invalid_link{os.str()};
         }
         if (src_port_type == port_type::signal) {
-            return make_signal_channel(*src_system, *dst_system);
+            return make_signal_channel(*src_node, *dst_node);
         }
     }
     if (src_dset) {

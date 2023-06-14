@@ -1,5 +1,5 @@
-#ifndef system_endpoint_hpp
-#define system_endpoint_hpp
+#ifndef node_endpoint_hpp
+#define node_endpoint_hpp
 
 #include <concepts> // for std::convertible_to
 #include <istream>
@@ -66,4 +66,4 @@ auto to_ports(std::string_view string) -> std::set<port_id>;
 
 }
 
-#endif /* system_endpoint_hpp */
+#endif /* node_endpoint_hpp */

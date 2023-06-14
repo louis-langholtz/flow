@@ -25,12 +25,12 @@ See the [system.hpp](library/include/flow/system.hpp) header file for specifics
 on how systems can be designed in C++.
 
 At a conceptual design level, there are three types of things to think about:
-ports, connections, and systems. Ports define data inputs or outputs.
-Connections define the binding together of output ports with input ports.
+ports, links, and systems. Ports define data inputs or outputs.
+Links define the binding together of output ports with input ports.
 Systems meanwhile encapsulate implementations taking the data from its input
 ports, processing that data, and then outputting resulting data to its output
 ports. These implementations can be executable programs, or recursively
-definable containers of subsystems connected via connections to each other's
+definable containers of subsystems connected via links to each other's
 ports. When systems are run, or _instantiated_, they're transformed into:
 instances, and channels. Instances and channels exist until the instances exit.
 
@@ -49,7 +49,7 @@ Generally speaking, the following instructions hopefully suffice...
 
 ### Have Requirements
 
-- POSIX-compliant operating system (like Linux or macOS 10.5+).
+- POSIX-compliant OS (like Linux or macOS 10.5+).
 - `git` command line tool.
 - Compiler supporting the C++20 standard (or newer).
 - CMake version 3.16.3 or newer command line tool.

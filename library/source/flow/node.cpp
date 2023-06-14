@@ -9,7 +9,7 @@ namespace flow {
 auto operator<<(std::ostream& os, const node& value)
     -> std::ostream&
 {
-    os << "system{";
+    os << "node{";
     auto top_prefix = "";
     if (!empty(value.interface)) {
         os << top_prefix << ".ports=" << value.interface;
