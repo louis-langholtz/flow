@@ -418,71 +418,79 @@ TEST(instantiate, nested_system)
     const auto cat_process_name = system_name{"cat_process"};
     const auto xargs_system_name = system_name{"xargs_system"};
     const auto xargs_process_name = system_name{"xargs_process"};
-    system::custom system;
-    {
-        system::custom cat_system;
-        system::executable cat_executable;
-        cat_executable.file = "/bin/cat";
-        cat_system.subsystems.emplace(cat_process_name, cat_executable);
-        cat_system.connections.push_back(unidirectional_connection{
-            system_endpoint{system_name{}, reference_descriptor{0}},
-            system_endpoint{cat_process_name, reference_descriptor{0}}
-        });
-        cat_system.connections.push_back(unidirectional_connection{
-            system_endpoint{cat_process_name, reference_descriptor{1}},
-            system_endpoint{system_name{}, reference_descriptor{1}},
-        });
-        cat_system.connections.push_back(unidirectional_connection{
-            system_endpoint{cat_process_name, reference_descriptor{2}},
-            system_endpoint{system_name{}, reference_descriptor{2}},
-        });
-        system.subsystems.emplace(cat_system_name,
-                                  flow::system{cat_system, std_ports});
-    }
-    {
-        system::custom xargs_system;
-        system::executable xargs_executable;
-        xargs_executable.file = "/usr/bin/xargs";
-        xargs_executable.arguments = {"xargs", "ls", "-alF"};
-        xargs_system.subsystems.emplace(xargs_process_name, xargs_executable);
-        xargs_system.connections.push_back(unidirectional_connection{
-            system_endpoint{system_name{}, reference_descriptor{0}},
-            system_endpoint{xargs_process_name, reference_descriptor{0}}
-        });
-        xargs_system.connections.push_back(unidirectional_connection{
-            system_endpoint{xargs_process_name, reference_descriptor{1}},
-            system_endpoint{system_name{}, reference_descriptor{1}},
-        });
-        xargs_system.connections.push_back(unidirectional_connection{
-            system_endpoint{xargs_process_name, reference_descriptor{2}},
-            system_endpoint{system_name{}, reference_descriptor{2}},
-        });
-        system.subsystems.emplace(xargs_system_name,
-                                  flow::system{xargs_system, std_ports});
-    }
-    const auto system_stdin = unidirectional_connection{
-        user_endpoint{},
-        system_endpoint{cat_system_name, reference_descriptor{0}},
+    const system::custom system{
+        .subsystems = {
+            {
+                cat_system_name, flow::system{system::custom{
+                    .subsystems = {
+                        {cat_process_name, system::executable{
+                            .file = "/bin/cat"
+                        }}
+                    },
+                    .connections = {
+                        unidirectional_connection{
+                            system_endpoint{system_name{}, reference_descriptor{0}},
+                            system_endpoint{cat_process_name, reference_descriptor{0}}
+                        },
+                        unidirectional_connection{
+                            system_endpoint{cat_process_name, reference_descriptor{1}},
+                            system_endpoint{system_name{}, reference_descriptor{1}},
+                        },
+                        unidirectional_connection{
+                            system_endpoint{cat_process_name, reference_descriptor{2}},
+                            system_endpoint{system_name{}, reference_descriptor{2}},
+                        }
+                    }
+                }, std_ports}
+            },
+            {
+                xargs_system_name, flow::system{system::custom{
+                    .subsystems = {
+                        {xargs_process_name, system::executable{
+                            .file = "/usr/bin/xargs",
+                            .arguments = {"xargs", "ls", "-alF"}
+                        }}
+                    },
+                    .connections = {
+                        unidirectional_connection{
+                            system_endpoint{system_name{}, reference_descriptor{0}},
+                            system_endpoint{xargs_process_name, reference_descriptor{0}}
+                        },
+                        unidirectional_connection{
+                            system_endpoint{xargs_process_name, reference_descriptor{1}},
+                            system_endpoint{system_name{}, reference_descriptor{1}},
+                        },
+                        unidirectional_connection{
+                            system_endpoint{xargs_process_name, reference_descriptor{2}},
+                            system_endpoint{system_name{}, reference_descriptor{2}},
+                        }
+                    }
+                }, std_ports}
+            }
+        },
+        .connections = {
+            unidirectional_connection{
+                user_endpoint{},
+                system_endpoint{cat_system_name, reference_descriptor{0}},
+            },
+            unidirectional_connection{
+                system_endpoint{cat_system_name, reference_descriptor{1}},
+                system_endpoint{xargs_system_name, reference_descriptor{0}},
+            },
+            unidirectional_connection{
+                system_endpoint{cat_system_name, reference_descriptor{2}},
+                file_endpoint::dev_null,
+            },
+            unidirectional_connection{
+                system_endpoint{xargs_system_name, reference_descriptor{2}},
+                file_endpoint::dev_null,
+            },
+            unidirectional_connection{
+                system_endpoint{xargs_system_name, reference_descriptor{1}},
+                user_endpoint{},
+            }
+        }
     };
-    const auto system_stdout = unidirectional_connection{
-        system_endpoint{xargs_system_name, reference_descriptor{1}},
-        user_endpoint{},
-    };
-
-    system.connections.push_back(system_stdin);
-    system.connections.push_back(unidirectional_connection{
-        system_endpoint{cat_system_name, reference_descriptor{1}},
-        system_endpoint{xargs_system_name, reference_descriptor{0}},
-    });
-    system.connections.push_back(unidirectional_connection{
-        system_endpoint{cat_system_name, reference_descriptor{2}},
-        file_endpoint::dev_null,
-    });
-    system.connections.push_back(unidirectional_connection{
-        system_endpoint{xargs_system_name, reference_descriptor{2}},
-        file_endpoint::dev_null,
-    });
-    system.connections.push_back(system_stdout);
     {
         std::stringstream os;
         auto diags = ext::temporary_fstream();
