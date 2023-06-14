@@ -178,7 +178,7 @@ auto connect_with_user(const system_name& name,
             });
             break;
         case io_type::bidir:
-            result.emplace_back(bidirectional_connection{
+            result.emplace_back(bidirectional_link{
                 system_endpoint{name, entry.first},
                 user_endpoint{user_ep_name},
             });

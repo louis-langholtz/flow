@@ -12,7 +12,7 @@ auto operator<<(std::ostream& os, const unidirectional_link& value)
     return os;
 }
 
-auto operator<<(std::ostream& os, const bidirectional_connection& value)
+auto operator<<(std::ostream& os, const bidirectional_link& value)
     -> std::ostream&
 {
     os << "bidirectional_connection{";

@@ -225,7 +225,7 @@ auto to_open_flags(io_type direction)
 }
 
 auto setup(const system_name& name,
-           const bidirectional_connection& c,
+           const bidirectional_link& c,
            file_channel& p,
            std::ostream& diags) -> void
 {
@@ -338,7 +338,7 @@ auto setup(const system_name& name,
     if (const auto p = std::get_if<unidirectional_link>(&conn)) {
         return setup(name, *p, fchan, diags);
     }
-    if (const auto p = std::get_if<bidirectional_connection>(&conn)) {
+    if (const auto p = std::get_if<bidirectional_link>(&conn)) {
         return setup(name, *p, fchan, diags);
     }
 }
