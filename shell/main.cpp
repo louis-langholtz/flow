@@ -155,10 +155,10 @@ auto find(const std::map<flow::system_name, flow::system>& map,
 auto find(const system_stack_type& stack, const arguments& args)
     -> const flow::system*
 {
-    const auto& custom = std::get<flow::system::custom>(stack.top().get().implementation);
+    const auto& custom = std::get<flow::custom>(stack.top().get().implementation);
     for (auto&& entry: custom.nodes) {
         const auto& sub = entry.second;
-        if (const auto p = std::get_if<flow::system::executable>(&sub.implementation)) {
+        if (const auto p = std::get_if<flow::executable>(&sub.implementation)) {
             if (p->arguments == args) {
                 return &sub;
             }
@@ -173,7 +173,7 @@ auto find(const system_stack_type& stack, const arguments& args)
 auto update(const flow::system& system, const string_span& args) -> flow::system
 {
     flow::system tsys = system;
-    if (const auto p = std::get_if<flow::system::executable>(&tsys.implementation)) {
+    if (const auto p = std::get_if<flow::executable>(&tsys.implementation)) {
         if (size(args) > 1u) {
             const auto cmd = empty(p->arguments)
                 ? p->file.native()
@@ -284,7 +284,7 @@ struct system_basis
 auto parse(system_basis from, std::size_t n_remain = 0u) -> system_basis
 {
     while (size(from.remaining) > n_remain) {
-        const auto p = std::get_if<flow::system::custom>(&from.psystem->implementation);
+        const auto p = std::get_if<flow::custom>(&from.psystem->implementation);
         if (!p) {
             break;
         }
@@ -341,7 +341,7 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
         }
         const auto arg_basis = parse({{}, sys_names, &context}, 1u);
         const auto p =
-            std::get_if<flow::system::custom>(&arg_basis.psystem->implementation);
+            std::get_if<flow::custom>(&arg_basis.psystem->implementation);
         if (!p) {
             std::cerr << "parent not custom?!\n";
             continue;
@@ -360,7 +360,7 @@ auto get_instantiate_options(const flow::system& context)
 {
     return flow::instantiate_options{
         .ports = context.interface,
-        .environment = std::get<flow::system::custom>(context.implementation).environment
+        .environment = std::get<flow::custom>(context.implementation).environment
     };
 }
 
@@ -439,7 +439,7 @@ auto do_foreground(const flow::system& context, const string_span& args)
             return;
         }
     }
-    const auto& custom = std::get<flow::system::custom>(context.implementation);
+    const auto& custom = std::get<flow::custom>(context.implementation);
     const auto found = find(custom.nodes, nargs[0].c_str());
     if (!found) {
         std::cerr << "no such system as ";
@@ -502,7 +502,7 @@ auto do_rename(flow::system& context, const string_span& args) -> void
         std::cerr << " invalid: " << ex.what();
         return;
     }
-    auto& custom = std::get<flow::system::custom>(context.implementation);
+    auto& custom = std::get<flow::custom>(context.implementation);
     auto subsystems = custom.nodes;
     auto nh = subsystems.extract(old_name);
     if (nh.empty()) {
@@ -600,7 +600,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
                 return;
             }
             executable = true;
-            // arguments after this are for flow::system::executable::arguments
+            // arguments after this are for flow::executable::arguments
             break;
         }
         if (arg == custom_token) {
@@ -665,7 +665,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
             return;
         }
         const auto psys =
-        std::get_if<flow::system::custom>(&(name_basis.psystem->implementation));
+        std::get_if<flow::custom>(&(name_basis.psystem->implementation));
         if (!psys) {
             abort(std::cerr, parent, "parent not custom");
             return;
@@ -673,14 +673,14 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
         const auto arg_span = args.subspan(index);
         const auto arguments = std::vector(begin(arg_span), end(arg_span));
         if (!empty(file) || !empty(arguments)) {
-            system.implementation = flow::system::executable{
+            system.implementation = flow::executable{
                 .file = file,
                 .arguments = arguments
             };
             system.interface = flow::std_ports;
         }
         else {
-            system.implementation = flow::system::custom{
+            system.implementation = flow::custom{
                 .environment = psys->environment
             };
             system.interface = name_basis.psystem->interface;
@@ -713,7 +713,7 @@ auto do_show_connections(const flow::system& context, const string_span& args)
             }
         }
     }
-    const auto& custom = std::get<flow::system::custom>(context.implementation);
+    const auto& custom = std::get<flow::custom>(context.implementation);
     for (auto&& c: custom.links) {
         if (const auto p = std::get_if<flow::unidirectional_connection>(&c)) {
             std::cout << p->src;
@@ -788,7 +788,7 @@ auto do_remove_connections(flow::system& context, const string_span& args)
             std::cerr << ": can't parse right-hand-side endpoint\n";
             continue;
         }
-        auto& custom = std::get<flow::system::custom>(context.implementation);
+        auto& custom = std::get<flow::custom>(context.implementation);
         const auto conn = flow::unidirectional_connection{
             lhs_endpoint, rhs_endpoint
         };
@@ -833,7 +833,7 @@ auto do_remove_connections(flow::system& context, const string_span& args)
         abort(std::cerr, src_str, dst_str, "can't parse destination");
         return;
     }
-    auto& custom = std::get<flow::system::custom>(context.implementation);
+    auto& custom = std::get<flow::custom>(context.implementation);
     const auto key = flow::connection{
         flow::unidirectional_connection{src_endpoint, dst_endpoint}
     };
@@ -942,7 +942,7 @@ auto do_add_connections(flow::system& context, const string_span& args) -> void
             std::cerr << std::quoted(name) << "no such system\n";
             return;
         }
-        const auto p = std::get_if<flow::system::custom>(&name_basis.psystem->implementation);
+        const auto p = std::get_if<flow::custom>(&name_basis.psystem->implementation);
         if (!p) {
             std::cerr << "specified containing system is not custom\n";
             return;
@@ -1018,12 +1018,12 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
             continue;
         }
     }
-    const auto& custom = std::get<flow::system::custom>(context.implementation);
+    const auto& custom = std::get<flow::custom>(context.implementation);
     for (auto&& entry: custom.nodes) {
         std::cout << entry.first;
         print(std::cout, entry.second.interface);
         if (show_info) {
-            if (const auto p = std::get_if<flow::system::executable>(&entry.second.implementation)) {
+            if (const auto p = std::get_if<flow::executable>(&entry.second.implementation)) {
                 if (!p->file.empty()) {
                     std::cout << ' ';
                     std::cout << file_prefix;
@@ -1037,7 +1037,7 @@ auto do_show_systems(const flow::system& context, const string_span& args) -> vo
                     }
                 }
             }
-            else if (const auto p = std::get_if<flow::system::custom>(&entry.second.implementation)) {
+            else if (const auto p = std::get_if<flow::custom>(&entry.second.implementation)) {
                 std::cout << ' ';
                 std::cout << custom_begin_token;
                 if (show_recursive && !empty(p->nodes)) {
@@ -1168,14 +1168,14 @@ auto do_env(const flow::system& context, const string_span& args) -> void
             return;
         }
     }
-    auto& map = std::get<flow::system::custom>(context.implementation).environment;
+    auto& map = std::get<flow::custom>(context.implementation).environment;
     flow::pretty_print(std::cout, map, "\n");
     std::cout.flush();
 }
 
 auto do_setenv(flow::system& context, const string_span& args) -> void
 {
-    auto& map = std::get<flow::system::custom>(context.implementation).environment;
+    auto& map = std::get<flow::custom>(context.implementation).environment;
     auto usage = [&](std::ostream& os){
         os << "usage: ";
         os << args[0];
@@ -1226,7 +1226,7 @@ auto do_unsetenv(flow::system& context, const string_span& args) -> void
         os << "<environment-variable-name>...";
         os << '\n';
     };
-    auto& map = std::get<flow::system::custom>(context.implementation).environment;
+    auto& map = std::get<flow::custom>(context.implementation).environment;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "unsets environment variables.\n";
@@ -1458,7 +1458,7 @@ auto do_chdir(flow::system& context, const string_span& args) -> void
         os << "<directory>";
         os << "\n";
     };
-    auto& map = std::get<flow::system::custom>(context.implementation).environment;
+    auto& map = std::get<flow::custom>(context.implementation).environment;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "changes the current working directory.\n";
@@ -1531,7 +1531,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
         std::cerr << "unable to parse entire sequence of system names\n";
         return;
     }
-    if (!std::holds_alternative<flow::system::custom>(name_basis.psystem->implementation)) {
+    if (!std::holds_alternative<flow::custom>(name_basis.psystem->implementation)) {
         std::cerr << std::quoted(args[1]);
         std::cerr << ": not custom system, can only push into custom system\n";
         return;
@@ -1583,7 +1583,7 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
         return;
     }
     const auto copy_of_top = stack.top().get();
-    stack.top().get() = flow::system::custom{
+    stack.top().get() = flow::custom{
         .nodes = {{rebase_name, copy_of_top}}
     };
 }
@@ -1647,7 +1647,7 @@ auto main(int argc, const char * argv[]) -> int
     auto environment = flow::get_environ();
     environment["SHELL"] = argv[0];
     auto root_system = flow::system{
-        flow::system::custom{environment},
+        flow::custom{environment},
         flow::std_ports,
     };
     system_stack_type system_stack;
@@ -1854,7 +1854,7 @@ auto main(int argc, const char * argv[]) -> int
             auto derived_name = system_name;
             const auto tsys = update(*found, args);
             if (tsys != *found) {
-                auto& custom = std::get<flow::system::custom>(context.implementation);
+                auto& custom = std::get<flow::custom>(context.implementation);
                 derived_name = bg_job_name(args[0]);
                 custom.nodes.emplace(derived_name, tsys);
             }

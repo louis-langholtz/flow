@@ -38,7 +38,7 @@ struct invalid_port_map: std::invalid_argument
 /// @throws invalid_connection if a <code>connection</code> specified by @sys
 ///   (or any of its sub-systems) is invalid such that a <code>channel</code>
 ///   cannot be made for it.
-/// @throws invalid_executable if a <code>system::executable</code> specified
+/// @throws invalid_executable if a <code>executable</code> specified
 ///   by @sys (or any of its sub-systems) is invalid such that an
 ///   <code>instance</code> cannot be made for it.
 /// @throws invalid_port_map if a <code>port_map</code> specified

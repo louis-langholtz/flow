@@ -29,7 +29,7 @@ struct instance
 {
     /// @brief Information specific to "custom" instances.
     /// @note Instantiating a custom system, should result in a custom instance.
-    /// @see system::custom.
+    /// @see custom.
     struct custom
     {
         static constexpr auto default_pgrp = no_process_id;
@@ -50,7 +50,7 @@ struct instance
     /// @brief Information specific to "forked" instances.
     /// @note Instantiating an executable system, should result in a forked
     ///   instance.
-    /// @see system::executable.
+    /// @see executable.
     struct forked
     {
         /// @brief Diagnostics stream.
