@@ -1,5 +1,5 @@
-#ifndef system_pipeline_hpp
-#define system_pipeline_hpp
+#ifndef node_pipeline_hpp
+#define node_pipeline_hpp
 
 #include <type_traits> // for std::is_default_constructible_v
 #include <vector>
@@ -51,4 +51,4 @@ auto operator|(node_pipeline& lhs, const endpoint& rhs)
 
 }
 
-#endif /* system_pipeline_hpp */
+#endif /* node_pipeline_hpp */

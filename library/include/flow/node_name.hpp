@@ -1,5 +1,5 @@
-#ifndef system_name_hpp
-#define system_name_hpp
+#ifndef node_name_hpp
+#define node_name_hpp
 
 #include <concepts>
 #include <deque>
@@ -17,13 +17,13 @@ struct node_name_checker: detail::allowed_chars_checker<detail::name_charset>
 {
 };
 
-/// @brief System name.
+/// @brief Node name.
 /// @details A lexical token for identifying a <code>node</code>.
 /// @note This is a strongly typed <code>std::string</code> that can be
 ///   constructed from strings containing only characters from its allowed
 ///   character set. An <code>charset_validator_error</code> exception is
 ///   thrown otherwise.
-/// @see system.
+/// @see node.
 using node_name = detail::checked<std::string, node_name_checker>;
 
 auto operator<<(std::ostream& os, const node_name& name) -> std::ostream&;
@@ -41,7 +41,7 @@ auto operator<<(std::ostream& os, const T& names) -> std::ostream&
     auto add_separator = false;
     for (auto&& name: names) {
         if (add_separator) {
-            os << reserved::system_name_separator;
+            os << reserved::node_name_separator;
         }
         os << name.get();
         add_separator = true;
@@ -54,9 +54,9 @@ auto operator<<(std::ostream& os, const T& names) -> std::ostream&
 ///   <code>node_name</code>.
 auto to_node_names(std::string_view string,
                    const std::string_view& separator =
-                   std::string{reserved::system_name_separator})
+                   std::string{reserved::node_name_separator})
     -> std::deque<node_name>;
 
 }
 
-#endif /* system_name_hpp */
+#endif /* node_name_hpp */

@@ -32,7 +32,7 @@ constexpr auto exit_failure_code = EXIT_FAILURE;
 ///   running when ::fork() actually doesn't copy threads. That leaves
 ///   user code stuck!
 /// @note The alternative, is the child exec's. Which is for our purpose
-///   closer to what we get when calling the underlying system _exit call.
+///   closer to what we get when calling the underlying OS _exit call.
 [[noreturn]]
 auto exit(int exit_code) -> void
 {
@@ -187,7 +187,7 @@ auto setup(const node_name& name,
     using io = pipe_channel::io;
     const auto ends = make_endpoints<node_endpoint>(conn);
     if (!ends[0] && !ends[1]) {
-        diags << "link has no system_endpoint: " << conn << "\n";
+        diags << "link has no node_endpoint: " << conn << "\n";
         return;
     }
     if ((!ends[0] || (ends[0]->address != name)) &&
@@ -396,14 +396,14 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 
 auto make_child(instance& parent,
                 const node_name& name,
-                const node& system,
+                const node& node,
                 const std::span<const link>& links,
                 const port_map& ports) -> instance
 {
     instance result;
-    const auto all_closed = confirm_closed(name, system.interface,
+    const auto all_closed = confirm_closed(name, node.interface,
                                            links, ports);
-    if (const auto p = std::get_if<executable>(&system.implementation)) {
+    if (const auto p = std::get_if<executable>(&node.implementation)) {
         if (!p->file.has_filename()) {
             std::ostringstream os;
             os << "cannot instantiate " << name << ": executable file path ";
@@ -413,7 +413,7 @@ auto make_child(instance& parent,
         info.diags = ext::temporary_fstream();
         result.info = std::move(info);
     }
-    else if (const auto p = std::get_if<custom>(&system.implementation)) {
+    else if (const auto p = std::get_if<custom>(&node.implementation)) {
         result.info = instance::custom{};
         auto& parent_info = std::get<instance::custom>(parent.info);
         auto& info = std::get<instance::custom>(result.info);
@@ -421,7 +421,7 @@ auto make_child(instance& parent,
             info.pgrp = current_process_id();
         }
         for (auto&& link: p->links) {
-            auto channel = make_channel(link, name, system, info.channels,
+            auto channel = make_channel(link, name, node, info.channels,
                                         links, parent_info.channels);
             if (const auto q = std::get_if<forwarding_channel>(&channel)) {
                 // TODO?
@@ -436,7 +436,9 @@ auto make_child(instance& parent,
     }
     else {
         std::ostringstream os;
-        os << "parent: unrecognized system type for " << name << "\n";
+        os << "parent: unrecognized node implementation type for ";
+        os << name;
+        os << '\n';
         throw std::logic_error{os.str()};
     }
     return result;
@@ -685,23 +687,23 @@ auto fork_executables(const custom& system,
     auto& info = std::get<instance::custom>(object.info);
     for (auto&& entry: system.nodes) {
         const auto& name = entry.first;
-        const auto& subsystem = entry.second;
+        const auto& node = entry.second;
         const auto found = info.children.find(name);
         if (found == info.children.end()) {
             diags << "can't find child instance for " << name << "!\n";
             continue;
         }
-        if (const auto p = std::get_if<executable>(&subsystem.implementation)) {
-            fork_child(name, subsystem, system.environment, found->second,
+        if (const auto p = std::get_if<executable>(&node.implementation)) {
+            fork_child(name, node, system.environment, found->second,
                        info.pgrp, system.links, info.channels, root,
                        diags);
             continue;
         }
-        if (const auto p = std::get_if<custom>(&subsystem.implementation)) {
+        if (const auto p = std::get_if<custom>(&node.implementation)) {
             fork_executables(*p, found->second, root, diags);
             continue;
         }
-        diags << "Detected unknown system type - skipping!\n";
+        diags << "Detected unknown node implementation type - skipping!\n";
     }
 }
 

@@ -24,14 +24,14 @@ TEST(node_name, construction)
         EXPECT_NO_THROW(node_name(std::string{c}));
     }
     EXPECT_NO_THROW(node_name(std::string{'_'}));
-    EXPECT_NO_THROW(node_name("system_33"));
+    EXPECT_NO_THROW(node_name("node_33"));
 
     EXPECT_THROW(node_name(std::string{'\0'}), charset_validator_error);
     EXPECT_THROW(node_name("-"), charset_validator_error);
     EXPECT_THROW(node_name("."), charset_validator_error);
-    EXPECT_THROW(node_name("system@"), charset_validator_error);
-    EXPECT_THROW(node_name("system:0"), charset_validator_error);
-    EXPECT_THROW(node_name("system#33"), charset_validator_error);
+    EXPECT_THROW(node_name("node@"), charset_validator_error);
+    EXPECT_THROW(node_name("node:0"), charset_validator_error);
+    EXPECT_THROW(node_name("node#33"), charset_validator_error);
 }
 
 TEST(node_name, ostream_operator_support)
@@ -52,14 +52,14 @@ TEST(node_name, ranged_ostream_operator_support)
     EXPECT_EQ(got, std::string("test.one.two"));
 }
 
-TEST(to_system_names, with_empty_string)
+TEST(to_node_names, with_empty_string)
 {
     auto result = decltype(to_node_names(std::string{})){};
     EXPECT_NO_THROW(result = to_node_names(std::string{}));
     EXPECT_TRUE(empty(result));
 }
 
-TEST(to_system_names, with_good_strings)
+TEST(to_node_names, with_good_strings)
 {
     auto result = decltype(to_node_names(std::string{})){};
     EXPECT_NO_THROW(result = to_node_names(""));
@@ -70,16 +70,16 @@ TEST(to_system_names, with_good_strings)
         EXPECT_EQ(result[0], node_name(""));
         EXPECT_EQ(result[1], node_name(""));
     }
-    EXPECT_NO_THROW(result = to_node_names("a_system"));
+    EXPECT_NO_THROW(result = to_node_names("a_node"));
     EXPECT_EQ(size(result), 1u);
     if (size(result) == 1u) {
-        EXPECT_EQ(result[0], node_name("a_system"));
+        EXPECT_EQ(result[0], node_name("a_node"));
     }
-    EXPECT_NO_THROW(result = to_node_names(".a_system"));
+    EXPECT_NO_THROW(result = to_node_names(".a_node"));
     EXPECT_EQ(size(result), 2u);
     if (size(result) == 2u) {
         EXPECT_EQ(result[0], node_name(""));
-        EXPECT_EQ(result[1], node_name("a_system"));
+        EXPECT_EQ(result[1], node_name("a_node"));
     }
     EXPECT_NO_THROW(result = to_node_names("a.b.c"));
     EXPECT_EQ(size(result), 3u);
@@ -90,7 +90,7 @@ TEST(to_system_names, with_good_strings)
     }
 }
 
-TEST(to_system_names, with_bad_strings)
+TEST(to_node_names, with_bad_strings)
 {
     EXPECT_THROW(to_node_names(":a.b.c"), charset_validator_error);
     EXPECT_THROW(to_node_names("@b-c"), charset_validator_error);

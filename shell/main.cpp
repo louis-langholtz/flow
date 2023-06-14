@@ -170,10 +170,10 @@ auto find(const system_stack_type& stack, const arguments& args)
     return nullptr;
 }
 
-auto update(const flow::node& system, const string_span& args) -> flow::node
+auto update(const flow::node& node, const string_span& args) -> flow::node
 {
-    flow::node tsys = system;
-    if (const auto p = std::get_if<flow::executable>(&tsys.implementation)) {
+    flow::node result = node;
+    if (const auto p = std::get_if<flow::executable>(&result.implementation)) {
         if (size(args) > 1u) {
             const auto cmd = empty(p->arguments)
                 ? p->file.native()
@@ -186,7 +186,7 @@ auto update(const flow::node& system, const string_span& args) -> flow::node
             }
         }
     }
-    return tsys;
+    return result;
 }
 
 auto to_int(const std::string_view& view)
@@ -861,7 +861,7 @@ auto do_add_links(flow::node& context, const string_span& args) -> void
         os << "<user-endpoint-name>\n";
         os << "  where <file_endpoint> is: ";
         os << flow::reserved::file_endpoint_prefix;
-        os << "<file-system-path>\n";
+        os << "<filesystem-path>\n";
         os << "  where <system_endpoint> is: ";
         os << flow::reserved::descriptors_prefix;
         os << "<number>[";

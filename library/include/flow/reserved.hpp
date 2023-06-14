@@ -9,7 +9,7 @@ constexpr auto file_endpoint_prefix = '%';
 constexpr auto address_prefix = '@';
 constexpr auto descriptors_prefix = ':';
 
-constexpr auto system_name_separator = '.';
+constexpr auto node_name_separator = '.';
 constexpr auto descriptor_separator = ',';
 constexpr auto env_separator = '=';
 
