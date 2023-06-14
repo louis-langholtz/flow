@@ -9,7 +9,7 @@
 #include "ext/fstream.hpp"
 
 #include "flow/channel.hpp"
-#include "flow/connection.hpp"
+#include "flow/link.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/owning_process_id.hpp"
 #include "flow/reference_process_id.hpp"

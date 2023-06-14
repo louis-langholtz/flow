@@ -34,7 +34,7 @@ const auto std_ports = port_map{
     stderr_ports_entry,
 };
 
-/// @brief Whether the given entry requires a <code>connection</code>.
+/// @brief Whether the given entry requires a <code>link</code>.
 auto requires_connection(const port_map_entry& entry) -> bool;
 
 }

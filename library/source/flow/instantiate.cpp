@@ -137,7 +137,7 @@ auto is_channel_for(const std::span<const channel>& channels,
 }
 
 auto close(pipe_channel& p, pipe_channel::io side,
-           const system_name& name, const connection& c,
+           const system_name& name, const link& c,
            std::ostream& diags)
     -> void
 {
@@ -150,7 +150,7 @@ auto close(pipe_channel& p, pipe_channel::io side,
 }
 
 auto dup2(pipe_channel& p, pipe_channel::io side, reference_descriptor id,
-          const system_name& name, const connection& c,
+          const system_name& name, const link& c,
           std::ostream& diags)
     -> void
 {
@@ -167,7 +167,7 @@ auto dup2(pipe_channel& pc,
           pipe_channel::io side,
           const std::set<port_id>& ports,
           const system_name& name,
-          const connection& conn,
+          const link& conn,
           std::ostream& diags)
     -> void
 {
@@ -180,14 +180,14 @@ auto dup2(pipe_channel& pc,
 }
 
 auto setup(const system_name& name,
-           const connection& conn,
+           const link& conn,
            pipe_channel& p,
            std::ostream& diags) -> void
 {
     using io = pipe_channel::io;
     const auto ends = make_endpoints<node_endpoint>(conn);
     if (!ends[0] && !ends[1]) {
-        diags << "connection has no system_endpoint: " << conn << "\n";
+        diags << "link has no system_endpoint: " << conn << "\n";
         return;
     }
     if ((!ends[0] || (ends[0]->address != name)) &&
@@ -331,7 +331,7 @@ auto setup(const system_name& name,
 }
 
 auto setup(const system_name& name,
-           const connection& conn,
+           const link& conn,
            file_channel& fchan,
            std::ostream& diags) -> void
 {
@@ -359,7 +359,7 @@ auto exec_child(const std::filesystem::path& path,
 
 auto confirm_closed(const system_name& name,
                     const port_map& ports,
-                    const std::span<const connection>& connections,
+                    const std::span<const link>& connections,
                     const port_map& available) -> bool
 {
     auto is_internally_closed = true;
@@ -379,7 +379,7 @@ auto confirm_closed(const system_name& name,
             }
         }
         std::ostringstream os;
-        os << "missing connection for " << look_for;
+        os << "missing link for " << look_for;
         throw invalid_port_map{os.str()};
     }
     return is_internally_closed;
@@ -397,7 +397,7 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 auto make_child(instance& parent,
                 const system_name& name,
                 const node& system,
-                const std::span<const connection>& connections,
+                const std::span<const link>& connections,
                 const port_map& ports) -> instance
 {
     instance result;
@@ -420,8 +420,8 @@ auto make_child(instance& parent,
         if (!all_closed) {
             info.pgrp = current_process_id();
         }
-        for (auto&& connection: p->links) {
-            auto channel = make_channel(connection, name, system, info.channels,
+        for (auto&& link: p->links) {
+            auto channel = make_channel(link, name, system, info.channels,
                                         connections, parent_info.channels);
             if (const auto q = std::get_if<forwarding_channel>(&channel)) {
                 // TODO?
@@ -484,7 +484,7 @@ auto set_found(const std::span<bool>& found, const port_map& ports)
 }
 
 auto close_unused_ports(const system_name& name,
-                        const std::span<const connection>& conns,
+                        const std::span<const link>& conns,
                         const port_map& ports)
     -> void
 {
@@ -521,7 +521,7 @@ auto close_pipes_except(instance& root,
 }
 
 auto setup(const system_name& name,
-           const connection& conn,
+           const link& conn,
            channel& chan,
            std::ostream& diags) -> void
 {
@@ -541,7 +541,7 @@ auto setup(const system_name& name,
 auto setup(instance& root,
            const system_name& name,
            const port_map& ports,
-           const std::span<const connection>& connections,
+           const std::span<const link>& connections,
            const std::span<channel>& channels,
            instance& child) -> void
 {
@@ -589,7 +589,7 @@ auto fork_child(const system_name& name,
                 const environment_map& env,
                 instance& child,
                 reference_process_id& pgrp,
-                const std::span<const connection>& connections,
+                const std::span<const link>& connections,
                 const std::span<channel>& channels,
                 instance& root,
                 std::ostream& diags) -> void
@@ -705,24 +705,24 @@ auto fork_executables(const custom& system,
     }
 }
 
-auto close_internal_ends(const connection& connection,
+auto close_internal_ends(const link& link,
                          pipe_channel& channel,
                          std::ostream& diags) -> void
 {
     static constexpr auto iowidth = 5;
-    const auto ends = make_endpoints<node_endpoint>(connection);
+    const auto ends = make_endpoints<node_endpoint>(link);
     if (ends[0] && (ends[0]->address != system_name{})) {
         const auto pio = pipe_channel::io::write;
         diags << "parent: closing ";
         diags << std::setw(iowidth) << pio << " side of ";
-        diags << connection << " " << channel << "\n";
+        diags << link << " " << channel << "\n";
         channel.close(pio, diags);
     }
     if (ends[1] && (ends[1]->address != system_name{})) {
         const auto pio = pipe_channel::io::read;
         diags << "parent: closing ";
         diags << std::setw(iowidth) << pio << " side of ";
-        diags << connection << " " << channel << "\n";
+        diags << link << " " << channel << "\n";
         channel.close(pio, diags);
     }
 }
@@ -734,9 +734,9 @@ auto close_all_internal_ends(instance::custom& instance,
     const auto max_i = size(instance.channels);
     for (auto i = 0u; i < max_i; ++i) {
         auto& channel = instance.channels[i];
-        const auto& connection = system.links[i];
+        const auto& link = system.links[i];
         if (const auto q = std::get_if<pipe_channel>(&channel)) {
-            close_internal_ends(connection, *q, diags);
+            close_internal_ends(link, *q, diags);
             continue;
         }
     }
@@ -792,8 +792,8 @@ auto instantiate(const node& system,
             }
         }
         info.channels.reserve(size(p->links));
-        for (auto&& connection: p->links) {
-            info.channels.push_back(make_channel(connection, {}, system,
+        for (auto&& link: p->links) {
+            info.channels.push_back(make_channel(link, {}, system,
                                                  info.channels, {}, {}));
         }
         // Create all the subsystem instances before forking any!

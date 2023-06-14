@@ -2,6 +2,8 @@ find_package(Boost)
 
 file(GLOB FLOW_SRCS "source/flow/*.cpp")
 file(GLOB FLOW_HDRS "include/flow/*.hpp")
+file(GLOB EXT_SRCS "source/ext/*.cpp")
+file(GLOB EXT_HDRS "include/ext/*.hpp")
 
 if (${FLOW_ENABLE_COVERAGE} AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	message(STATUS "lib: Adding definitions for coverage analysis.")
@@ -11,6 +13,8 @@ endif()
 set(libsrc
 	${FLOW_SRCS}
 	${FLOW_HDRS}
+	${EXT_SRCS}
+	${EXT_HDRS}
 )
 
 add_library(flow ${libsrc})

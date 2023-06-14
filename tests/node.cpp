@@ -13,7 +13,7 @@ TEST(system_custom, default_construction)
 TEST(system_custom, equality)
 {
     flow::custom obj_a, obj_b;
-    obj_b.links = {flow::connection{}};
+    obj_b.links = {flow::link{}};
     EXPECT_TRUE(flow::custom() == flow::custom());
     EXPECT_TRUE(obj_a == flow::custom());
     EXPECT_TRUE(flow::custom() == obj_a);

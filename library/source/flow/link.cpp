@@ -1,4 +1,4 @@
-#include "flow/connection.hpp"
+#include "flow/link.hpp"
 
 namespace flow {
 

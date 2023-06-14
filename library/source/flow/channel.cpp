@@ -192,7 +192,7 @@ auto make_channel(const pipe_channel& src, const pipe_channel& dst)
 
 auto make_channel(const std::set<port_id>& dset,
                   const system_name& name,
-                  const std::span<const connection>& parent_connections,
+                  const std::span<const link>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> reference_channel
 {
@@ -200,7 +200,7 @@ auto make_channel(const std::set<port_id>& dset,
     const auto found = find_index(parent_connections, look_for);
     if (!found) {
         std::ostringstream os;
-        os << "can't find parent connection with ";
+        os << "can't find parent link with ";
         os << look_for;
         os << " endpoint for making reference channel";
         throw invalid_connection{os.str()};
@@ -209,21 +209,21 @@ auto make_channel(const std::set<port_id>& dset,
 }
 
 auto make_channel(const user_endpoint& src, const user_endpoint& dst,
-                  const std::span<const connection>& connections,
+                  const std::span<const link>& connections,
                   const std::span<channel>& channels)
     -> forwarding_channel
 {
     const auto src_conn = find_index(connections, src);
     if (!src_conn) {
         std::ostringstream os;
-        os << "can't find source connection with endpoint ";
+        os << "can't find source link with endpoint ";
         os << src;
         throw invalid_connection{os.str()};
     }
     const auto dst_conn = find_index(connections, dst);
     if (!dst_conn) {
         std::ostringstream os;
-        os << "can't find destination connection with endpoint ";
+        os << "can't find destination link with endpoint ";
         os << dst;
         throw invalid_connection{os.str()};
     }
@@ -245,12 +245,12 @@ auto make_signal_channel(const node_endpoint& src,
 {
     if (src.ports != dst.ports) {
         std::ostringstream os;
-        os << "connection between different signal sets not supported";
+        os << "link between different signal sets not supported";
         throw invalid_connection{os.str()};
     }
     if (src.address != system_name{}) {
         std::ostringstream os;
-        os << "connection src system endpoint for signal(s) must be";
+        os << "link src system endpoint for signal(s) must be";
         os << " empty address; not ";
         os << src.address;
         throw invalid_connection{os.str()};
@@ -271,12 +271,12 @@ auto make_channel(const unidirectional_link& conn,
                   const system_name& name,
                   const node& system,
                   const std::span<channel>& channels,
-                  const std::span<const connection>& parent_connections,
+                  const std::span<const link>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> channel
 {
     static constexpr auto same_endpoints_error =
-        "connection must have different endpoints";
+        "link must have different endpoints";
     static constexpr auto no_system_end_error =
         "at least one end must be a system";
     if (conn.src == conn.dst) {
@@ -310,7 +310,7 @@ auto make_channel(const unidirectional_link& conn,
     if (src_dset && dst_dset) {
         // TODO: make a forwarding channel for this case
         std::ostringstream os;
-        os << "connection between enclosing system endpoints not supported";
+        os << "link between enclosing system endpoints not supported";
         throw invalid_connection{os.str()};
     }
     if (src_file) {
@@ -325,7 +325,7 @@ auto make_channel(const unidirectional_link& conn,
     if (src_system && dst_system) {
         if (src_port_type != dst_port_type) {
             std::ostringstream os;
-            os << "connection between different port types not supported";
+            os << "link between different port types not supported";
             os << ": src-type=" << int(src_port_type);
             os << ", dst-type=" << int(dst_port_type);
             throw invalid_connection{os.str()};
@@ -347,11 +347,11 @@ auto make_channel(const unidirectional_link& conn,
 
 }
 
-auto make_channel(const connection& conn,
+auto make_channel(const link& conn,
                   const system_name& name,
                   const node& system,
                   const std::span<channel>& channels,
-                  const std::span<const connection>& parent_connections,
+                  const std::span<const link>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> channel
 {
