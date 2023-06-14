@@ -18,6 +18,39 @@
 
 namespace flow {
 
+struct system;
+
+struct custom
+{
+    /// @brief Environment for the <code>system</code>.
+    /// @note This is considered an _internal_ component of this type.
+    environment_map environment;
+
+    /// @brief Subsystems.
+    /// @note The identifying key of a subsystem is considered an _external_
+    ///   component of that subsystems.
+    std::map<system_name, system> nodes;
+
+    /// @brief Connections.
+    /// @note The connections of this system are considered _internal_
+    ///   components.
+    std::vector<connection> links;
+};
+
+struct executable
+{
+    /// @brief Path to the executable file for this system.
+    std::filesystem::path file;
+
+    /// @brief Arguments to pass to the executable.
+    std::vector<std::string> arguments;
+
+    /// @brief Working directory.
+    /// @todo Consider what sense this member makes & removing it if
+    ///   there isn't enough reason to keep it around.
+    std::filesystem::path working_directory;
+};
+
 /// @brief Recursive structure for defining systems.
 /// @note Systems are conceptually made up of three categories of components:
 ///   _external_, _interface_, and _internal_.
@@ -28,37 +61,6 @@ namespace flow {
 /// @see instantiate, instance.
 struct system
 {
-    struct custom
-    {
-        /// @brief Environment for the <code>system</code>.
-        /// @note This is considered an _internal_ component of this type.
-        environment_map environment;
-
-        /// @brief Subsystems.
-        /// @note The identifying key of a subsystem is considered an _external_
-        ///   component of that subsystems.
-        std::map<system_name, system> nodes;
-
-        /// @brief Connections.
-        /// @note The connections of this system are considered _internal_
-        ///   components.
-        std::vector<connection> links;
-    };
-
-    struct executable
-    {
-        /// @brief Path to the executable file for this system.
-        std::filesystem::path file;
-
-        /// @brief Arguments to pass to the executable.
-        std::vector<std::string> arguments;
-
-        /// @brief Working directory.
-        /// @todo Consider what sense this member makes & removing it if
-        ///   there isn't enough reason to keep it around.
-        std::filesystem::path working_directory;
-    };
-
     system() = default;
 
     system(custom type_info,
@@ -92,16 +94,16 @@ static_assert(std::is_move_constructible_v<system>);
 static_assert(std::is_copy_assignable_v<system>);
 static_assert(std::is_move_assignable_v<system>);
 
-inline auto operator==(const system::custom& lhs,
-                       const system::custom& rhs) noexcept -> bool
+inline auto operator==(const custom& lhs,
+                       const custom& rhs) noexcept -> bool
 {
     return (lhs.nodes == rhs.nodes)
         && (lhs.environment == rhs.environment)
         && (lhs.links == rhs.links);
 }
 
-inline auto operator==(const system::executable& lhs,
-                       const system::executable& rhs) noexcept -> bool
+inline auto operator==(const executable& lhs,
+                       const executable& rhs) noexcept -> bool
 {
     return (lhs.file == rhs.file)
         && (lhs.arguments == rhs.arguments)

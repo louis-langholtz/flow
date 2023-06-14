@@ -43,7 +43,7 @@ TEST(make_channel, for_subsys_to_file)
 {
     auto chan = channel{};
     const auto name = system_name{};
-    const auto sys = flow::system::custom{
+    const auto sys = flow::custom{
         .nodes = {
             {"subsys", flow::system{}},
         }
@@ -62,7 +62,7 @@ TEST(make_channel, for_file_to_subsys)
 {
     auto chan = channel{};
     const auto name = system_name{};
-    const auto sys = flow::system::custom{
+    const auto sys = flow::custom{
         .nodes = {
             {"subsys", flow::system{}},
         }
@@ -81,7 +81,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
 {
     auto chan = channel{};
     const auto name = system_name{};
-    const auto sys = flow::system::custom{
+    const auto sys = flow::custom{
         .nodes = {
             {"subsys_a", flow::system{}},
             {"subsys_b", flow::system{}},
@@ -102,9 +102,9 @@ TEST(make_channel, for_exe_subsys_to_sys)
     auto chan = channel{};
     const auto name = system_name{};
     const auto sys = flow::system{
-        flow::system::custom{
+        flow::custom{
             .nodes = {
-                {"subsys_a", flow::system::executable{}},
+                {"subsys_a", flow::executable{}},
             }
         }, std_ports,
     };
@@ -130,9 +130,9 @@ TEST(make_channel, signal_channel)
     const auto sig = flow::signals::winch();
     auto name = flow::system_name{};
     auto sys = flow::system{
-        system::custom{
+        custom{
             .nodes = {{exe_name, {
-                system::executable{},
+                executable{},
                 port_map{
                     {sig, {"", io_type::in}},
                     stdout_ports_entry,

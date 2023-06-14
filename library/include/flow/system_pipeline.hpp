@@ -23,7 +23,7 @@ struct system_pipeline
     auto wait() -> std::vector<wait_result>;
 
 private:
-    system::custom info;
+    custom info;
     endpoint src_end;
     endpoint dst_end;
     instance object;
