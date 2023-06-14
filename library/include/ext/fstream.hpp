@@ -702,7 +702,7 @@ inline auto filebuf::write_mode() -> void
 /// @note This supports C++23's <code>noreplace</code> and a new
 ///   <code>tmpfile</code> openmode. The latter results in the stream being
 ///   opened for reading/writing to a temporary file that either never shows up
-///   in the file system, or is deleted from it right after its creation. One
+///   in the filesystem, or is deleted from it right after its creation. One
 ///   has to use the open modes however from this class; not from
 ///   <code>std::ios_base</code> or any derived classes of that other than this
 ///   class.
