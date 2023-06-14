@@ -11,19 +11,19 @@
 
 namespace flow {
 
-struct unidirectional_connection {
+struct unidirectional_link {
     endpoint src;
     endpoint dst;
 };
 
-constexpr auto operator==(const unidirectional_connection& lhs,
-                          const unidirectional_connection& rhs) noexcept
+constexpr auto operator==(const unidirectional_link& lhs,
+                          const unidirectional_link& rhs) noexcept
     -> bool
 {
     return (lhs.src == rhs.src) && (lhs.dst == rhs.dst);
 }
 
-auto operator<<(std::ostream& os, const unidirectional_connection& value)
+auto operator<<(std::ostream& os, const unidirectional_link& value)
     -> std::ostream&;
 
 struct bidirectional_connection {
@@ -41,7 +41,7 @@ auto operator<<(std::ostream& os, const bidirectional_connection& value)
     -> std::ostream&;
 
 using connection = variant<
-    unidirectional_connection,
+    unidirectional_link,
     bidirectional_connection
 >;
 
@@ -49,7 +49,7 @@ static_assert(std::is_default_constructible_v<connection>);
 static_assert(std::equality_comparable<connection>);
 
 template <std::convertible_to<endpoint> T>
-auto make_endpoints(const unidirectional_connection& c)
+auto make_endpoints(const unidirectional_link& c)
     -> std::array<const T*, 2u>
 {
     return {std::get_if<T>(&c.src), std::get_if<T>(&c.dst)};
@@ -68,7 +68,7 @@ auto make_endpoints(const bidirectional_connection& c)
 template <std::convertible_to<endpoint> T>
 auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
 {
-    if (const auto p = std::get_if<unidirectional_connection>(&c)) {
+    if (const auto p = std::get_if<unidirectional_link>(&c)) {
         return make_endpoints<T>(*p);
     }
     if (const auto p = std::get_if<bidirectional_connection>(&c)) {

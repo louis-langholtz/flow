@@ -715,7 +715,7 @@ auto do_show_connections(const flow::node& context, const string_span& args)
     }
     const auto& custom = std::get<flow::custom>(context.implementation);
     for (auto&& c: custom.links) {
-        if (const auto p = std::get_if<flow::unidirectional_connection>(&c)) {
+        if (const auto p = std::get_if<flow::unidirectional_link>(&c)) {
             std::cout << p->src;
             std::cout << connection_separator;
             std::cout << p->dst;
@@ -789,7 +789,7 @@ auto do_remove_connections(flow::node& context, const string_span& args)
             continue;
         }
         auto& custom = std::get<flow::custom>(context.implementation);
-        const auto conn = flow::unidirectional_connection{
+        const auto conn = flow::unidirectional_link{
             lhs_endpoint, rhs_endpoint
         };
         std::cout << std::quoted(arg);
@@ -835,7 +835,7 @@ auto do_remove_connections(flow::node& context, const string_span& args)
     }
     auto& custom = std::get<flow::custom>(context.implementation);
     const auto key = flow::connection{
-        flow::unidirectional_connection{src_endpoint, dst_endpoint}
+        flow::unidirectional_link{src_endpoint, dst_endpoint}
     };
     std::cout << "found and removed ";
     std::cout << erase(custom.links, key);
@@ -959,7 +959,7 @@ auto do_add_connections(flow::node& context, const string_span& args) -> void
             std::cerr << ": can't parse right-hand-side endpoint\n";
             continue;
         }
-        p->links.emplace_back(flow::unidirectional_connection{
+        p->links.emplace_back(flow::unidirectional_link{
             lhs_endpoint, rhs_endpoint
         });
     }

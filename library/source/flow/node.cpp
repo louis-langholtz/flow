@@ -166,13 +166,13 @@ auto connect_with_user(const system_name& name,
         const auto user_ep_name = name.get() + ":" + to_string(entry.first);
         switch (entry.second.direction) {
         case io_type::in:
-            result.emplace_back(unidirectional_connection{
+            result.emplace_back(unidirectional_link{
                 user_endpoint{user_ep_name},
                 system_endpoint{name, entry.first},
             });
             break;
         case io_type::out:
-            result.emplace_back(unidirectional_connection{
+            result.emplace_back(unidirectional_link{
                 system_endpoint{name, entry.first},
                 user_endpoint{user_ep_name},
             });

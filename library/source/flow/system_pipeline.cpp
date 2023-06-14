@@ -45,7 +45,7 @@ auto system_pipeline::append(const node& sys) -> system_pipeline&
             if (empty(sys_inputs)) {
                 throw std::invalid_argument{"current system must have inputs"};
             }
-            info.links.emplace_back(unidirectional_connection{
+            info.links.emplace_back(unidirectional_link{
                 src_end, system_endpoint{sys_name, sys_inputs},
             });
         }
@@ -60,7 +60,7 @@ auto system_pipeline::append(const node& sys) -> system_pipeline&
         if (empty(sys_inputs)) {
             throw std::invalid_argument{"current system must have inputs"};
         }
-        info.links.emplace_back(unidirectional_connection{
+        info.links.emplace_back(unidirectional_link{
             system_endpoint{last_name, std::move(last_outputs)},
             system_endpoint{sys_name, sys_inputs},
         });
@@ -98,7 +98,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
         if (empty(last_outputs)) {
             throw std::invalid_argument{"last system must have outputs"};
         }
-        info.links.emplace_back(unidirectional_connection{
+        info.links.emplace_back(unidirectional_link{
             system_endpoint{last_name, std::move(last_outputs)}, dst_end,
         });
     }

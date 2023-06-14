@@ -277,7 +277,7 @@ auto setup(const system_name& name,
 }
 
 auto setup(const system_name& name,
-           const unidirectional_connection& conn,
+           const unidirectional_link& conn,
            file_channel& chan,
            std::ostream& diags) -> void
 {
@@ -335,7 +335,7 @@ auto setup(const system_name& name,
            file_channel& fchan,
            std::ostream& diags) -> void
 {
-    if (const auto p = std::get_if<unidirectional_connection>(&conn)) {
+    if (const auto p = std::get_if<unidirectional_link>(&conn)) {
         return setup(name, *p, fchan, diags);
     }
     if (const auto p = std::get_if<bidirectional_connection>(&conn)) {

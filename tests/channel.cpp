@@ -20,7 +20,7 @@ TEST(make_channel, with_defaulted_args)
 
 TEST(make_channel, with_diff_system_endpoints)
 {
-    const auto conn = unidirectional_connection{
+    const auto conn = unidirectional_link{
         system_endpoint{"a"},
         system_endpoint{"b"},
     };
@@ -31,7 +31,7 @@ TEST(make_channel, with_diff_system_endpoints)
 TEST(make_channel, with_diff_sizes)
 {
     const auto pconns = std::vector<connection>{
-        unidirectional_connection{user_endpoint{}, system_endpoint{
+        unidirectional_link{user_endpoint{}, system_endpoint{
             {}, {reference_descriptor{1}}
         }}
     };
@@ -48,7 +48,7 @@ TEST(make_channel, for_subsys_to_file)
             {"subsys", flow::node{}},
         }
     };
-    const auto conn = unidirectional_connection{
+    const auto conn = unidirectional_link{
         system_endpoint{"subsys"},
         file_endpoint{"file"},
     };
@@ -67,7 +67,7 @@ TEST(make_channel, for_file_to_subsys)
             {"subsys", flow::node{}},
         }
     };
-    const auto conn = unidirectional_connection{
+    const auto conn = unidirectional_link{
         file_endpoint{"file"},
         system_endpoint{"subsys"},
     };
@@ -87,7 +87,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
             {"subsys_b", flow::node{}},
         }
     };
-    const auto conn = unidirectional_connection{
+    const auto conn = unidirectional_link{
         system_endpoint{"subsys_a"},
         system_endpoint{"subsys_b"},
     };
@@ -109,12 +109,12 @@ TEST(make_channel, for_exe_subsys_to_sys)
         }, std_ports,
     };
     ASSERT_FALSE(empty(sys.interface));
-    const auto conn = unidirectional_connection{
+    const auto conn = unidirectional_link{
         system_endpoint{"subsys_a", {reference_descriptor{1}}},
         system_endpoint{{}, {reference_descriptor{1}}},
     };
     const auto pconns = std::vector<connection>{
-        unidirectional_connection{user_endpoint{}, system_endpoint{
+        unidirectional_link{user_endpoint{}, system_endpoint{
             {}, {reference_descriptor{1}}
         }}
     };
@@ -142,7 +142,7 @@ TEST(make_channel, signal_channel)
         },
         port_map{{sig, {"", io_type::in}}}
     };
-    auto conn = flow::unidirectional_connection{
+    auto conn = flow::unidirectional_link{
         system_endpoint{{}, {sig}},
         system_endpoint{exe_name, {sig}},
     };
