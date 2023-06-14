@@ -6,7 +6,7 @@
 #include <stdexcept> // for std::invalid_argument
 #include <type_traits> // for std::is_default_constructible_v
 
-#include "flow/connection.hpp"
+#include "flow/link.hpp"
 #include "flow/file_channel.hpp"
 #include "flow/forwarding_channel.hpp"
 #include "flow/pipe_channel.hpp"
@@ -50,18 +50,18 @@ struct invalid_connection: std::invalid_argument
     using std::invalid_argument::invalid_argument;
 };
 
-/// @brief Makes a <code>channel</code> for a <code>connection</code>.
+/// @brief Makes a <code>channel</code> for a <code>link</code>.
 /// @throws invalid_connection if something is invalid about
-///   @connection for the given context that prevents making the
+///   @link for the given context that prevents making the
 ///   <code>channel</code>.
 /// @throws std::logic_error if size of @parent_connections doesn't match
 ///   size of @parent_channels.
 /// @see channel.
-auto make_channel(const connection& conn,
+auto make_channel(const link& conn,
                   const system_name& name,
                   const node& system,
                   const std::span<channel>& channels,
-                  const std::span<const connection>& parent_connections,
+                  const std::span<const link>& parent_connections,
                   const std::span<channel>& parent_channels)
     -> channel;
 

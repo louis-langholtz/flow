@@ -13,7 +13,7 @@ namespace flow {
 /// @brief Port identifier.
 /// @note Ports are _passive_ endpoints for communications in the sense
 ///   that they're always acted upon rather than the other way around.
-/// @note Ports can be connection oriented or connectionless.
+/// @note Ports can be link oriented or connectionless.
 using port_id = variant<
     reference_descriptor,
     signal

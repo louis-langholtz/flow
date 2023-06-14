@@ -14,7 +14,8 @@ TEST(channel, default_construction)
 
 TEST(make_channel, with_defaulted_args)
 {
-    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::node{}, {},
+    using flow::link; // disambiguate link
+    EXPECT_THROW(make_channel(link{}, system_name{}, flow::node{}, {},
                               {}, {}), invalid_connection);
 }
 
@@ -30,17 +31,19 @@ TEST(make_channel, with_diff_system_endpoints)
 
 TEST(make_channel, with_diff_sizes)
 {
-    const auto pconns = std::vector<connection>{
+    using flow::link; // disambiguate link
+    const auto pconns = std::vector<link>{
         unidirectional_link{user_endpoint{}, node_endpoint{
             {}, {reference_descriptor{1}}
         }}
     };
-    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::node{}, {},
+    EXPECT_THROW(make_channel(link{}, system_name{}, flow::node{}, {},
                               pconns, {}), std::logic_error);
 }
 
 TEST(make_channel, for_subsys_to_file)
 {
+    using flow::link; // disambiguate link
     auto chan = channel{};
     const auto name = system_name{};
     const auto sys = flow::custom{
@@ -52,7 +55,7 @@ TEST(make_channel, for_subsys_to_file)
         node_endpoint{"subsys"},
         file_endpoint{"file"},
     };
-    const auto pconns = std::vector<connection>{};
+    const auto pconns = std::vector<link>{};
     auto pchans = std::vector<channel>{};
     EXPECT_NO_THROW(chan = make_channel(conn, name, sys, {}, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<file_channel>(chan));
@@ -60,6 +63,7 @@ TEST(make_channel, for_subsys_to_file)
 
 TEST(make_channel, for_file_to_subsys)
 {
+    using flow::link; // disambiguate link
     auto chan = channel{};
     const auto name = system_name{};
     const auto sys = flow::custom{
@@ -71,7 +75,7 @@ TEST(make_channel, for_file_to_subsys)
         file_endpoint{"file"},
         node_endpoint{"subsys"},
     };
-    const auto pconns = std::vector<connection>{};
+    const auto pconns = std::vector<link>{};
     auto pchans = std::vector<channel>{};
     EXPECT_NO_THROW(chan = make_channel(conn, name, sys, {}, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<file_channel>(chan));
@@ -79,6 +83,7 @@ TEST(make_channel, for_file_to_subsys)
 
 TEST(make_channel, for_default_subsys_to_default_subsys)
 {
+    using flow::link; // disambiguate link
     auto chan = channel{};
     const auto name = system_name{};
     const auto sys = flow::custom{
@@ -91,7 +96,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
         node_endpoint{"subsys_a"},
         node_endpoint{"subsys_b"},
     };
-    const auto pconns = std::vector<connection>{};
+    const auto pconns = std::vector<link>{};
     auto pchans = std::vector<channel>{};
     EXPECT_NO_THROW(chan = make_channel(conn, name, sys, {}, pconns, pchans));
     EXPECT_TRUE(std::holds_alternative<pipe_channel>(chan));
@@ -99,6 +104,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
 
 TEST(make_channel, for_exe_subsys_to_sys)
 {
+    using flow::link; // disambiguate link
     auto chan = channel{};
     const auto name = system_name{};
     const auto sys = flow::node{
@@ -113,7 +119,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
         node_endpoint{"subsys_a", {reference_descriptor{1}}},
         node_endpoint{{}, {reference_descriptor{1}}},
     };
-    const auto pconns = std::vector<connection>{
+    const auto pconns = std::vector<link>{
         unidirectional_link{user_endpoint{}, node_endpoint{
             {}, {reference_descriptor{1}}
         }}
@@ -126,6 +132,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
 
 TEST(make_channel, signal_channel)
 {
+    using flow::link; // disambiguate link
     const auto exe_name = system_name{"exe"};
     const auto sig = flow::signals::winch();
     auto name = flow::system_name{};
@@ -147,7 +154,7 @@ TEST(make_channel, signal_channel)
         node_endpoint{exe_name, {sig}},
     };
     auto channels = std::vector<channel>{};
-    auto pconns = std::vector<connection>{};
+    auto pconns = std::vector<link>{};
     auto pchans = std::vector<channel>{};
     const auto rv = make_channel(conn, name, sys, channels, pconns, pchans);
     ASSERT_TRUE(std::holds_alternative<signal_channel>(rv));

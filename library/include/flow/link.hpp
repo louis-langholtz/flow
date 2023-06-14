@@ -40,13 +40,13 @@ constexpr auto operator==(const bidirectional_link& lhs,
 auto operator<<(std::ostream& os, const bidirectional_link& value)
     -> std::ostream&;
 
-using connection = variant<
+using link = variant<
     unidirectional_link,
     bidirectional_link
 >;
 
-static_assert(std::is_default_constructible_v<connection>);
-static_assert(std::equality_comparable<connection>);
+static_assert(std::is_default_constructible_v<link>);
+static_assert(std::equality_comparable<link>);
 
 template <std::convertible_to<endpoint> T>
 auto make_endpoints(const unidirectional_link& c)
@@ -66,7 +66,7 @@ auto make_endpoints(const bidirectional_link& c)
 }
 
 template <std::convertible_to<endpoint> T>
-auto make_endpoints(const connection& c) -> std::array<const T*, 2u>
+auto make_endpoints(const link& c) -> std::array<const T*, 2u>
 {
     if (const auto p = std::get_if<unidirectional_link>(&c)) {
         return make_endpoints<T>(*p);

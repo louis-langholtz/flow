@@ -15,7 +15,7 @@
 
 #include "flow/channel.hpp"
 #include "flow/charset_checker.hpp"
-#include "flow/connection.hpp"
+#include "flow/link.hpp"
 #include "flow/reference_descriptor.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/indenting_ostreambuf.hpp"
@@ -794,8 +794,8 @@ auto do_remove_connections(flow::node& context, const string_span& args)
         };
         std::cout << std::quoted(arg);
         std::cout << ": found and removed ";
-        std::cout << erase(custom.links, flow::connection{conn});
-        std::cout << " matching connection(s)\n";
+        std::cout << erase(custom.links, flow::link{conn});
+        std::cout << " matching link(s)\n";
         ++nconnects;
     }
     if (empty(src_str) && empty(dst_str)) {
@@ -808,7 +808,7 @@ auto do_remove_connections(flow::node& context, const string_span& args)
                     const std::string& src,
                     const std::string& dst,
                     const std::string& msg = {}){
-        os << "aborting: unable to remove connection from ";
+        os << "aborting: unable to remove link from ";
         os << std::quoted(src);
         os << " to ";
         os << std::quoted(dst);
@@ -834,12 +834,12 @@ auto do_remove_connections(flow::node& context, const string_span& args)
         return;
     }
     auto& custom = std::get<flow::custom>(context.implementation);
-    const auto key = flow::connection{
+    const auto key = flow::link{
         flow::unidirectional_link{src_endpoint, dst_endpoint}
     };
     std::cout << "found and removed ";
     std::cout << erase(custom.links, key);
-    std::cout << " matching connection(s)\n";
+    std::cout << " matching link(s)\n";
 }
 
 auto do_add_connections(flow::node& context, const string_span& args) -> void

@@ -18,7 +18,7 @@
 #include <sys/stat.h> // for mkfifo
 #include <unistd.h> // for ::close, ::getpid
 
-#include "flow/connection.hpp"
+#include "flow/link.hpp"
 #include "flow/reference_descriptor.hpp"
 #include "flow/instance.hpp"
 #include "flow/os_error_code.hpp"
@@ -238,8 +238,8 @@ auto write_diags(instance& object, std::ostream& os,
     }
 }
 
-auto find_index(const std::span<const connection>& connections,
-                const connection& look_for) -> std::optional<std::size_t>
+auto find_index(const std::span<const link>& connections,
+                const link& look_for) -> std::optional<std::size_t>
 {
     const auto first = std::begin(connections);
     const auto last = std::end(connections);
@@ -270,7 +270,7 @@ auto is_matching(const unidirectional_link& conn,
     return false;
 }
 
-auto find_index(const std::span<const connection>& connections,
+auto find_index(const std::span<const link>& connections,
                 const endpoint& look_for) -> std::optional<std::size_t>
 {
     const auto first = std::begin(connections);

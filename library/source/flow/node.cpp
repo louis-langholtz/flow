@@ -112,8 +112,8 @@ auto pretty_print(std::ostream& os, const node& value) -> void
             os << info_prefix;
             os << "\n";
             os << "    .connections={\n";
-            for (auto&& connection: p->links) {
-                os << "      " << connection << ",\n";
+            for (auto&& link: p->links) {
+                os << "      " << link << ",\n";
             }
             os << "    }";
             info_prefix = ",";
@@ -159,9 +159,9 @@ auto get_matching_set(const node& sys, io_type io)
 
 auto connect_with_user(const system_name& name,
                        const port_map& ports)
-    -> std::vector<connection>
+    -> std::vector<link>
 {
-    auto result = std::vector<connection>{};
+    auto result = std::vector<link>{};
     for (auto&& entry: ports) {
         const auto user_ep_name = name.get() + ":" + to_string(entry.first);
         switch (entry.second.direction) {

@@ -83,14 +83,15 @@
 		99A88D542A17F93A00AFD76F /* channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99A88D532A17F93A00AFD76F /* channel.cpp */; };
 		99BD75092A3799DB00186221 /* charset_checker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD75082A3799DB00186221 /* charset_checker.cpp */; };
 		99BD750D2A38E0B700186221 /* char_template_joiner.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99BD750B2A38E0B700186221 /* char_template_joiner.hpp */; };
+		99BD75102A3A66C400186221 /* fstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD750F2A3A66C400186221 /* fstream.cpp */; };
 		99C1937B29F4D70F00C3F53F /* node_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* node_endpoint.cpp */; };
 		99C1937C29F4D70F00C3F53F /* node_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */; };
 		99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938129F506C200C3F53F /* file_endpoint.cpp */; };
 		99C1938429F506C200C3F53F /* file_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1938229F506C200C3F53F /* file_endpoint.hpp */; };
 		99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938D29F50EFD00C3F53F /* channel.cpp */; };
 		99C1939029F50EFD00C3F53F /* channel.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1938E29F50EFD00C3F53F /* channel.hpp */; };
-		99C1939329F511B700C3F53F /* connection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939129F511B700C3F53F /* connection.cpp */; };
-		99C1939429F511B700C3F53F /* connection.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939229F511B700C3F53F /* connection.hpp */; };
+		99C1939329F511B700C3F53F /* link.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939129F511B700C3F53F /* link.cpp */; };
+		99C1939429F511B700C3F53F /* link.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939229F511B700C3F53F /* link.hpp */; };
 		99C1939729F5136100C3F53F /* node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939529F5136100C3F53F /* node.cpp */; };
 		99C1939829F5136100C3F53F /* node.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1939629F5136100C3F53F /* node.hpp */; };
 		99C1939B29F5774600C3F53F /* instance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1939929F5774600C3F53F /* instance.cpp */; };
@@ -245,14 +246,15 @@
 		99BD75072A36822C00186221 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		99BD75082A3799DB00186221 /* charset_checker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = charset_checker.cpp; sourceTree = "<group>"; };
 		99BD750B2A38E0B700186221 /* char_template_joiner.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = char_template_joiner.hpp; sourceTree = "<group>"; };
+		99BD750F2A3A66C400186221 /* fstream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = fstream.cpp; sourceTree = "<group>"; };
 		99C1937929F4D70F00C3F53F /* node_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node_endpoint.cpp; sourceTree = "<group>"; };
 		99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = node_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
 		99C1938229F506C200C3F53F /* file_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = file_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938D29F50EFD00C3F53F /* channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = channel.cpp; sourceTree = "<group>"; };
 		99C1938E29F50EFD00C3F53F /* channel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = channel.hpp; sourceTree = "<group>"; };
-		99C1939129F511B700C3F53F /* connection.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = connection.cpp; sourceTree = "<group>"; };
-		99C1939229F511B700C3F53F /* connection.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = connection.hpp; sourceTree = "<group>"; };
+		99C1939129F511B700C3F53F /* link.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = link.cpp; sourceTree = "<group>"; };
+		99C1939229F511B700C3F53F /* link.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = link.hpp; sourceTree = "<group>"; };
 		99C1939529F5136100C3F53F /* node.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node.cpp; sourceTree = "<group>"; };
 		99C1939629F5136100C3F53F /* node.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = node.hpp; sourceTree = "<group>"; };
 		99C1939929F5774600C3F53F /* instance.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = instance.cpp; sourceTree = "<group>"; };
@@ -357,6 +359,7 @@
 		99940BD929F1BC5900A77461 /* source */ = {
 			isa = PBXGroup;
 			children = (
+				99BD750E2A3A668300186221 /* ext */,
 				99940BF129F1CB9300A77461 /* flow */,
 			);
 			path = source;
@@ -376,7 +379,7 @@
 				99BD750B2A38E0B700186221 /* char_template_joiner.hpp */,
 				99A88D4A2A15903A00AFD76F /* charset_checker.hpp */,
 				9943E8B52A06F6ED002F4C26 /* checked.hpp */,
-				99C1939229F511B700C3F53F /* connection.hpp */,
+				99C1939229F511B700C3F53F /* link.hpp */,
 				9986C7A12A19102E006B2095 /* descriptor.hpp */,
 				99C193A429F76AB800C3F53F /* descriptor_iostream.hpp */,
 				9943E88B2A005069002F4C26 /* endpoint.hpp */,
@@ -424,7 +427,7 @@
 			children = (
 				99C1938D29F50EFD00C3F53F /* channel.cpp */,
 				99A88D492A15903A00AFD76F /* charset_checker.cpp */,
-				99C1939129F511B700C3F53F /* connection.cpp */,
+				99C1939129F511B700C3F53F /* link.cpp */,
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
 				9986C7B02A1C455C006B2095 /* endpoint.cpp */,
 				9943E89B2A0453F3002F4C26 /* environment_map.cpp */,
@@ -482,6 +485,14 @@
 			path = tests;
 			sourceTree = "<group>";
 		};
+		99BD750E2A3A668300186221 /* ext */ = {
+			isa = PBXGroup;
+			children = (
+				99BD750F2A3A66C400186221 /* fstream.cpp */,
+			);
+			path = ext;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -521,7 +532,7 @@
 				99C193B029F7AFD100C3F53F /* fstream.hpp in Headers */,
 				99A88D192A0B1BC500AFD76F /* port_info.hpp in Headers */,
 				99C1939029F50EFD00C3F53F /* channel.hpp in Headers */,
-				99C1939429F511B700C3F53F /* connection.hpp in Headers */,
+				99C1939429F511B700C3F53F /* link.hpp in Headers */,
 				9943E88529FC0763002F4C26 /* wait_result.hpp in Headers */,
 				9943E8A02A04A63F002F4C26 /* owning_process_id.hpp in Headers */,
 				9943E87D29FBFA07002F4C26 /* variant.hpp in Headers */,
@@ -659,10 +670,11 @@
 				9943E87629FB444F002F4C26 /* os_error_code.cpp in Sources */,
 				9943E88429FC0763002F4C26 /* wait_result.cpp in Sources */,
 				9986C7AE2A19220A006B2095 /* forwarding_channel.cpp in Sources */,
-				99C1939329F511B700C3F53F /* connection.cpp in Sources */,
+				99C1939329F511B700C3F53F /* link.cpp in Sources */,
 				99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */,
 				9943E8A32A04A783002F4C26 /* reference_process_id.cpp in Sources */,
 				99940BFF29F1F73900A77461 /* system_name.cpp in Sources */,
+				99BD75102A3A66C400186221 /* fstream.cpp in Sources */,
 				99FE1CAB2A25103200D24AE3 /* wait_option.cpp in Sources */,
 				99F29E2B2A269A9C00D861B0 /* port_id.cpp in Sources */,
 				99A88D182A0B1BC500AFD76F /* port_info.cpp in Sources */,

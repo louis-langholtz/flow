@@ -9,7 +9,7 @@
 #include <type_traits> // for std::is_default_constructible_v
 #include <vector>
 
-#include "flow/connection.hpp"
+#include "flow/link.hpp"
 #include "flow/port_map.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/io_type.hpp"
@@ -34,7 +34,7 @@ struct custom
     /// @brief Connections.
     /// @note The connections of this system are considered _internal_
     ///   components.
-    std::vector<connection> links;
+    std::vector<link> links;
 };
 
 struct executable
@@ -131,7 +131,7 @@ auto get_matching_set(const node& sys, io_type io)
 ///   <code>io_type::bidir</code>.
 auto connect_with_user(const system_name& name,
                        const port_map& ports)
-    -> std::vector<connection>;
+    -> std::vector<link>;
 
 }
 
