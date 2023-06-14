@@ -3,7 +3,7 @@
 #include <csignal> // for kill
 
 #include "flow/instance.hpp"
-#include "flow/system_name.hpp"
+#include "flow/node_name.hpp"
 #include "flow/utility.hpp"
 #include "flow/wait_result.hpp"
 

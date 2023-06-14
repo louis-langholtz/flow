@@ -135,12 +135,12 @@ char *prompt([[maybe_unused]] EditLine *el)
     return continuation? cl_buf.data(): nl_buf.data();
 }
 
-auto find(const std::map<flow::system_name, flow::node>& map,
+auto find(const std::map<flow::node_name, flow::node>& map,
           const std::string_view& name) -> const flow::node*
 {
-    auto sname = flow::system_name{};
+    auto sname = flow::node_name{};
     try {
-        sname = flow::system_name{name};
+        sname = flow::node_name{name};
     }
     catch (const flow::charset_validator_error& ex) {
         return nullptr;
@@ -269,11 +269,11 @@ auto update(flow::port_map& map, const flow::port_map_entry& entry)
 struct system_basis
 {
     /// @brief Names from which the map of systems is arrived at.
-    std::deque<flow::system_name> names;
+    std::deque<flow::node_name> names;
 
     /// @brief Remaining node names that have yet to be parsed through
     ///   possibly because no matches for them have been found yet.
-    std::deque<flow::system_name> remaining;
+    std::deque<flow::node_name> remaining;
 
     /// @brief Pointer to map of systems arrived at from @root.
     flow::node *psystem;
@@ -327,7 +327,7 @@ auto do_unset_system(flow::node& context, const string_span& args) -> void
             usage(std::cout);
             return;
         }
-        auto sys_names = std::deque<flow::system_name>{};
+        auto sys_names = std::deque<flow::node_name>{};
         try {
             sys_names = flow::to_system_names(arg);
         }
@@ -482,9 +482,9 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         std::cerr << "] <old-name> <new-name>\n";
         return;
     }
-    auto old_name = flow::system_name{};
+    auto old_name = flow::node_name{};
     try {
-        old_name = flow::system_name{nargs[0]};
+        old_name = flow::node_name{nargs[0]};
     }
     catch (const flow::charset_validator_error& ex) {
         std::cerr << "old system name ";
@@ -492,9 +492,9 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         std::cerr << " invalid: " << ex.what();
         return;
     }
-    auto new_name = flow::system_name{};
+    auto new_name = flow::node_name{};
     try {
-        new_name = flow::system_name{nargs[1]};
+        new_name = flow::node_name{nargs[1]};
     }
     catch (const flow::charset_validator_error& ex) {
         std::cerr << "new system name ";
@@ -626,7 +626,7 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
         std::cerr << "aborting: one or more names must be specified\n";
         return;
     }
-    auto parent_names = std::deque<flow::system_name>{};
+    auto parent_names = std::deque<flow::node_name>{};
     try {
         parent_names = flow::to_system_names(parent);
     }
@@ -643,7 +643,7 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
         return;
     }
     for (auto&& name: names) {
-        auto base_names = std::deque<flow::system_name>{};
+        auto base_names = std::deque<flow::node_name>{};
         try {
             base_names = flow::to_system_names(name);
         }
@@ -882,7 +882,7 @@ auto do_add_connections(flow::node& context, const string_span& args) -> void
         }
         if (arg.starts_with(parent_prefix)) {
             const auto parent = arg.substr(parent_prefix.size());
-            auto parent_names = std::deque<flow::system_name>{};
+            auto parent_names = std::deque<flow::node_name>{};
             try {
                 parent_names = flow::to_system_names(parent);
             }
@@ -923,7 +923,7 @@ auto do_add_connections(flow::node& context, const string_span& args) -> void
             std::cerr << ": right-hand-side endpoint must be specified\n";
             continue;
         }
-        auto names = std::deque<flow::system_name>();
+        auto names = std::deque<flow::node_name>();
         try {
             names = flow::to_system_names(name);
         }
@@ -1076,9 +1076,9 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
             usage(std::cout);
             return;
         }
-        auto name = flow::system_name{};
+        auto name = flow::node_name{};
         try {
-            name = flow::system_name{arg};
+            name = flow::node_name{arg};
         }
         catch (const flow::charset_validator_error& ex) {
             std::cerr << std::quoted(arg);
@@ -1515,7 +1515,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
         std::cerr << ": specify custom system and only that\n";
         return;
     }
-    auto names = std::deque<flow::system_name>();
+    auto names = std::deque<flow::node_name>();
     try {
         names = flow::to_system_names(args[1]);
     }
@@ -1848,10 +1848,10 @@ auto main(int argc, const char * argv[]) -> int
             run(it->second, args);
         }
         else if (const auto found = find(system_stack, args)) {
-            const auto system_name = std::string{args[0]};
+            const auto node_name = std::string{args[0]};
             auto& context = system_stack.top().get();
             const auto opts = get_instantiate_options(context);
-            auto derived_name = system_name;
+            auto derived_name = node_name;
             const auto tsys = update(*found, args);
             if (tsys != *found) {
                 auto& custom = std::get<flow::custom>(context.implementation);

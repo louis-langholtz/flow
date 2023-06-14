@@ -89,7 +89,7 @@ auto get_reference_process_id(const instance::forked& object)
     return invalid_process_id;
 }
 
-auto get_reference_process_id(const std::vector<system_name>& names,
+auto get_reference_process_id(const std::vector<node_name>& names,
                               const instance& object)
     -> reference_process_id
 {

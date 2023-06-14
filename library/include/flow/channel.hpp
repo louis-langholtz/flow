@@ -58,7 +58,7 @@ struct invalid_connection: std::invalid_argument
 ///   size of @parent_channels.
 /// @see channel.
 auto make_channel(const link& conn,
-                  const system_name& name,
+                  const node_name& name,
                   const node& system,
                   const std::span<channel>& channels,
                   const std::span<const link>& parent_connections,

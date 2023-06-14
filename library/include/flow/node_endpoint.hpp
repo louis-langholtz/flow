@@ -10,23 +10,23 @@
 #include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/port_id.hpp"
-#include "flow/system_name.hpp"
+#include "flow/node_name.hpp"
 
 namespace flow {
 
 struct node_endpoint
 {
-    explicit node_endpoint(system_name a = {}): address{std::move(a)} {}
+    explicit node_endpoint(node_name a = {}): address{std::move(a)} {}
 
-    node_endpoint(system_name a, std::set<port_id> d):
+    node_endpoint(node_name a, std::set<port_id> d):
         address{std::move(a)}, ports{std::move(d)} {}
 
-    node_endpoint(system_name a,
+    node_endpoint(node_name a,
                     std::convertible_to<port_id> auto&& ...d):
         address{std::move(a)}, ports{std::move(d)...} {}
 
     /// @brief Well known name identifier for a node.
-    system_name address;
+    node_name address;
 
     /// @brief Well known port IDs of endpoint for a node.
     std::set<port_id> ports;
@@ -41,15 +41,15 @@ static_assert(std::is_move_assignable_v<node_endpoint>);
 
 // Ensure initializing construction supported for contained types...
 static_assert(std::is_constructible_v<node_endpoint,
-              system_name>);
+              node_name>);
 static_assert(std::is_constructible_v<node_endpoint,
-              system_name, std::set<port_id>>);
+              node_name, std::set<port_id>>);
 
 // Ensure pack-expansion constructor works for descriptor_id's...
 static_assert(std::is_constructible_v<node_endpoint,
-              system_name, reference_descriptor>);
+              node_name, reference_descriptor>);
 static_assert(std::is_constructible_v<node_endpoint,
-              system_name, reference_descriptor, reference_descriptor>);
+              node_name, reference_descriptor, reference_descriptor>);
 
 inline auto operator==(const node_endpoint& lhs,
                        const node_endpoint& rhs) -> bool

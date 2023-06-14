@@ -34,7 +34,7 @@ auto system_pipeline::append(const node& sys) -> system_pipeline&
     }
     auto sys_inputs = get_matching_set(sys, io_type::in);
     const auto count = size(info.nodes);
-    const auto sys_name = system_name{std::to_string(count)};
+    const auto sys_name = node_name{std::to_string(count)};
     if (count == 0u) {
         if (std::holds_alternative<unset_endpoint>(src_end)) {
             if (!empty(sys_inputs)) {
@@ -51,7 +51,7 @@ auto system_pipeline::append(const node& sys) -> system_pipeline&
         }
     }
     else {
-        const auto last_name = system_name{std::to_string(count - 1u)};
+        const auto last_name = node_name{std::to_string(count - 1u)};
         auto &last = info.nodes.at(last_name);
         auto last_outputs = get_matching_set(last, io_type::out);
         if (empty(last_outputs)) {
@@ -92,7 +92,7 @@ auto system_pipeline::append(const endpoint& end) -> system_pipeline&
             throw std::invalid_argument{"already have destination endpoint"};
         }
         dst_end = end;
-        const auto last_name = system_name{std::to_string(count - 1u)};
+        const auto last_name = node_name{std::to_string(count - 1u)};
         auto &last = info.nodes.at(last_name);
         auto last_outputs = get_matching_set(last, io_type::out);
         if (empty(last_outputs)) {

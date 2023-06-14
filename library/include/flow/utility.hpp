@@ -16,7 +16,7 @@
 #include "flow/port_map.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/signal.hpp"
-#include "flow/system_name.hpp"
+#include "flow/node_name.hpp"
 
 namespace flow {
 

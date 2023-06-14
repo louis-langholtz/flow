@@ -75,7 +75,7 @@ auto operator>>(std::istream& is, node_endpoint& value) -> std::istream&
         string.substr(apos + 1u, abs_sub(dpos, apos + 1u)): std::string{};
     const auto ports = (dpos != npos)?
         string.substr(dpos + 1u, abs_sub(apos, dpos + 1u)): std::string{};
-    value = node_endpoint{system_name{address}, to_ports(ports)};
+    value = node_endpoint{node_name{address}, to_ports(ports)};
     return is;
 }
 

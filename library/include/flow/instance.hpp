@@ -13,7 +13,7 @@
 #include "flow/environment_map.hpp"
 #include "flow/owning_process_id.hpp"
 #include "flow/reference_process_id.hpp"
-#include "flow/system_name.hpp"
+#include "flow/node_name.hpp"
 #include "flow/variant.hpp"
 #include "flow/wait_status.hpp"
 
@@ -39,7 +39,7 @@ struct instance
         custom() noexcept = default;
 
         /// @brief Sub-instances - or children - of this instance.
-        std::map<system_name, instance> children;
+        std::map<node_name, instance> children;
 
         /// @brief Channels made for this instance.
         std::vector<channel> channels;
@@ -80,7 +80,7 @@ auto pretty_print(std::ostream& os, const instance& value) -> void;
 
 auto get_reference_process_id(const instance::forked& object)
     -> reference_process_id;
-auto get_reference_process_id(const std::vector<system_name>& names,
+auto get_reference_process_id(const std::vector<node_name>& names,
                               const instance& object)
     -> reference_process_id;
 auto total_descendants(const instance& object) -> std::size_t;

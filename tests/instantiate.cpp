@@ -53,12 +53,12 @@ TEST(instantiate, ls_system)
     touch(output_file_endpoint);
     custom system;
 
-    const auto cat_process_name = system_name{"cat"};
+    const auto cat_process_name = node_name{"cat"};
     executable cat_executable;
     cat_executable.file = "/bin/cat";
     system.nodes.emplace(cat_process_name, cat_executable);
 
-    const auto xargs_process_name = system_name{"xargs"};
+    const auto xargs_process_name = node_name{"xargs"};
     executable xargs_executable;
     xargs_executable.file = "/usr/bin/xargs";
     xargs_executable.working_directory = no_such_path;
@@ -186,7 +186,7 @@ TEST(instantiate, ls_system)
 
 TEST(instantiate, ls_outerr_system)
 {
-    const auto ls_exe_name = system_name{"ls_exe"};
+    const auto ls_exe_name = node_name{"ls_exe"};
     const auto ls_exe_sys = executable{
         .file = "/bin/ls",
         .arguments = {"ls", no_such_path, "/"},
@@ -250,7 +250,7 @@ TEST(instantiate, env_system)
     const auto base_env_name = env_name{"base"};
     const auto base_env_val = env_value{"base value"};
     const auto derived_env_val = env_value{"derived value"};
-    const auto env_exe_name = system_name{"env_exe"};
+    const auto env_exe_name = node_name{"env_exe"};
     const auto env_out = unidirectional_link{
         node_endpoint{env_exe_name, stdout_id},
         user_endpoint{},
@@ -337,7 +337,7 @@ TEST(instantiate, env_system)
 
 TEST(instantiate, lsof_system)
 {
-    const auto lsof_name = system_name{"lsof"};
+    const auto lsof_name = node_name{"lsof"};
     const auto lsof_stdout = unidirectional_link{
         node_endpoint{lsof_name, stdout_id}, user_endpoint{},
     };
@@ -414,10 +414,10 @@ TEST(instantiate, lsof_system)
 
 TEST(instantiate, nested_system)
 {
-    const auto cat_system_name = system_name{"cat_system"};
-    const auto cat_process_name = system_name{"cat_process"};
-    const auto xargs_system_name = system_name{"xargs_system"};
-    const auto xargs_process_name = system_name{"xargs_process"};
+    const auto cat_system_name = node_name{"cat_system"};
+    const auto cat_process_name = node_name{"cat_process"};
+    const auto xargs_system_name = node_name{"xargs_system"};
+    const auto xargs_process_name = node_name{"xargs_process"};
     const custom system{
         .nodes = {
             {
@@ -429,16 +429,16 @@ TEST(instantiate, nested_system)
                     },
                     .links = {
                         unidirectional_link{
-                            node_endpoint{system_name{}, reference_descriptor{0}},
+                            node_endpoint{node_name{}, reference_descriptor{0}},
                             node_endpoint{cat_process_name, reference_descriptor{0}}
                         },
                         unidirectional_link{
                             node_endpoint{cat_process_name, reference_descriptor{1}},
-                            node_endpoint{system_name{}, reference_descriptor{1}},
+                            node_endpoint{node_name{}, reference_descriptor{1}},
                         },
                         unidirectional_link{
                             node_endpoint{cat_process_name, reference_descriptor{2}},
-                            node_endpoint{system_name{}, reference_descriptor{2}},
+                            node_endpoint{node_name{}, reference_descriptor{2}},
                         }
                     }
                 }, std_ports}
@@ -453,16 +453,16 @@ TEST(instantiate, nested_system)
                     },
                     .links = {
                         unidirectional_link{
-                            node_endpoint{system_name{}, reference_descriptor{0}},
+                            node_endpoint{node_name{}, reference_descriptor{0}},
                             node_endpoint{xargs_process_name, reference_descriptor{0}}
                         },
                         unidirectional_link{
                             node_endpoint{xargs_process_name, reference_descriptor{1}},
-                            node_endpoint{system_name{}, reference_descriptor{1}},
+                            node_endpoint{node_name{}, reference_descriptor{1}},
                         },
                         unidirectional_link{
                             node_endpoint{xargs_process_name, reference_descriptor{2}},
-                            node_endpoint{system_name{}, reference_descriptor{2}},
+                            node_endpoint{node_name{}, reference_descriptor{2}},
                         }
                     }
                 }, std_ports}
@@ -555,7 +555,7 @@ TEST(instantiate, nested_system)
 
 TEST(instantiate, bin_dd)
 {
-    const auto exe_name = system_name{"dd"};
+    const auto exe_name = node_name{"dd"};
     auto sys = flow::node{custom{
         .nodes = {{exe_name, {
             executable{
