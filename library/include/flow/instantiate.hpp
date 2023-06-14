@@ -35,7 +35,7 @@ struct invalid_port_map: std::invalid_argument
 /// @param[in] sys System to attempt to instantiate.
 /// @param[out] diags Diagnostic information and warnings that don't by
 ///   themselves prevent instantiation.
-/// @throws invalid_connection if a <code>link</code> specified by @sys
+/// @throws invalid_link if a <code>link</code> specified by @sys
 ///   (or any of its sub-systems) is invalid such that a <code>channel</code>
 ///   cannot be made for it.
 /// @throws invalid_executable if a <code>executable</code> specified
