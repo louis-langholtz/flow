@@ -364,7 +364,7 @@ auto confirm_closed(const node_name& name,
 {
     auto is_internally_closed = true;
     for (auto&& entry: ports) {
-        if (!requires_connection(entry)) {
+        if (!requires_link(entry)) {
             continue;
         }
         const auto look_for = node_endpoint{name, entry.first};
