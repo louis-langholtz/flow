@@ -16,7 +16,7 @@ TEST(make_channel, with_defaulted_args)
 {
     using flow::link; // disambiguate link
     EXPECT_THROW(make_channel(link{}, node_name{}, flow::node{}, {},
-                              {}, {}), invalid_connection);
+                              {}, {}), invalid_link);
 }
 
 TEST(make_channel, with_diff_system_endpoints)
@@ -26,7 +26,7 @@ TEST(make_channel, with_diff_system_endpoints)
         node_endpoint{"b"},
     };
     EXPECT_THROW(make_channel(conn, node_name{}, flow::node{}, {},
-                              {}, {}), invalid_connection);
+                              {}, {}), invalid_link);
 }
 
 TEST(make_channel, with_diff_sizes)

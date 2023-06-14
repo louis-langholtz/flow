@@ -45,13 +45,13 @@ using channel = reference_channel::channel;
 // This fails unless all of channel's types are complete.
 static_assert(std::is_default_constructible_v<channel>);
 
-struct invalid_connection: std::invalid_argument
+struct invalid_link: std::invalid_argument
 {
     using std::invalid_argument::invalid_argument;
 };
 
 /// @brief Makes a <code>channel</code> for a <code>link</code>.
-/// @throws invalid_connection if something is invalid about
+/// @throws invalid_link if something is invalid about
 ///   @link for the given context that prevents making the
 ///   <code>channel</code>.
 /// @throws std::logic_error if size of @parent_links doesn't match

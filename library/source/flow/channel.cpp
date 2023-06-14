@@ -34,7 +34,7 @@ auto at(const port_map& ports, const port_id& key, const node_name& name)
         }
         os << " descriptor mapping: ";
         os << ex.what();
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
 }
 
@@ -109,7 +109,7 @@ auto validate(const node_endpoint& end,
                 os << reverse(expected_io);
                 os << ", got ";
                 os << d_info.direction;
-                throw invalid_connection{os.str()};
+                throw invalid_link{os.str()};
             }
         }
         const auto counts = count_types(end.ports);
@@ -117,7 +117,7 @@ auto validate(const node_endpoint& end,
             std::ostringstream os;
             os << "system endpoint can't specify";
             os << " both signal & descriptor ports";
-            throw invalid_connection{os.str()};
+            throw invalid_link{os.str()};
         }
         return get_port_type(counts);
     }
@@ -128,13 +128,13 @@ auto validate(const node_endpoint& end,
             os << "endpoint address system ";
             os << end.address;
             os << " not found";
-            throw invalid_connection{os.str()};
+            throw invalid_link{os.str()};
         }
         const auto& subsys = found->second;
         for (auto&& d: end.ports) {
             const auto& d_info = at(subsys.interface, d, end.address);
             if (d_info.direction != expected_io) {
-                throw invalid_connection{"bad subsys endpoint io"};
+                throw invalid_link{"bad subsys endpoint io"};
             }
         }
         const auto counts = count_types(end.ports);
@@ -142,7 +142,7 @@ auto validate(const node_endpoint& end,
             std::ostringstream os;
             os << "subsystem endpoint can't specify";
             os << " both signal & descriptor ports";
-            throw invalid_connection{os.str()};
+            throw invalid_link{os.str()};
         }
         return get_port_type(counts);
     }
@@ -165,7 +165,7 @@ auto make_channel(const file_endpoint& src, const file_endpoint& dst)
         std::ostringstream os;
         os << "can't open source file endpoint " << src.path;
         os << ": " << err;
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     auto dst_d = owning_descriptor{
         ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
@@ -176,7 +176,7 @@ auto make_channel(const file_endpoint& src, const file_endpoint& dst)
         std::ostringstream os;
         os << "can't open destination file endpoint " << dst.path;
         os << ": " << err;
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     return {std::move(src_d), std::move(dst_d)};
 }
@@ -203,7 +203,7 @@ auto make_channel(const std::set<port_id>& dset,
         os << "can't find parent link with ";
         os << look_for;
         os << " endpoint for making reference channel";
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     return {&parent_channels[*found]};
 }
@@ -218,14 +218,14 @@ auto make_channel(const user_endpoint& src, const user_endpoint& dst,
         std::ostringstream os;
         os << "can't find source link with endpoint ";
         os << src;
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     const auto dst_conn = find_index(links, dst);
     if (!dst_conn) {
         std::ostringstream os;
         os << "can't find destination link with endpoint ";
         os << dst;
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     return make_channel(std::get<pipe_channel>(channels[*src_conn]),
                         std::get<pipe_channel>(channels[*dst_conn]));
@@ -246,14 +246,14 @@ auto make_signal_channel(const node_endpoint& src,
     if (src.ports != dst.ports) {
         std::ostringstream os;
         os << "link between different signal sets not supported";
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     if (src.address != node_name{}) {
         std::ostringstream os;
         os << "link src system endpoint for signal(s) must be";
         os << " empty address; not ";
         os << src.address;
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     return signal_channel{
         to_signal_set(src.ports),
@@ -280,7 +280,7 @@ auto make_channel(const unidirectional_link& conn,
     static constexpr auto no_system_end_error =
         "at least one end must be a system";
     if (conn.src == conn.dst) {
-        throw invalid_connection{same_endpoints_error};
+        throw invalid_link{same_endpoints_error};
     }
     const auto src_file = std::get_if<file_endpoint>(&conn.src);
     const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
@@ -297,7 +297,7 @@ auto make_channel(const unidirectional_link& conn,
     const auto src_system = std::get_if<node_endpoint>(&conn.src);
     const auto dst_system = std::get_if<node_endpoint>(&conn.dst);
     if (!src_system && !dst_system) {
-        throw invalid_connection{no_system_end_error};
+        throw invalid_link{no_system_end_error};
     }
     const auto src_port_type = src_system
         ? validate(*src_system, node, io_type::out)
@@ -311,7 +311,7 @@ auto make_channel(const unidirectional_link& conn,
         // TODO: make a forwarding channel for this case
         std::ostringstream os;
         os << "link between enclosing system endpoints not supported";
-        throw invalid_connection{os.str()};
+        throw invalid_link{os.str()};
     }
     if (src_file) {
         return file_channel{src_file->path, io_type::in};
@@ -328,7 +328,7 @@ auto make_channel(const unidirectional_link& conn,
             os << "link between different port types not supported";
             os << ": src-type=" << int(src_port_type);
             os << ", dst-type=" << int(dst_port_type);
-            throw invalid_connection{os.str()};
+            throw invalid_link{os.str()};
         }
         if (src_port_type == port_type::signal) {
             return make_signal_channel(*src_system, *dst_system);
@@ -368,7 +368,7 @@ auto make_channel(const link& for_link,
         return make_channel(*p, name, node, channels,
                             parent_links, parent_channels);
     }
-    throw invalid_connection{"only unidirectional_link supported"};
+    throw invalid_link{"only unidirectional_link supported"};
 }
 
 auto operator<<(std::ostream& os, const reference_channel& value)
