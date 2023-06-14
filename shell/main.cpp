@@ -39,6 +39,7 @@ const auto parent_prefix = std::string{"--parent="};
 const auto file_prefix = std::string{"--file="};
 const auto src_prefix = std::string{"--src="};
 const auto dst_prefix = std::string{"--dst="};
+const auto rebase_prefix = std::string{"--rebase="};
 const auto help_argument = std::string{"--help"};
 const auto usage_argument = std::string{"--usage"};
 const auto background_argument = std::string{"&"};
@@ -853,6 +854,21 @@ auto do_add_connections(flow::system& context, const string_span& args) -> void
         os << "[" << name_prefix << "<name>]";
         os << " <lhs_endpoint>-<rhs_endpoint>...";
         os << '\n';
+        os << "  where <lhs_endpoint> and <rhs_endpoint> are one of:\n";
+        os << "  <user_endpoint>|<file_endpoint>|<system_endpoint>\n";
+        os << "  where <user_endpoint> is: ";
+        os << flow::reserved::user_endpoint_prefix;
+        os << "<user-endpoint-name>\n";
+        os << "  where <file_endpoint> is: ";
+        os << flow::reserved::file_endpoint_prefix;
+        os << "<file-system-path>\n";
+        os << "  where <system_endpoint> is: ";
+        os << flow::reserved::descriptors_prefix;
+        os << "<number>[";
+        os << flow::reserved::descriptor_separator;
+        os << "<number>...][";
+        os << flow::reserved::address_prefix;
+        os << "<system-name>]\n";
     };
     auto parent_basis = system_basis{{}, {}, &context};
     for (auto&& arg: args.subspan(1u)) {
@@ -1532,8 +1548,12 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
         os << help_argument;
         os << "|";
         os << usage_argument;
+        os << "|";
+        os << rebase_prefix << "<new-system-name>";
         os << "]\n";
     };
+    auto rebase = false;
+    auto rebase_name = std::string{};
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "pops the current custom system off the stack.\n";
@@ -1543,12 +1563,29 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
             usage(std::cout);
             return;
         }
+        if (arg.starts_with(rebase_prefix)) {
+            rebase_name = arg.substr(rebase_prefix.size());
+            rebase = true;
+            continue;
+        }
+        if (arg.starts_with("-")) {
+            std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
+            continue;
+        }
     }
-    if (stack.size() == 1u) {
-        std::cerr << "already at root custom system.\n";
+    if (stack.size() > 1u) {
+        stack.pop();
         return;
     }
-    stack.pop();
+    if (!rebase) {
+        std::cerr << "already at root custom system";
+        std::cerr << " and rebase not specified.\n";
+        return;
+    }
+    const auto copy_of_top = stack.top().get();
+    stack.top().get() = flow::system::custom{
+        .subsystems = {{rebase_name, copy_of_top}}
+    };
 }
 
 auto run(const cmd_handler& cmd, const string_span& args) -> void
