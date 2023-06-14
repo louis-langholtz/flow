@@ -20,7 +20,7 @@ auto operator<<(std::ostream& os, const port_map& value)
     return os;
 }
 
-auto requires_connection(const port_map_entry& entry) -> bool
+auto requires_link(const port_map_entry& entry) -> bool
 {
     return !std::holds_alternative<signal>(entry.first);
 }
