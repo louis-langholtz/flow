@@ -121,7 +121,7 @@ auto validate(const node_endpoint& end,
         }
         return get_port_type(counts);
     }
-    if (const auto p = std::get_if<custom>(&(node.implementation))) {
+    if (const auto p = std::get_if<system>(&(node.implementation))) {
         const auto found = p->nodes.find(end.address);
         if (found == p->nodes.end()) {
             std::ostringstream os;
@@ -289,7 +289,7 @@ auto make_channel(const unidirectional_link& conn,
     const auto dst_user = std::get_if<user_endpoint>(&conn.dst);
     if (src_user && dst_user) {
         return make_channel(*src_user, *dst_user,
-                            std::get<custom>(node.implementation).links,
+                            std::get<system>(node.implementation).links,
                             channels);
     }
     const auto src_node = std::get_if<node_endpoint>(&conn.src);

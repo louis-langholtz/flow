@@ -4,7 +4,7 @@
 
 TEST(node_custom, default_construction)
 {
-    flow::custom obj;
+    flow::system obj;
     EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(empty(obj.nodes));
     EXPECT_TRUE(empty(obj.links));
@@ -12,11 +12,11 @@ TEST(node_custom, default_construction)
 
 TEST(node_custom, equality)
 {
-    flow::custom obj_a, obj_b;
+    flow::system obj_a, obj_b;
     obj_b.links = {flow::link{}};
-    EXPECT_TRUE(flow::custom() == flow::custom());
-    EXPECT_TRUE(obj_a == flow::custom());
-    EXPECT_TRUE(flow::custom() == obj_a);
+    EXPECT_TRUE(flow::system() == flow::system());
+    EXPECT_TRUE(obj_a == flow::system());
+    EXPECT_TRUE(flow::system() == obj_a);
     EXPECT_FALSE(obj_a == obj_b);
     obj_b = obj_a;
     ASSERT_TRUE(obj_a == obj_b);
@@ -46,9 +46,9 @@ TEST(node, default_construction)
 {
     flow::node obj;
     EXPECT_TRUE(empty(obj.interface));
-    EXPECT_TRUE(std::holds_alternative<flow::custom>(obj.implementation));
-    if (std::holds_alternative<flow::custom>(obj.implementation)) {
-        const auto& info = std::get<flow::custom>(obj.implementation);
+    EXPECT_TRUE(std::holds_alternative<flow::system>(obj.implementation));
+    if (std::holds_alternative<flow::system>(obj.implementation)) {
+        const auto& info = std::get<flow::system>(obj.implementation);
         EXPECT_TRUE(empty(info.nodes));
         EXPECT_TRUE(empty(info.links));
     }
@@ -65,7 +65,7 @@ TEST(node, equality)
     ASSERT_TRUE(obj == flow::node());
     obj.implementation = flow::executable{};
     EXPECT_FALSE(obj == flow::node());
-    obj.implementation = flow::custom{};
+    obj.implementation = flow::system{};
     ASSERT_TRUE(obj == flow::node());
 }
 

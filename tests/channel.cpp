@@ -46,7 +46,7 @@ TEST(make_channel, for_subsys_to_file)
     using flow::link; // disambiguate link
     auto chan = channel{};
     const auto name = node_name{};
-    const auto sys = flow::custom{
+    const auto sys = flow::system{
         .nodes = {
             {"subsys", flow::node{}},
         }
@@ -66,7 +66,7 @@ TEST(make_channel, for_file_to_subsys)
     using flow::link; // disambiguate link
     auto chan = channel{};
     const auto name = node_name{};
-    const auto sys = flow::custom{
+    const auto sys = flow::system{
         .nodes = {
             {"subsys", flow::node{}},
         }
@@ -86,7 +86,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
     using flow::link; // disambiguate link
     auto chan = channel{};
     const auto name = node_name{};
-    const auto sys = flow::custom{
+    const auto sys = flow::system{
         .nodes = {
             {"subsys_a", flow::node{}},
             {"subsys_b", flow::node{}},
@@ -108,7 +108,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
     auto chan = channel{};
     const auto name = node_name{};
     const auto sys = flow::node{
-        flow::custom{
+        flow::system{
             .nodes = {
                 {"subsys_a", flow::executable{}},
             }
@@ -137,7 +137,7 @@ TEST(make_channel, signal_channel)
     const auto sig = flow::signals::winch();
     auto name = flow::node_name{};
     auto sys = flow::node{
-        custom{
+        flow::system{
             .nodes = {{exe_name, {
                 executable{},
                 port_map{

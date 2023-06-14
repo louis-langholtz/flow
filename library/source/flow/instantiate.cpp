@@ -413,7 +413,7 @@ auto make_child(instance& parent,
         info.diags = ext::temporary_fstream();
         result.info = std::move(info);
     }
-    else if (const auto p = std::get_if<custom>(&node.implementation)) {
+    else if (const auto p = std::get_if<system>(&node.implementation)) {
         result.info = instance::custom{};
         auto& parent_info = std::get<instance::custom>(parent.info);
         auto& info = std::get<instance::custom>(result.info);
@@ -679,7 +679,7 @@ auto fork_child(const node_name& name,
     }
 }
 
-auto fork_executables(const custom& system,
+auto fork_executables(const system& system,
                       instance& object,
                       instance& root,
                       std::ostream& diags) -> void
@@ -699,7 +699,7 @@ auto fork_executables(const custom& system,
                        diags);
             continue;
         }
-        if (const auto p = std::get_if<custom>(&node.implementation)) {
+        if (const auto p = std::get_if<flow::system>(&node.implementation)) {
             fork_executables(*p, found->second, root, diags);
             continue;
         }
@@ -730,7 +730,7 @@ auto close_internal_ends(const link& link,
 }
 
 auto close_all_internal_ends(instance::custom& instance,
-                             const custom& system,
+                             const system& system,
                              std::ostream& diags) -> void
 {
     const auto max_i = size(instance.channels);
@@ -748,7 +748,7 @@ auto close_all_internal_ends(instance::custom& instance,
         if (custom) {
             const auto& sub_system = system.nodes.at(sub_name);
             close_all_internal_ends(*custom,
-                                    std::get<flow::custom>(sub_system.implementation),
+                                    std::get<flow::system>(sub_system.implementation),
                                     diags);
         }
     }
@@ -775,7 +775,7 @@ auto instantiate(const node& system,
         fork_child({}, system, opts.environment, result, pgrp, {}, {}, result,
                    diags);
     }
-    else if (const auto p = std::get_if<custom>(&system.implementation)) {
+    else if (const auto p = std::get_if<flow::system>(&system.implementation)) {
         const auto all_closed =
             confirm_closed({}, system.interface,
                            p->links, opts.ports);

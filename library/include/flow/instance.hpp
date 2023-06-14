@@ -27,9 +27,9 @@ namespace flow {
 /// @see node.
 struct instance
 {
-    /// @brief Information specific to "custom" instances.
-    /// @note Instantiating a custom node, should result in a custom instance.
-    /// @see custom.
+    /// @brief Information specific to "system" instances.
+    /// @note Instantiating a custom node, should result in a system instance.
+    /// @see system.
     struct custom
     {
         static constexpr auto default_pgrp = no_process_id;
