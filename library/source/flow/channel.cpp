@@ -267,7 +267,7 @@ auto get_interface_ports(const system_endpoint* end)
     return (end && (end->address == system_name{}))? &(end->ports): nullptr;
 }
 
-auto make_channel(const unidirectional_connection& conn,
+auto make_channel(const unidirectional_link& conn,
                   const system_name& name,
                   const node& system,
                   const std::span<channel>& channels,
@@ -364,7 +364,7 @@ auto make_channel(const connection& conn,
         os << ")";
         throw std::logic_error{os.str()};
     }
-    if (const auto p = std::get_if<unidirectional_connection>(&conn)) {
+    if (const auto p = std::get_if<unidirectional_link>(&conn)) {
         return make_channel(*p, name, system, channels,
                             parent_connections, parent_channels);
     }

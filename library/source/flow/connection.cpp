@@ -2,7 +2,7 @@
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const unidirectional_connection& value)
+auto operator<<(std::ostream& os, const unidirectional_link& value)
     -> std::ostream&
 {
     os << "unidirectional_connection{";
