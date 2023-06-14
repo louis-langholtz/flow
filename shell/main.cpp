@@ -49,7 +49,7 @@ constexpr auto vi_editor_str = "vi";
 constexpr auto assignment_token = '=';
 constexpr auto custom_begin_token = "{";
 constexpr auto custom_end_token = "}";
-constexpr auto connection_separator = '-';
+constexpr auto link_separator = '-';
 
 auto next_sequence() -> std::size_t
 {
@@ -692,13 +692,13 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
     }
 }
 
-auto do_show_connections(const flow::node& context, const string_span& args)
+auto do_show_links(const flow::node& context, const string_span& args)
     -> void
 {
     if (!empty(args)) {
         for (auto&& arg: args.subspan(1u)) {
             if (arg == help_argument) {
-                std::cout << "shows connections within a system.\n";
+                std::cout << "shows links within a system.\n";
                 return;
             }
             if (arg == usage_argument) {
@@ -717,14 +717,14 @@ auto do_show_connections(const flow::node& context, const string_span& args)
     for (auto&& c: custom.links) {
         if (const auto p = std::get_if<flow::unidirectional_link>(&c)) {
             std::cout << p->src;
-            std::cout << connection_separator;
+            std::cout << link_separator;
             std::cout << p->dst;
             std::cout << '\n';
         }
     }
 }
 
-auto do_remove_connections(flow::node& context, const string_span& args)
+auto do_remove_links(flow::node& context, const string_span& args)
     -> void
 {
     auto src_str = std::string{};
@@ -740,7 +740,7 @@ auto do_remove_connections(flow::node& context, const string_span& args)
     };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "removes connections between endpoints within a system.\n";
+            std::cout << "removes links between endpoints within a system.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -759,7 +759,7 @@ auto do_remove_connections(flow::node& context, const string_span& args)
             std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
             continue;
         }
-        const auto found = arg.find(connection_separator);
+        const auto found = arg.find(link_separator);
         if (found == arg.npos) {
             std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
             continue;
@@ -842,7 +842,7 @@ auto do_remove_connections(flow::node& context, const string_span& args)
     std::cout << " matching link(s)\n";
 }
 
-auto do_add_connections(flow::node& context, const string_span& args) -> void
+auto do_add_links(flow::node& context, const string_span& args) -> void
 {
     auto name = std::string{};
     const auto usage = [&](std::ostream& os){
@@ -873,7 +873,7 @@ auto do_add_connections(flow::node& context, const string_span& args) -> void
     auto parent_basis = system_basis{{}, {}, &context};
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "adds connections between endpoints within a system.\n";
+            std::cout << "adds links between endpoints within a system.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -906,7 +906,7 @@ auto do_add_connections(flow::node& context, const string_span& args) -> void
             std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
             continue;
         }
-        const auto found = arg.find(connection_separator);
+        const auto found = arg.find(link_separator);
         if (found == arg.npos) {
             std::cerr << std::quoted(arg) << ": unrecognized argument.\n";
             continue;
@@ -1713,15 +1713,15 @@ auto main(int argc, const char * argv[]) -> int
     };
 
     const auto show_conns_lambda = [&](const string_span& args){
-        do_show_connections(system_stack.top().get(), args);
+        do_show_links(system_stack.top().get(), args);
     };
     const cmd_table conn_cmds{
         {"", show_conns_lambda},
         {"add", [&](const string_span& args){
-            do_add_connections(system_stack.top().get(), args);
+            do_add_links(system_stack.top().get(), args);
         }},
         {"remove", [&](const string_span& args){
-            do_remove_connections(system_stack.top().get(), args);
+            do_remove_links(system_stack.top().get(), args);
         }},
         {"show", show_conns_lambda},
     };
@@ -1778,7 +1778,7 @@ auto main(int argc, const char * argv[]) -> int
         {"systems", [&](const string_span& args){
             do_cmds(sys_cmds, args.subspan(1u));
         }},
-        {"connections", [&](const string_span& args){
+        {"links", [&](const string_span& args){
             do_cmds(conn_cmds, args.subspan(1u));
         }},
         {"push", [&](const string_span& args){

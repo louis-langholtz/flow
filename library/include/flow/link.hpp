@@ -1,5 +1,5 @@
-#ifndef connection_hpp
-#define connection_hpp
+#ifndef link_hpp
+#define link_hpp
 
 #include <array>
 #include <concepts> // for std::convertible_to
@@ -79,4 +79,4 @@ auto make_endpoints(const link& c) -> std::array<const T*, 2u>
 
 }
 
-#endif /* connection_hpp */
+#endif /* link_hpp */

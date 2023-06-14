@@ -359,7 +359,7 @@ auto exec_child(const std::filesystem::path& path,
 
 auto confirm_closed(const node_name& name,
                     const port_map& ports,
-                    const std::span<const link>& connections,
+                    const std::span<const link>& links,
                     const port_map& available) -> bool
 {
     auto is_internally_closed = true;
@@ -368,7 +368,7 @@ auto confirm_closed(const node_name& name,
             continue;
         }
         const auto look_for = node_endpoint{name, entry.first};
-        if (find_index(connections, look_for)) {
+        if (find_index(links, look_for)) {
             continue;
         }
         if (const auto it = available.find(entry.first);
@@ -397,12 +397,12 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 auto make_child(instance& parent,
                 const node_name& name,
                 const node& system,
-                const std::span<const link>& connections,
+                const std::span<const link>& links,
                 const port_map& ports) -> instance
 {
     instance result;
     const auto all_closed = confirm_closed(name, system.interface,
-                                           connections, ports);
+                                           links, ports);
     if (const auto p = std::get_if<executable>(&system.implementation)) {
         if (!p->file.has_filename()) {
             std::ostringstream os;
@@ -422,7 +422,7 @@ auto make_child(instance& parent,
         }
         for (auto&& link: p->links) {
             auto channel = make_channel(link, name, system, info.channels,
-                                        connections, parent_info.channels);
+                                        links, parent_info.channels);
             if (const auto q = std::get_if<forwarding_channel>(&channel)) {
                 // TODO?
             }
@@ -541,18 +541,18 @@ auto setup(const node_name& name,
 auto setup(instance& root,
            const node_name& name,
            const port_map& ports,
-           const std::span<const link>& connections,
+           const std::span<const link>& links,
            const std::span<channel>& channels,
            instance& child) -> void
 {
     // close & dup the channels needed for name, and close those that aren't
     auto& child_info = std::get<instance::forked>(child.info);
-    const auto max_index = size(connections);
+    const auto max_index = size(links);
     assert(max_index == size(channels));
     for (auto index = 0u; index < max_index; ++index) {
-        setup(name, connections[index], channels[index], child_info.diags);
+        setup(name, links[index], channels[index], child_info.diags);
     }
-    close_unused_ports(name, connections, ports);
+    close_unused_ports(name, links, ports);
     close_pipes_except(root, child);
 }
 
@@ -589,7 +589,7 @@ auto fork_child(const node_name& name,
                 const environment_map& env,
                 instance& child,
                 reference_process_id& pgrp,
-                const std::span<const link>& connections,
+                const std::span<const link>& links,
                 const std::span<channel>& channels,
                 instance& root,
                 std::ostream& diags) -> void
@@ -650,7 +650,7 @@ auto fork_child(const node_name& name,
         }
         make_substitutions(argv);
         // Deal with:
-        // unidirectional_connection{
+        // unidirectional_link{
         //   node_endpoint{ls_process_name, flow::reference_descriptor{1}},
         //   node_endpoint{cat_process_name, flow::reference_descriptor{0}}
         // }
@@ -658,7 +658,7 @@ auto fork_child(const node_name& name,
         // Also:
         // Close file descriptors inherited by child that it's not using.
         // See: https://stackoverflow.com/a/7976880/7410358
-        setup(root, name, sys.interface, connections, channels, child);
+        setup(root, name, sys.interface, links, channels, child);
         // NOTE: child.diags streams opened close-on-exec, so no need
         //   to close them.
         if (!exe.working_directory.empty()) {

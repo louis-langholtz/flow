@@ -5,7 +5,7 @@ namespace flow {
 auto operator<<(std::ostream& os, const unidirectional_link& value)
     -> std::ostream&
 {
-    os << "unidirectional_connection{";
+    os << "unidirectional_link{";
     os << ".src=" << value.src;
     os << ",.dst=" << value.dst;
     os << "}";
@@ -15,7 +15,7 @@ auto operator<<(std::ostream& os, const unidirectional_link& value)
 auto operator<<(std::ostream& os, const bidirectional_link& value)
     -> std::ostream&
 {
-    os << "bidirectional_connection{";
+    os << "bidirectional_link{";
     auto prepend = "";
     for (auto&& end: value.ends) {
         os << prepend << end;

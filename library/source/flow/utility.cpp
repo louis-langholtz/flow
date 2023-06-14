@@ -238,11 +238,11 @@ auto write_diags(instance& object, std::ostream& os,
     }
 }
 
-auto find_index(const std::span<const link>& connections,
+auto find_index(const std::span<const link>& links,
                 const link& look_for) -> std::optional<std::size_t>
 {
-    const auto first = std::begin(connections);
-    const auto last = std::end(connections);
+    const auto first = std::begin(links);
+    const auto last = std::end(links);
     const auto iter = std::find(first, last, look_for);
     if (iter != last) {
         return {std::distance(first, iter)};
@@ -250,10 +250,10 @@ auto find_index(const std::span<const link>& connections,
     return {};
 }
 
-auto is_matching(const unidirectional_link& conn,
+auto is_matching(const unidirectional_link& link,
                  const node_endpoint& look_for) -> bool
 {
-    const auto ends = make_endpoints<node_endpoint>(conn);
+    const auto ends = make_endpoints<node_endpoint>(link);
     for (auto&& end: ends) {
         if (end) {
             if (end->address == look_for.address) {
@@ -270,11 +270,11 @@ auto is_matching(const unidirectional_link& conn,
     return false;
 }
 
-auto find_index(const std::span<const link>& connections,
+auto find_index(const std::span<const link>& links,
                 const endpoint& look_for) -> std::optional<std::size_t>
 {
-    const auto first = std::begin(connections);
-    const auto last = std::end(connections);
+    const auto first = std::begin(links);
+    const auto last = std::end(links);
     const auto iter = std::find_if(first, last, [&look_for](const auto& c){
         const auto look_sys = std::get_if<node_endpoint>(&look_for);
         if (const auto p = std::get_if<unidirectional_link>(&c)) {

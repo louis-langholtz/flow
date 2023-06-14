@@ -54,14 +54,14 @@ struct invalid_connection: std::invalid_argument
 /// @throws invalid_connection if something is invalid about
 ///   @link for the given context that prevents making the
 ///   <code>channel</code>.
-/// @throws std::logic_error if size of @parent_connections doesn't match
+/// @throws std::logic_error if size of @parent_links doesn't match
 ///   size of @parent_channels.
 /// @see channel.
-auto make_channel(const link& conn,
+auto make_channel(const link& for_link,
                   const node_name& name,
-                  const node& system,
+                  const node& node,
                   const std::span<channel>& channels,
-                  const std::span<const link>& parent_connections,
+                  const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
     -> channel;
 
