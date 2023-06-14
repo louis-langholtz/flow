@@ -45,7 +45,7 @@ TEST(system_executable, equality)
 TEST(system, default_construction)
 {
     flow::system obj;
-    EXPECT_TRUE(empty(obj.ports));
+    EXPECT_TRUE(empty(obj.interface));
     EXPECT_TRUE(std::holds_alternative<flow::system::custom>(obj.implementation));
     if (std::holds_alternative<flow::system::custom>(obj.implementation)) {
         const auto& info = std::get<flow::system::custom>(obj.implementation);
@@ -59,9 +59,9 @@ TEST(system, equality)
     EXPECT_TRUE(flow::system() == flow::system());
     flow::system obj;
     EXPECT_TRUE(obj == flow::system());
-    obj.ports = flow::std_ports;
+    obj.interface = flow::std_ports;
     EXPECT_FALSE(obj == flow::system());
-    obj.ports = {};
+    obj.interface = {};
     ASSERT_TRUE(obj == flow::system());
     obj.implementation = flow::system::executable{};
     EXPECT_FALSE(obj == flow::system());
@@ -72,7 +72,7 @@ TEST(system, equality)
 TEST(system, executable_construction)
 {
     flow::system obj{flow::system::executable{}};
-    EXPECT_FALSE(empty(obj.ports));
+    EXPECT_FALSE(empty(obj.interface));
     EXPECT_TRUE(std::holds_alternative<flow::system::executable>(obj.implementation));
     if (std::holds_alternative<flow::system::executable>(obj.implementation)) {
         const auto& info = std::get<flow::system::executable>(obj.implementation);

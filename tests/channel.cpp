@@ -108,7 +108,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
             }
         }, std_ports,
     };
-    ASSERT_FALSE(empty(sys.ports));
+    ASSERT_FALSE(empty(sys.interface));
     const auto conn = unidirectional_connection{
         system_endpoint{"subsys_a", {reference_descriptor{1}}},
         system_endpoint{{}, {reference_descriptor{1}}},
