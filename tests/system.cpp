@@ -7,13 +7,13 @@ TEST(system_custom, default_construction)
     flow::system::custom obj;
     EXPECT_TRUE(empty(obj.environment));
     EXPECT_TRUE(empty(obj.subsystems));
-    EXPECT_TRUE(empty(obj.connections));
+    EXPECT_TRUE(empty(obj.links));
 }
 
 TEST(system_custom, equality)
 {
     flow::system::custom obj_a, obj_b;
-    obj_b.connections = {flow::connection{}};
+    obj_b.links = {flow::connection{}};
     EXPECT_TRUE(flow::system::custom() == flow::system::custom());
     EXPECT_TRUE(obj_a == flow::system::custom());
     EXPECT_TRUE(flow::system::custom() == obj_a);
@@ -50,7 +50,7 @@ TEST(system, default_construction)
     if (std::holds_alternative<flow::system::custom>(obj.implementation)) {
         const auto& info = std::get<flow::system::custom>(obj.implementation);
         EXPECT_TRUE(empty(info.subsystems));
-        EXPECT_TRUE(empty(info.connections));
+        EXPECT_TRUE(empty(info.links));
     }
 }
 

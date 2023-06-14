@@ -420,7 +420,7 @@ auto make_child(instance& parent,
         if (!all_closed) {
             info.pgrp = current_process_id();
         }
-        for (auto&& connection: p->connections) {
+        for (auto&& connection: p->links) {
             auto channel = make_channel(connection, name, system, info.channels,
                                         connections, parent_info.channels);
             if (const auto q = std::get_if<forwarding_channel>(&channel)) {
@@ -430,7 +430,7 @@ auto make_child(instance& parent,
         }
         for (auto&& entry: p->subsystems) {
             auto kid = make_child(result, entry.first, entry.second,
-                                  p->connections, ports);
+                                  p->links, ports);
             info.children.emplace(entry.first, std::move(kid));
         }
     }
@@ -693,7 +693,7 @@ auto fork_executables(const system::custom& system,
         }
         if (const auto p = std::get_if<system::executable>(&subsystem.implementation)) {
             fork_child(name, subsystem, system.environment, found->second,
-                       info.pgrp, system.connections, info.channels, root,
+                       info.pgrp, system.links, info.channels, root,
                        diags);
             continue;
         }
@@ -734,7 +734,7 @@ auto close_all_internal_ends(instance::custom& instance,
     const auto max_i = size(instance.channels);
     for (auto i = 0u; i < max_i; ++i) {
         auto& channel = instance.channels[i];
-        const auto& connection = system.connections[i];
+        const auto& connection = system.links[i];
         if (const auto q = std::get_if<pipe_channel>(&channel)) {
             close_internal_ends(connection, *q, diags);
             continue;
@@ -776,7 +776,7 @@ auto instantiate(const system& system,
     else if (const auto p = std::get_if<system::custom>(&system.implementation)) {
         const auto all_closed =
             confirm_closed({}, system.interface,
-                           p->connections, opts.ports);
+                           p->links, opts.ports);
         result.info = instance::custom{};
         auto& info = std::get<instance::custom>(result.info);
         if (!all_closed) {
@@ -784,15 +784,15 @@ auto instantiate(const system& system,
         }
         for (auto&& entry: system.interface) {
             const auto look_for = system_endpoint{{}, entry.first};
-            if (!find_index(p->connections, look_for)) {
+            if (!find_index(p->links, look_for)) {
                 std::ostringstream os;
                 os << look_for;
                 os << ": enclosing endpoint not connected";
                 throw invalid_port_map{os.str()};
             }
         }
-        info.channels.reserve(size(p->connections));
-        for (auto&& connection: p->connections) {
+        info.channels.reserve(size(p->links));
+        for (auto&& connection: p->links) {
             info.channels.push_back(make_channel(connection, {}, system,
                                                  info.channels, {}, {}));
         }
@@ -800,7 +800,7 @@ auto instantiate(const system& system,
         for (auto&& entry: p->subsystems) {
             const auto& sub_name = entry.first;
             const auto& sub_system = entry.second;
-            auto kid = make_child(result, sub_name, sub_system, p->connections,
+            auto kid = make_child(result, sub_name, sub_system, p->links,
                                   opts.ports);
             info.children.emplace(sub_name, std::move(kid));
         }

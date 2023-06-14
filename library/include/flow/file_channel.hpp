@@ -11,7 +11,7 @@ namespace flow {
 
 /// @brief File channel.
 /// @note This is intended to be a strong place-holder/tag type.
-/// @note Instances of this type are made for connections with
+/// @note Instances of this type are made for links with
 ///   <code>file_endpoint</code> ends.
 /// @see file_endpoint.
 struct file_channel

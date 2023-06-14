@@ -291,7 +291,7 @@ auto make_channel(const unidirectional_connection& conn,
     const auto dst_user = std::get_if<user_endpoint>(&conn.dst);
     if (src_user && dst_user) {
         return make_channel(*src_user, *dst_user,
-                            std::get<system::custom>(system.implementation).connections,
+                            std::get<system::custom>(system.implementation).links,
                             channels);
     }
     const auto src_system = std::get_if<system_endpoint>(&conn.src);
