@@ -42,7 +42,7 @@ struct system
         /// @brief Connections.
         /// @note The connections of this system are considered _internal_
         ///   components.
-        std::vector<connection> connections;
+        std::vector<connection> links;
     };
 
     struct executable
@@ -97,7 +97,7 @@ inline auto operator==(const system::custom& lhs,
 {
     return (lhs.subsystems == rhs.subsystems)
         && (lhs.environment == rhs.environment)
-        && (lhs.connections == rhs.connections);
+        && (lhs.links == rhs.links);
 }
 
 inline auto operator==(const system::executable& lhs,

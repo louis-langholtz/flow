@@ -13,7 +13,7 @@ namespace flow {
 
 /// @brief Endpoint.
 /// @details These are connection end points to the variety of entities
-/// available that provide end-points for connections.
+/// available that provide end-points for links.
 /// @note Every supported type minimally supports <code>operator==</code> so
 ///   that this variant too supports <code>operator==</code>.
 using endpoint = variant<

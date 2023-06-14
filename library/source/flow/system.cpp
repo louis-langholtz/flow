@@ -50,7 +50,7 @@ auto operator<<(std::ostream& os, const system& value)
             os << "}";
             sub_prefix = ",";
         }
-        if (!empty(p->connections)) {
+        if (!empty(p->links)) {
             os << sub_prefix << ".connections={";
             os << "}";
         }
@@ -108,11 +108,11 @@ auto pretty_print(std::ostream& os, const system& value) -> void
             os << "    }";
             info_prefix = ",";
         }
-        if (!empty(p->connections)) {
+        if (!empty(p->links)) {
             os << info_prefix;
             os << "\n";
             os << "    .connections={\n";
-            for (auto&& connection: p->connections) {
+            for (auto&& connection: p->links) {
                 os << "      " << connection << ",\n";
             }
             os << "    }";

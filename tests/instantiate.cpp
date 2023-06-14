@@ -73,20 +73,20 @@ TEST(instantiate, ls_system)
         system_endpoint{xargs_process_name, reference_descriptor{1}},
         user_endpoint{},
     };
-    system.connections.push_back(cat_stdin);
-    system.connections.push_back(unidirectional_connection{
+    system.links.push_back(cat_stdin);
+    system.links.push_back(unidirectional_connection{
         system_endpoint{cat_process_name, reference_descriptor{1}},
         system_endpoint{xargs_process_name, reference_descriptor{0}},
     });
-    system.connections.push_back(unidirectional_connection{
+    system.links.push_back(unidirectional_connection{
         system_endpoint{cat_process_name, reference_descriptor{2}},
         file_endpoint::dev_null,
     });
-    system.connections.push_back(unidirectional_connection{
+    system.links.push_back(unidirectional_connection{
         system_endpoint{xargs_process_name, reference_descriptor{2}},
         file_endpoint::dev_null,
     });
-    system.connections.push_back(xargs_stdout);
+    system.links.push_back(xargs_stdout);
 
     {
         std::ostringstream os;
@@ -201,7 +201,7 @@ TEST(instantiate, ls_outerr_system)
     };
     system::custom custom;
     custom.subsystems = {{ls_exe_name, ls_exe_sys}};
-    custom.connections = {ls_in, ls_outerr};
+    custom.links = {ls_in, ls_outerr};
     {
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
@@ -262,7 +262,7 @@ TEST(instantiate, env_system)
     auto overriding_system = flow::system{system::custom{
         .environment = {{base_env_name, derived_env_val}},
         .subsystems = {{env_exe_name, env_exe_sys}},
-        .connections = {env_out},
+        .links = {env_out},
     }};
     auto base = flow::system{system::custom{
         .environment = {{base_env_name, base_env_val}},
@@ -349,11 +349,11 @@ TEST(instantiate, lsof_system)
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
     }, std_ports});
-    custom.connections.push_back(unidirectional_connection{
+    custom.links.push_back(unidirectional_connection{
         file_endpoint::dev_null, system_endpoint{lsof_name, stdin_id},
     });
-    custom.connections.push_back(lsof_stdout);
-    custom.connections.push_back(unidirectional_connection{
+    custom.links.push_back(lsof_stdout);
+    custom.links.push_back(unidirectional_connection{
         system_endpoint{lsof_name, stderr_id}, file_endpoint::dev_null,
     });
     {
@@ -427,7 +427,7 @@ TEST(instantiate, nested_system)
                             .file = "/bin/cat"
                         }}
                     },
-                    .connections = {
+                    .links = {
                         unidirectional_connection{
                             system_endpoint{system_name{}, reference_descriptor{0}},
                             system_endpoint{cat_process_name, reference_descriptor{0}}
@@ -451,7 +451,7 @@ TEST(instantiate, nested_system)
                             .arguments = {"xargs", "ls", "-alF"}
                         }}
                     },
-                    .connections = {
+                    .links = {
                         unidirectional_connection{
                             system_endpoint{system_name{}, reference_descriptor{0}},
                             system_endpoint{xargs_process_name, reference_descriptor{0}}
@@ -468,7 +468,7 @@ TEST(instantiate, nested_system)
                 }, std_ports}
             }
         },
-        .connections = {
+        .links = {
             unidirectional_connection{
                 user_endpoint{},
                 system_endpoint{cat_system_name, reference_descriptor{0}},
@@ -580,7 +580,7 @@ TEST(instantiate, bin_dd)
                 },
             }
         }}},
-        .connections = {unidirectional_connection{
+        .links = {unidirectional_connection{
             system_endpoint{exe_name, reference_descriptor{2}},
             user_endpoint{},
         }},
