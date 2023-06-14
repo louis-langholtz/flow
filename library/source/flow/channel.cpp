@@ -122,8 +122,8 @@ auto validate(const system_endpoint& end,
         return get_port_type(counts);
     }
     if (const auto p = std::get_if<system::custom>(&(system.implementation))) {
-        const auto found = p->subsystems.find(end.address);
-        if (found == p->subsystems.end()) {
+        const auto found = p->nodes.find(end.address);
+        if (found == p->nodes.end()) {
             std::ostringstream os;
             os << "endpoint address system ";
             os << end.address;

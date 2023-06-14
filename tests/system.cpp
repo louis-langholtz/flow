@@ -6,7 +6,7 @@ TEST(system_custom, default_construction)
 {
     flow::system::custom obj;
     EXPECT_TRUE(empty(obj.environment));
-    EXPECT_TRUE(empty(obj.subsystems));
+    EXPECT_TRUE(empty(obj.nodes));
     EXPECT_TRUE(empty(obj.links));
 }
 
@@ -49,7 +49,7 @@ TEST(system, default_construction)
     EXPECT_TRUE(std::holds_alternative<flow::system::custom>(obj.implementation));
     if (std::holds_alternative<flow::system::custom>(obj.implementation)) {
         const auto& info = std::get<flow::system::custom>(obj.implementation);
-        EXPECT_TRUE(empty(info.subsystems));
+        EXPECT_TRUE(empty(info.nodes));
         EXPECT_TRUE(empty(info.links));
     }
 }

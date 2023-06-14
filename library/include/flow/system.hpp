@@ -37,7 +37,7 @@ struct system
         /// @brief Subsystems.
         /// @note The identifying key of a subsystem is considered an _external_
         ///   component of that subsystems.
-        std::map<system_name, system> subsystems;
+        std::map<system_name, system> nodes;
 
         /// @brief Connections.
         /// @note The connections of this system are considered _internal_
@@ -95,7 +95,7 @@ static_assert(std::is_move_assignable_v<system>);
 inline auto operator==(const system::custom& lhs,
                        const system::custom& rhs) noexcept -> bool
 {
-    return (lhs.subsystems == rhs.subsystems)
+    return (lhs.nodes == rhs.nodes)
         && (lhs.environment == rhs.environment)
         && (lhs.links == rhs.links);
 }
