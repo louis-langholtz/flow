@@ -64,7 +64,7 @@ struct system
     system(custom type_info,
            port_map des_map = {})
         : ports{std::move(des_map)},
-          info{std::move(type_info)}
+          implementation{std::move(type_info)}
     {
         // Intentionally empty.
     }
@@ -72,7 +72,7 @@ struct system
     system(executable type_info,
            port_map des_map = std_ports)
         : ports{std::move(des_map)},
-          info{std::move(type_info)}
+          implementation{std::move(type_info)}
     {
         // Intentionally empty.
     }
@@ -83,7 +83,7 @@ struct system
 
     /// @brief System type specific information.
     /// @note This is considered an _internal_ component of this type.
-    variant<custom, executable> info;
+    variant<custom, executable> implementation;
 };
 
 static_assert(std::is_default_constructible_v<system>);
@@ -112,7 +112,7 @@ inline auto operator==(const system& lhs,
                        const system& rhs) noexcept -> bool
 {
     return (lhs.ports == rhs.ports)
-        && (lhs.info == rhs.info);
+        && (lhs.implementation == rhs.implementation);
 }
 
 auto operator<<(std::ostream& os, const system& value)

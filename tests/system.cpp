@@ -46,9 +46,9 @@ TEST(system, default_construction)
 {
     flow::system obj;
     EXPECT_TRUE(empty(obj.ports));
-    EXPECT_TRUE(std::holds_alternative<flow::system::custom>(obj.info));
-    if (std::holds_alternative<flow::system::custom>(obj.info)) {
-        const auto& info = std::get<flow::system::custom>(obj.info);
+    EXPECT_TRUE(std::holds_alternative<flow::system::custom>(obj.implementation));
+    if (std::holds_alternative<flow::system::custom>(obj.implementation)) {
+        const auto& info = std::get<flow::system::custom>(obj.implementation);
         EXPECT_TRUE(empty(info.subsystems));
         EXPECT_TRUE(empty(info.connections));
     }
@@ -63,9 +63,9 @@ TEST(system, equality)
     EXPECT_FALSE(obj == flow::system());
     obj.ports = {};
     ASSERT_TRUE(obj == flow::system());
-    obj.info = flow::system::executable{};
+    obj.implementation = flow::system::executable{};
     EXPECT_FALSE(obj == flow::system());
-    obj.info = flow::system::custom{};
+    obj.implementation = flow::system::custom{};
     ASSERT_TRUE(obj == flow::system());
 }
 
@@ -73,9 +73,9 @@ TEST(system, executable_construction)
 {
     flow::system obj{flow::system::executable{}};
     EXPECT_FALSE(empty(obj.ports));
-    EXPECT_TRUE(std::holds_alternative<flow::system::executable>(obj.info));
-    if (std::holds_alternative<flow::system::executable>(obj.info)) {
-        const auto& info = std::get<flow::system::executable>(obj.info);
+    EXPECT_TRUE(std::holds_alternative<flow::system::executable>(obj.implementation));
+    if (std::holds_alternative<flow::system::executable>(obj.implementation)) {
+        const auto& info = std::get<flow::system::executable>(obj.implementation);
         EXPECT_TRUE(info.file.empty());
         EXPECT_TRUE(empty(info.arguments));
         EXPECT_TRUE(info.working_directory.empty());

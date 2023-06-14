@@ -16,7 +16,7 @@ auto operator<<(std::ostream& os, const system& value)
         top_prefix = ",";
     }
     os << top_prefix << ".info=";
-    if (const auto p = std::get_if<system::executable>(&(value.info))) {
+    if (const auto p = std::get_if<system::executable>(&(value.implementation))) {
         os << "executable_info{";
         os << ".file=" << p->file;
         os << ",.arguments={";
@@ -29,7 +29,7 @@ auto operator<<(std::ostream& os, const system& value)
         os << ",.working_directory=" << p->working_directory;
         os << "}";
     }
-    else if (const auto p = std::get_if<system::custom>(&(value.info))) {
+    else if (const auto p = std::get_if<system::custom>(&(value.implementation))) {
         os << "custom_info{";
         auto sub_prefix = "";
         if (!empty(p->environment)) {
@@ -71,7 +71,7 @@ auto pretty_print(std::ostream& os, const system& value) -> void
         os << "}";
         top_prefix = ",\n";
     }
-    if (const auto p = std::get_if<system::custom>(&value.info)) {
+    if (const auto p = std::get_if<system::custom>(&value.implementation)) {
         os << top_prefix;
         os << "  .info=custom{";
         auto info_prefix = "";
@@ -123,7 +123,7 @@ auto pretty_print(std::ostream& os, const system& value) -> void
         }
         os << "}\n";
     }
-    else if (const auto p = std::get_if<system::executable>(&value.info)) {
+    else if (const auto p = std::get_if<system::executable>(&value.implementation)) {
         os << top_prefix;
         os << "  .info=executable{";
         auto exe_prefix = "\n";
