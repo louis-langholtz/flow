@@ -1,12 +1,12 @@
 #include <sstream> // for std::ostringstream
 
 #include "flow/indenting_ostreambuf.hpp"
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 #include "flow/utility.hpp"
 
 namespace flow {
 
-auto operator<<(std::ostream& os, const system& value)
+auto operator<<(std::ostream& os, const node& value)
     -> std::ostream&
 {
     os << "system{";
@@ -60,7 +60,7 @@ auto operator<<(std::ostream& os, const system& value)
     return os;
 }
 
-auto pretty_print(std::ostream& os, const system& value) -> void
+auto pretty_print(std::ostream& os, const node& value) -> void
 {
     os << "{\n";
     auto top_prefix = "";
@@ -151,7 +151,7 @@ auto pretty_print(std::ostream& os, const system& value) -> void
     os << "}\n";
 }
 
-auto get_matching_set(const system& sys, io_type io)
+auto get_matching_set(const node& sys, io_type io)
     -> std::set<port_id>
 {
     return get_matching_set(sys.interface, io);

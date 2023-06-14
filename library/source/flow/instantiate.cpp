@@ -396,7 +396,7 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 
 auto make_child(instance& parent,
                 const system_name& name,
-                const system& system,
+                const node& system,
                 const std::span<const connection>& connections,
                 const port_map& ports) -> instance
 {
@@ -585,7 +585,7 @@ auto find_file(const std::filesystem::path& file,
 }
 
 auto fork_child(const system_name& name,
-                const system& sys,
+                const node& sys,
                 const environment_map& env,
                 instance& child,
                 reference_process_id& pgrp,
@@ -754,7 +754,7 @@ auto close_all_internal_ends(instance::custom& instance,
 
 }
 
-auto instantiate(const system& system,
+auto instantiate(const node& system,
                  std::ostream& diags,
                  const instantiate_options& opts)
     -> instance

@@ -22,7 +22,7 @@
 #include "flow/reference_descriptor.hpp"
 #include "flow/instance.hpp"
 #include "flow/os_error_code.hpp"
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 #include "flow/utility.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, ostream support
 #include "flow/wait_result.hpp"

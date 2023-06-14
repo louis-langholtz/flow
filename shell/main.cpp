@@ -26,7 +26,7 @@ namespace {
 
 using arguments = std::vector<std::string>;
 using string_span = std::span<const std::string>;
-using system_stack_type = std::stack<std::reference_wrapper<flow::system>>;
+using system_stack_type = std::stack<std::reference_wrapper<flow::node>>;
 
 using cmd_handler = std::function<void(const string_span& args)>;
 using cmd_table = std::map<std::string, cmd_handler>;
@@ -135,8 +135,8 @@ char *prompt([[maybe_unused]] EditLine *el)
     return continuation? cl_buf.data(): nl_buf.data();
 }
 
-auto find(const std::map<flow::system_name, flow::system>& map,
-          const std::string_view& name) -> const flow::system*
+auto find(const std::map<flow::system_name, flow::node>& map,
+          const std::string_view& name) -> const flow::node*
 {
     auto sname = flow::system_name{};
     try {
@@ -153,7 +153,7 @@ auto find(const std::map<flow::system_name, flow::system>& map,
 }
 
 auto find(const system_stack_type& stack, const arguments& args)
-    -> const flow::system*
+    -> const flow::node*
 {
     const auto& custom = std::get<flow::custom>(stack.top().get().implementation);
     for (auto&& entry: custom.nodes) {
@@ -170,9 +170,9 @@ auto find(const system_stack_type& stack, const arguments& args)
     return nullptr;
 }
 
-auto update(const flow::system& system, const string_span& args) -> flow::system
+auto update(const flow::node& system, const string_span& args) -> flow::node
 {
-    flow::system tsys = system;
+    flow::node tsys = system;
     if (const auto p = std::get_if<flow::executable>(&tsys.implementation)) {
         if (size(args) > 1u) {
             const auto cmd = empty(p->arguments)
@@ -271,12 +271,12 @@ struct system_basis
     /// @brief Names from which the map of systems is arrived at.
     std::deque<flow::system_name> names;
 
-    /// @brief Remaining system names that have yet to be parsed through
+    /// @brief Remaining node names that have yet to be parsed through
     ///   possibly because no matches for them have been found yet.
     std::deque<flow::system_name> remaining;
 
     /// @brief Pointer to map of systems arrived at from @root.
-    flow::system *psystem;
+    flow::node *psystem;
 
     auto operator==(const system_basis& other) const noexcept -> bool = default;
 };
@@ -307,7 +307,7 @@ auto parse(flow::endpoint& value, const std::string& string) -> bool
     return !ss.fail();
 }
 
-auto do_unset_system(flow::system& context, const string_span& args) -> void
+auto do_unset_system(flow::node& context, const string_span& args) -> void
 {
     auto usage = [&](std::ostream& os){
         os << "usage: ";
@@ -356,7 +356,7 @@ auto do_unset_system(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto get_instantiate_options(const flow::system& context)
+auto get_instantiate_options(const flow::node& context)
 {
     return flow::instantiate_options{
         .ports = context.interface,
@@ -365,7 +365,7 @@ auto get_instantiate_options(const flow::system& context)
 }
 
 auto instantiate(const std::string_view& cmd,
-                 const flow::system& tsys,
+                 const flow::node& tsys,
                  const flow::instantiate_options& opts)
     -> std::optional<flow::instance>
 {
@@ -407,7 +407,7 @@ auto print(const std::span<const flow::wait_result>& results,
 }
 
 auto foreground(const std::string_view& cmd,
-                const flow::system& tsys,
+                const flow::node& tsys,
                 const flow::instantiate_options& opts)
 {
     if (auto obj = instantiate(cmd, tsys, opts)) {
@@ -416,7 +416,7 @@ auto foreground(const std::string_view& cmd,
     }
 }
 
-auto do_foreground(const flow::system& context, const string_span& args)
+auto do_foreground(const flow::node& context, const string_span& args)
     -> void
 {
     auto usage = [&](std::ostream& os){
@@ -453,7 +453,7 @@ auto do_foreground(const flow::system& context, const string_span& args)
     });
 }
 
-auto do_rename(flow::system& context, const string_span& args) -> void
+auto do_rename(flow::node& context, const string_span& args) -> void
 {
     auto usage = [&](std::ostream& os){
         os << "usage: ";
@@ -522,9 +522,9 @@ auto do_rename(flow::system& context, const string_span& args) -> void
     custom.nodes = std::move(subsystems);
 }
 
-auto do_set_system(flow::system& context, const string_span& args) -> void
+auto do_set_system(flow::node& context, const string_span& args) -> void
 {
-    auto system = flow::system{};
+    auto system = flow::node{};
     auto parent = std::string{};
     auto names = std::vector<std::string>{};
     auto custom = false;
@@ -692,7 +692,7 @@ auto do_set_system(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto do_show_connections(const flow::system& context, const string_span& args)
+auto do_show_connections(const flow::node& context, const string_span& args)
     -> void
 {
     if (!empty(args)) {
@@ -724,7 +724,7 @@ auto do_show_connections(const flow::system& context, const string_span& args)
     }
 }
 
-auto do_remove_connections(flow::system& context, const string_span& args)
+auto do_remove_connections(flow::node& context, const string_span& args)
     -> void
 {
     auto src_str = std::string{};
@@ -842,7 +842,7 @@ auto do_remove_connections(flow::system& context, const string_span& args)
     std::cout << " matching connection(s)\n";
 }
 
-auto do_add_connections(flow::system& context, const string_span& args) -> void
+auto do_add_connections(flow::node& context, const string_span& args) -> void
 {
     auto name = std::string{};
     const auto usage = [&](std::ostream& os){
@@ -980,7 +980,7 @@ auto print(std::ostream& os, const flow::port_map& ports) -> void
     }
 }
 
-auto do_show_systems(const flow::system& context, const string_span& args) -> void
+auto do_show_systems(const flow::node& context, const string_span& args) -> void
 {
     constexpr auto show_info_argument = "--show-info";
     constexpr auto recursive_argument = "--recursive";
@@ -1150,7 +1150,7 @@ auto do_show_instances(flow::instance& instance, const string_span& args)
     }
 }
 
-auto do_env(const flow::system& context, const string_span& args) -> void
+auto do_env(const flow::node& context, const string_span& args) -> void
 {
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
@@ -1173,7 +1173,7 @@ auto do_env(const flow::system& context, const string_span& args) -> void
     std::cout.flush();
 }
 
-auto do_setenv(flow::system& context, const string_span& args) -> void
+auto do_setenv(flow::node& context, const string_span& args) -> void
 {
     auto& map = std::get<flow::custom>(context.implementation).environment;
     auto usage = [&](std::ostream& os){
@@ -1210,7 +1210,7 @@ auto do_setenv(flow::system& context, const string_span& args) -> void
     }
 }
 
-auto do_unsetenv(flow::system& context, const string_span& args) -> void
+auto do_unsetenv(flow::node& context, const string_span& args) -> void
 {
     constexpr auto all_argument = "--all";
     auto usage = [&](std::ostream& os){
@@ -1445,7 +1445,7 @@ auto do_usage(const cmd_table& cmds, const string_span& args) -> void
     }
 }
 
-auto do_chdir(flow::system& context, const string_span& args) -> void
+auto do_chdir(flow::node& context, const string_span& args) -> void
 {
     auto usage = [&](std::ostream& os){
         os << "usage: ";
@@ -1646,7 +1646,7 @@ auto main(int argc, const char * argv[]) -> int
 {
     auto environment = flow::get_environ();
     environment["SHELL"] = argv[0];
-    auto root_system = flow::system{
+    auto root_system = flow::node{
         flow::custom{environment},
         flow::std_ports,
     };

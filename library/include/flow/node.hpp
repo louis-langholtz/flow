@@ -18,7 +18,7 @@
 
 namespace flow {
 
-struct system;
+struct node;
 
 struct custom
 {
@@ -29,7 +29,7 @@ struct custom
     /// @brief Subsystems.
     /// @note The identifying key of a subsystem is considered an _external_
     ///   component of that subsystems.
-    std::map<system_name, system> nodes;
+    std::map<system_name, node> nodes;
 
     /// @brief Connections.
     /// @note The connections of this system are considered _internal_
@@ -39,7 +39,7 @@ struct custom
 
 struct executable
 {
-    /// @brief Path to the executable file for this system.
+    /// @brief Path to the executable file for this node.
     std::filesystem::path file;
 
     /// @brief Arguments to pass to the executable.
@@ -59,11 +59,11 @@ struct executable
 /// @note This type is intended to be moveable, copyable, and equality
 ///   comparable.
 /// @see instantiate, instance.
-struct system
+struct node
 {
-    system() = default;
+    node() = default;
 
-    system(custom type_info,
+    node(custom type_info,
            port_map des_map = {})
         : interface{std::move(des_map)},
           implementation{std::move(type_info)}
@@ -71,7 +71,7 @@ struct system
         // Intentionally empty.
     }
 
-    system(executable type_info,
+    node(executable type_info,
            port_map des_map = std_ports)
         : interface{std::move(des_map)},
           implementation{std::move(type_info)}
@@ -79,7 +79,7 @@ struct system
         // Intentionally empty.
     }
 
-    /// @brief Ports of the <code>system</code>.
+    /// @brief Ports of the <code>node</code>.
     /// @note This is considered an _interface_ component of this type.
     port_map interface;
 
@@ -88,11 +88,11 @@ struct system
     variant<custom, executable> implementation;
 };
 
-static_assert(std::is_default_constructible_v<system>);
-static_assert(std::is_copy_constructible_v<system>);
-static_assert(std::is_move_constructible_v<system>);
-static_assert(std::is_copy_assignable_v<system>);
-static_assert(std::is_move_assignable_v<system>);
+static_assert(std::is_default_constructible_v<node>);
+static_assert(std::is_copy_constructible_v<node>);
+static_assert(std::is_move_constructible_v<node>);
+static_assert(std::is_copy_assignable_v<node>);
+static_assert(std::is_move_assignable_v<node>);
 
 inline auto operator==(const custom& lhs,
                        const custom& rhs) noexcept -> bool
@@ -110,18 +110,18 @@ inline auto operator==(const executable& lhs,
         && (lhs.working_directory == rhs.working_directory);
 }
 
-inline auto operator==(const system& lhs,
-                       const system& rhs) noexcept -> bool
+inline auto operator==(const node& lhs,
+                       const node& rhs) noexcept -> bool
 {
     return (lhs.interface == rhs.interface)
         && (lhs.implementation == rhs.implementation);
 }
 
-auto operator<<(std::ostream& os, const system& value)
+auto operator<<(std::ostream& os, const node& value)
     -> std::ostream&;
-auto pretty_print(std::ostream& os, const system& value) -> void;
+auto pretty_print(std::ostream& os, const node& value) -> void;
 
-auto get_matching_set(const system& sys, io_type io)
+auto get_matching_set(const node& sys, io_type io)
     -> std::set<port_id>;
 
 /// @brief Makes connections for each of the specified ports with

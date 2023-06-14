@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "flow/instance.hpp"
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 #include "flow/wait_result.hpp"
 
 namespace flow {
@@ -17,7 +17,7 @@ struct system_pipeline
     ~system_pipeline();
     auto operator=(system_pipeline&& other) -> system_pipeline& = default;
 
-    auto append(const system& sys) -> system_pipeline&;
+    auto append(const node& sys) -> system_pipeline&;
     auto append(const endpoint& end) -> system_pipeline&;
     auto instantiate() -> system_pipeline&;
     auto wait() -> std::vector<wait_result>;
@@ -38,13 +38,13 @@ static_assert(std::is_move_constructible_v<system_pipeline>);
 static_assert(!std::is_copy_assignable_v<system_pipeline>);
 static_assert(std::is_move_assignable_v<system_pipeline>);
 
-auto operator|(const endpoint& lhs, const system& rhs)
+auto operator|(const endpoint& lhs, const node& rhs)
     -> system_pipeline;
-auto operator|(const system& lhs, const system& rhs)
+auto operator|(const node& lhs, const node& rhs)
     -> system_pipeline;
-auto operator|(const system& lhs, const endpoint& rhs)
+auto operator|(const node& lhs, const endpoint& rhs)
     -> system_pipeline;
-auto operator|(system_pipeline& lhs, const system& rhs)
+auto operator|(system_pipeline& lhs, const node& rhs)
     -> system_pipeline&;
 auto operator|(system_pipeline& lhs, const endpoint& rhs)
     -> system_pipeline&;

@@ -8,7 +8,7 @@
 
 #include "flow/channel.hpp"
 #include "flow/instance.hpp"
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 #include "flow/utility.hpp"
 
 namespace flow {
@@ -97,7 +97,7 @@ auto get_port_type(const port_size_array& counts) -> port_type
 }
 
 auto validate(const system_endpoint& end,
-              const system& system,
+              const node& system,
               io_type expected_io) -> port_type
 {
     if (end.address == system_name{}) {
@@ -269,7 +269,7 @@ auto get_interface_ports(const system_endpoint* end)
 
 auto make_channel(const unidirectional_connection& conn,
                   const system_name& name,
-                  const system& system,
+                  const node& system,
                   const std::span<channel>& channels,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)
@@ -349,7 +349,7 @@ auto make_channel(const unidirectional_connection& conn,
 
 auto make_channel(const connection& conn,
                   const system_name& name,
-                  const system& system,
+                  const node& system,
                   const std::span<channel>& channels,
                   const std::span<const connection>& parent_connections,
                   const std::span<channel>& parent_channels)

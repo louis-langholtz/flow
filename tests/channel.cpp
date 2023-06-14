@@ -2,7 +2,7 @@
 
 #include "flow/channel.hpp"
 #include "flow/instance.hpp"
-#include "flow/system.hpp"
+#include "flow/node.hpp"
 
 using namespace flow;
 
@@ -14,7 +14,7 @@ TEST(channel, default_construction)
 
 TEST(make_channel, with_defaulted_args)
 {
-    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::system{}, {},
+    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::node{}, {},
                               {}, {}), invalid_connection);
 }
 
@@ -24,7 +24,7 @@ TEST(make_channel, with_diff_system_endpoints)
         system_endpoint{"a"},
         system_endpoint{"b"},
     };
-    EXPECT_THROW(make_channel(conn, system_name{}, flow::system{}, {},
+    EXPECT_THROW(make_channel(conn, system_name{}, flow::node{}, {},
                               {}, {}), invalid_connection);
 }
 
@@ -35,7 +35,7 @@ TEST(make_channel, with_diff_sizes)
             {}, {reference_descriptor{1}}
         }}
     };
-    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::system{}, {},
+    EXPECT_THROW(make_channel(connection{}, system_name{}, flow::node{}, {},
                               pconns, {}), std::logic_error);
 }
 
@@ -45,7 +45,7 @@ TEST(make_channel, for_subsys_to_file)
     const auto name = system_name{};
     const auto sys = flow::custom{
         .nodes = {
-            {"subsys", flow::system{}},
+            {"subsys", flow::node{}},
         }
     };
     const auto conn = unidirectional_connection{
@@ -64,7 +64,7 @@ TEST(make_channel, for_file_to_subsys)
     const auto name = system_name{};
     const auto sys = flow::custom{
         .nodes = {
-            {"subsys", flow::system{}},
+            {"subsys", flow::node{}},
         }
     };
     const auto conn = unidirectional_connection{
@@ -83,8 +83,8 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
     const auto name = system_name{};
     const auto sys = flow::custom{
         .nodes = {
-            {"subsys_a", flow::system{}},
-            {"subsys_b", flow::system{}},
+            {"subsys_a", flow::node{}},
+            {"subsys_b", flow::node{}},
         }
     };
     const auto conn = unidirectional_connection{
@@ -101,7 +101,7 @@ TEST(make_channel, for_exe_subsys_to_sys)
 {
     auto chan = channel{};
     const auto name = system_name{};
-    const auto sys = flow::system{
+    const auto sys = flow::node{
         flow::custom{
             .nodes = {
                 {"subsys_a", flow::executable{}},
@@ -129,7 +129,7 @@ TEST(make_channel, signal_channel)
     const auto exe_name = system_name{"exe"};
     const auto sig = flow::signals::winch();
     auto name = flow::system_name{};
-    auto sys = flow::system{
+    auto sys = flow::node{
         custom{
             .nodes = {{exe_name, {
                 executable{},

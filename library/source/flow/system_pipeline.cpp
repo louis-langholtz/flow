@@ -24,7 +24,7 @@ system_pipeline::~system_pipeline()
     }
 }
 
-auto system_pipeline::append(const system& sys) -> system_pipeline&
+auto system_pipeline::append(const node& sys) -> system_pipeline&
 {
     if (current_state != state::setup) {
         throw std::logic_error{"append only supported during setup"};
@@ -137,7 +137,7 @@ auto system_pipeline::wait() -> std::vector<wait_result>
     return wait_results;
 }
 
-auto operator|(const endpoint& lhs, const system& rhs)
+auto operator|(const endpoint& lhs, const node& rhs)
     -> system_pipeline
 {
     auto pipeline = system_pipeline();
@@ -145,7 +145,7 @@ auto operator|(const endpoint& lhs, const system& rhs)
     return pipeline;
 }
 
-auto operator|(const system& lhs, const system& rhs)
+auto operator|(const node& lhs, const node& rhs)
     -> system_pipeline
 {
     auto pipeline = system_pipeline();
@@ -153,7 +153,7 @@ auto operator|(const system& lhs, const system& rhs)
     return pipeline;
 }
 
-auto operator|(const system& lhs, const endpoint& rhs)
+auto operator|(const node& lhs, const endpoint& rhs)
     -> system_pipeline
 {
     auto pipeline = system_pipeline();
@@ -161,7 +161,7 @@ auto operator|(const system& lhs, const endpoint& rhs)
     return pipeline;
 }
 
-auto operator|(system_pipeline& lhs, const system& rhs)
+auto operator|(system_pipeline& lhs, const node& rhs)
     -> system_pipeline&
 {
     return lhs.append(rhs);
