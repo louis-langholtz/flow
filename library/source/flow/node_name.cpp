@@ -10,7 +10,7 @@ auto operator<<(std::ostream& os, const node_name& name) -> std::ostream&
     return os;
 }
 
-auto to_system_names(std::string_view string,
+auto to_node_names(std::string_view string,
                      const std::string_view& separator)
     -> std::deque<node_name>
 {

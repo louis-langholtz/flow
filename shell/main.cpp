@@ -329,7 +329,7 @@ auto do_unset_system(flow::node& context, const string_span& args) -> void
         }
         auto sys_names = std::deque<flow::node_name>{};
         try {
-            sys_names = flow::to_system_names(arg);
+            sys_names = flow::to_node_names(arg);
         }
         catch (const flow::charset_validator_error& ex) {
             std::cerr << "invalid name ";
@@ -628,7 +628,7 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
     }
     auto parent_names = std::deque<flow::node_name>{};
     try {
-        parent_names = flow::to_system_names(parent);
+        parent_names = flow::to_node_names(parent);
     }
     catch (const flow::charset_validator_error& ex) {
         std::cerr << "aborting: parent name(s) ";
@@ -645,7 +645,7 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
     for (auto&& name: names) {
         auto base_names = std::deque<flow::node_name>{};
         try {
-            base_names = flow::to_system_names(name);
+            base_names = flow::to_node_names(name);
         }
         catch (const flow::charset_validator_error& ex) {
             std::cerr << "skipping invalid system name(s) ";
@@ -884,7 +884,7 @@ auto do_add_connections(flow::node& context, const string_span& args) -> void
             const auto parent = arg.substr(parent_prefix.size());
             auto parent_names = std::deque<flow::node_name>{};
             try {
-                parent_names = flow::to_system_names(parent);
+                parent_names = flow::to_node_names(parent);
             }
             catch (const flow::charset_validator_error& ex) {
                 std::cerr << "can't parse parent name " << std::quoted(parent);
@@ -925,7 +925,7 @@ auto do_add_connections(flow::node& context, const string_span& args) -> void
         }
         auto names = std::deque<flow::node_name>();
         try {
-            names = flow::to_system_names(name);
+            names = flow::to_node_names(name);
         }
         catch (const flow::charset_validator_error& ex) {
             std::cerr << "can't parse name " << std::quoted(name);
@@ -1517,7 +1517,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
     }
     auto names = std::deque<flow::node_name>();
     try {
-        names = flow::to_system_names(args[1]);
+        names = flow::to_node_names(args[1]);
     }
     catch (const flow::charset_validator_error& ex) {
         std::cerr << std::quoted(args[1]);
