@@ -20,10 +20,10 @@ namespace flow {
 
 struct node;
 
-struct custom
+/// @brief Recursive structure for defining systems.
+struct system
 {
     /// @brief Environment for the <code>system</code>.
-    /// @note This is considered an _internal_ component of this type.
     environment_map environment;
 
     /// @brief Nodes.
@@ -32,7 +32,6 @@ struct custom
     std::map<node_name, node> nodes;
 
     /// @brief Links.
-    /// @note The links of a system are considered _internal_ components.
     std::vector<link> links;
 };
 
@@ -62,7 +61,7 @@ struct node
 {
     node() = default;
 
-    node(custom type_info, port_map des_map = {})
+    node(system type_info, port_map des_map = {})
         : interface{std::move(des_map)},
           implementation{std::move(type_info)}
     {
@@ -82,7 +81,7 @@ struct node
 
     /// @brief Implementation specific information.
     /// @note This is considered an _internal_ component of this type.
-    variant<custom, executable> implementation;
+    variant<system, executable> implementation;
 };
 
 static_assert(std::is_default_constructible_v<node>);
@@ -91,8 +90,8 @@ static_assert(std::is_move_constructible_v<node>);
 static_assert(std::is_copy_assignable_v<node>);
 static_assert(std::is_move_assignable_v<node>);
 
-inline auto operator==(const custom& lhs,
-                       const custom& rhs) noexcept -> bool
+inline auto operator==(const system& lhs,
+                       const system& rhs) noexcept -> bool
 {
     return (lhs.nodes == rhs.nodes)
         && (lhs.environment == rhs.environment)

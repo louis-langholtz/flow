@@ -17,8 +17,9 @@ using namespace flow::descriptors;
 
 TEST(instantiate, default_custom)
 {
+    using flow::system;
     std::ostringstream os;
-    const auto obj = instantiate(custom{}, os);
+    const auto obj = instantiate(system{}, os);
     EXPECT_TRUE(empty(os.str()));
     EXPECT_TRUE(std::holds_alternative<instance::custom>(obj.info));
     if (std::holds_alternative<instance::custom>(obj.info)) {
@@ -48,10 +49,11 @@ TEST(instantiate, empty_executable)
 
 TEST(instantiate, ls_system)
 {
+    using flow::system;
     const auto input_file_endpoint = file_endpoint{"flow.in"};
     const auto output_file_endpoint = file_endpoint{"flow.out"};
     touch(output_file_endpoint);
-    custom system;
+    system system;
 
     const auto cat_process_name = node_name{"cat"};
     executable cat_executable;
@@ -186,8 +188,9 @@ TEST(instantiate, ls_system)
 
 TEST(instantiate, ls_outerr_system)
 {
+    using flow::system;
     const auto ls_exe_name = node_name{"ls_exe"};
-    const auto ls_exe_sys = executable{
+    const auto ls_exe_node = executable{
         .file = "/bin/ls",
         .arguments = {"ls", no_such_path, "/"},
     };
@@ -199,8 +202,8 @@ TEST(instantiate, ls_outerr_system)
         node_endpoint{ls_exe_name, stdout_id, stderr_id},
         user_endpoint{},
     };
-    custom custom;
-    custom.nodes = {{ls_exe_name, ls_exe_sys}};
+    system custom;
+    custom.nodes = {{ls_exe_name, ls_exe_node}};
     custom.links = {ls_in, ls_outerr};
     {
         std::ostringstream os;
@@ -247,6 +250,7 @@ TEST(instantiate, ls_outerr_system)
 
 TEST(instantiate, env_system)
 {
+    using flow::system;
     const auto base_env_name = env_name{"base"};
     const auto base_env_val = env_value{"base value"};
     const auto derived_env_val = env_value{"derived value"};
@@ -259,12 +263,12 @@ TEST(instantiate, env_system)
         executable{"/usr/bin/env"},
         {stdout_ports_entry}
     };
-    auto overriding_system = flow::node{custom{
+    auto overriding_system = flow::node{system{
         .environment = {{base_env_name, derived_env_val}},
         .nodes = {{env_exe_name, env_exe_sys}},
         .links = {env_out},
     }};
-    auto base = flow::node{custom{
+    auto base = flow::node{system{
         .environment = {{base_env_name, base_env_val}},
         .nodes = {{"overrider", overriding_system}},
     }};
@@ -342,7 +346,7 @@ TEST(instantiate, lsof_system)
         node_endpoint{lsof_name, stdout_id}, user_endpoint{},
     };
 
-    flow::custom custom;
+    flow::system custom;
     custom.environment = get_environ();
     custom.nodes.emplace(lsof_name, flow::node{flow::executable{
         .file = "lsof",
@@ -418,10 +422,10 @@ TEST(instantiate, nested_system)
     const auto cat_process_name = node_name{"cat_process"};
     const auto xargs_system_name = node_name{"xargs_system"};
     const auto xargs_process_name = node_name{"xargs_process"};
-    const custom system{
+    const flow::system system{
         .nodes = {
             {
-                cat_system_name, flow::node{custom{
+                cat_system_name, flow::node{flow::system{
                     .nodes = {
                         {cat_process_name, executable{
                             .file = "/bin/cat"
@@ -444,7 +448,7 @@ TEST(instantiate, nested_system)
                 }, std_ports}
             },
             {
-                xargs_system_name, flow::node{custom{
+                xargs_system_name, flow::node{flow::system{
                     .nodes = {
                         {xargs_process_name, executable{
                             .file = "/usr/bin/xargs",
@@ -556,7 +560,7 @@ TEST(instantiate, nested_system)
 TEST(instantiate, bin_dd)
 {
     const auto exe_name = node_name{"dd"};
-    auto sys = flow::node{custom{
+    auto sys = flow::node{flow::system{
         .nodes = {{exe_name, {
             executable{
                 .file = "/bin/dd",

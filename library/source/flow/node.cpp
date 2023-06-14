@@ -29,7 +29,7 @@ auto operator<<(std::ostream& os, const node& value)
         os << ",.working_directory=" << p->working_directory;
         os << "}";
     }
-    else if (const auto p = std::get_if<custom>(&(value.implementation))) {
+    else if (const auto p = std::get_if<system>(&(value.implementation))) {
         os << "custom_info{";
         auto sub_prefix = "";
         if (!empty(p->environment)) {
@@ -71,7 +71,7 @@ auto pretty_print(std::ostream& os, const node& value) -> void
         os << "}";
         top_prefix = ",\n";
     }
-    if (const auto p = std::get_if<custom>(&value.implementation)) {
+    if (const auto p = std::get_if<system>(&value.implementation)) {
         os << top_prefix;
         os << "  .info=custom{";
         auto info_prefix = "";
