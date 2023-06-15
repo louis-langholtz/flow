@@ -28,7 +28,7 @@ namespace flow {
 struct instance
 {
     /// @brief Information specific to "system" instances.
-    /// @note Instantiating a custom node, should result in a system instance.
+    /// @note Instantiating a system node, should result in a system instance.
     /// @see system.
     struct custom
     {
