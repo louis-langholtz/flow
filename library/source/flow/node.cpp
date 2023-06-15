@@ -157,8 +157,7 @@ auto get_matching_set(const node& sys, io_type io)
     return get_matching_set(sys.interface, io);
 }
 
-auto connect_with_user(const node_name& name,
-                       const port_map& ports)
+auto link_with_user(const node_name& name, const port_map& ports)
     -> std::vector<link>
 {
     auto result = std::vector<link>{};
