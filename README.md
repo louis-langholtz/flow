@@ -25,13 +25,13 @@ See the [system.hpp](library/include/flow/system.hpp) header file for specifics
 on how systems can be designed in C++.
 
 At a conceptual design level, there are three types of things to think about:
-ports, links, and systems. Ports define data inputs or outputs.
+ports, links, and nodes. Ports define data inputs or outputs.
 Links define the binding together of output ports with input ports.
-Systems meanwhile encapsulate implementations taking the data from its input
+Nodes meanwhile encapsulate implementations taking the data from its input
 ports, processing that data, and then outputting resulting data to its output
-ports. These implementations can be executable programs, or recursively
-definable containers of subsystems connected via links to each other's
-ports. When systems are run, or _instantiated_, they're transformed into:
+ports. These implementations can be executable programs, or systems that are
+recursively definable containers of nodes connected via links to each other's
+ports. When nodes are run, or _instantiated_, they're transformed into:
 instances, and channels. Instances and channels exist until the instances exit.
 
 ## Why?
@@ -39,7 +39,7 @@ instances, and channels. Instances and channels exist until the instances exit.
 Data-flow programming and architecture has been an interest of mine for years.
 Additionally, it has benefits that are more attractive than ever, like:
 - Lending itself better to modern computing resources.
-- Facilitating a more organic style of modelling natural processes.
+- Facilitating a more organic style of modeling natural processes.
 
 ## How?
 
