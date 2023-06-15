@@ -21,9 +21,9 @@ TEST(instantiate, default_custom)
     std::ostringstream os;
     const auto obj = instantiate(system{}, os);
     EXPECT_TRUE(empty(os.str()));
-    EXPECT_TRUE(std::holds_alternative<instance::custom>(obj.info));
-    if (std::holds_alternative<instance::custom>(obj.info)) {
-        const auto& info = std::get<instance::custom>(obj.info);
+    EXPECT_TRUE(std::holds_alternative<instance::system>(obj.info));
+    if (std::holds_alternative<instance::system>(obj.info)) {
+        const auto& info = std::get<instance::system>(obj.info);
         EXPECT_TRUE(empty(info.children));
         EXPECT_TRUE(empty(info.channels));
         EXPECT_EQ(info.pgrp, no_process_id);
@@ -100,14 +100,14 @@ TEST(instantiate, ls_system)
                   std::ostream_iterator<char>(os));
         EXPECT_FALSE(empty(os.str()));
         std::cerr << os.str() << '\n';
-        EXPECT_TRUE(std::holds_alternative<instance::custom>(object.info));
+        EXPECT_TRUE(std::holds_alternative<instance::system>(object.info));
         auto cat_stdin_pipe = static_cast<pipe_channel*>(nullptr);
         auto xargs_stdout_pipe = static_cast<pipe_channel*>(nullptr);
         auto cat_info = static_cast<instance::forked*>(nullptr);
         auto xargs_info = static_cast<instance::forked*>(nullptr);
         auto cat_pid = no_process_id;
         auto xargs_pid = no_process_id;
-        if (const auto p = std::get_if<instance::custom>(&object.info)) {
+        if (const auto p = std::get_if<instance::system>(&object.info)) {
             EXPECT_EQ(size(p->channels), 5u);
             if (size(p->channels) == 5u) {
                 cat_stdin_pipe = std::get_if<pipe_channel>(&(p->channels[0]));
@@ -209,7 +209,7 @@ TEST(instantiate, ls_outerr_system)
         std::ostringstream os;
         auto diags = ext::temporary_fstream();
         auto object = instantiate(custom, diags);
-        const auto info = std::get_if<instance::custom>(&object.info);
+        const auto info = std::get_if<instance::system>(&object.info);
         auto pipe = static_cast<pipe_channel*>(nullptr);
         EXPECT_NE(info, nullptr);
         if (info) {
@@ -286,12 +286,12 @@ TEST(instantiate, env_system)
                   std::ostream_iterator<char>(os));
         EXPECT_FALSE(empty(os.str()));
         os.str({});
-        ASSERT_TRUE(std::holds_alternative<instance::custom>(object.info));
-        auto info = std::get_if<instance::custom>(&object.info);
+        ASSERT_TRUE(std::holds_alternative<instance::system>(object.info));
+        auto info = std::get_if<instance::system>(&object.info);
         ASSERT_EQ(size(info->children), 1u);
         EXPECT_EQ(size(info->channels), 0u);
         auto& child = info->children.begin()->second;
-        info = std::get_if<instance::custom>(&child.info);
+        info = std::get_if<instance::system>(&child.info);
         EXPECT_NE(info, nullptr);
         auto pipe = static_cast<pipe_channel*>(nullptr);
         if (info) {
@@ -371,7 +371,7 @@ TEST(instantiate, lsof_system)
         EXPECT_FALSE(empty(os.str()));
         os.str(std::string());
 
-        const auto info = std::get_if<instance::custom>(&object.info);
+        const auto info = std::get_if<instance::system>(&object.info);
         auto pipe = static_cast<pipe_channel*>(nullptr);
         EXPECT_NE(info, nullptr);
         if (info) {
@@ -398,7 +398,7 @@ TEST(instantiate, lsof_system)
             ++waited;
         }
         EXPECT_EQ(waited, 1);
-        if (const auto p = std::get_if<instance::custom>(&object.info)) {
+        if (const auto p = std::get_if<instance::system>(&object.info)) {
             const auto ws = get_wait_status(p->children[lsof_name]);
             EXPECT_EQ(ws, wait_status(wait_exit_status{0}));
         }
@@ -505,7 +505,7 @@ TEST(instantiate, nested_system)
         const auto xarg_names = {xargs_process_name, xargs_system_name};
         const auto xargs_pid = get_reference_process_id(xarg_names, object);
         EXPECT_NE(xargs_pid, invalid_process_id);
-        const auto info = std::get_if<instance::custom>(&object.info);
+        const auto info = std::get_if<instance::system>(&object.info);
         auto in_pipe = static_cast<pipe_channel*>(nullptr);
         auto out_pipe = static_cast<pipe_channel*>(nullptr);
         EXPECT_NE(info, nullptr);
@@ -593,8 +593,8 @@ TEST(instantiate, bin_dd)
         using namespace std::chrono_literals;
         std::stringstream os;
         auto instance = instantiate(sys, std::cerr);
-        ASSERT_TRUE(std::holds_alternative<instance::custom>(instance.info));
-        auto& info = std::get<instance::custom>(instance.info);
+        ASSERT_TRUE(std::holds_alternative<instance::system>(instance.info));
+        auto& info = std::get<instance::system>(instance.info);
         ASSERT_EQ(size(info.channels), 1u);
         // Wait a moment before sending SIGINFO to help ensure dd is up
         // and has it's SIGINFO handler registered...

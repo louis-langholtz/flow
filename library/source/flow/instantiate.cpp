@@ -84,7 +84,7 @@ auto make_substitutions(std::vector<char*>& argv)
 auto find_parent(const instance& root, const instance& child)
     -> const instance*
 {
-    if (const auto p = std::get_if<instance::custom>(&root.info)) {
+    if (const auto p = std::get_if<instance::system>(&root.info)) {
         for (auto&& entry: p->children) {
             if (&entry.second == &child) {
                 return &root;
@@ -414,9 +414,9 @@ auto make_child(instance& parent,
         result.info = std::move(info);
     }
     else if (const auto p = std::get_if<system>(&node.implementation)) {
-        result.info = instance::custom{};
-        auto& parent_info = std::get<instance::custom>(parent.info);
-        auto& info = std::get<instance::custom>(result.info);
+        result.info = instance::system{};
+        auto& parent_info = std::get<instance::system>(parent.info);
+        auto& info = std::get<instance::system>(result.info);
         if (!all_closed) {
             info.pgrp = current_process_id();
         }
@@ -511,7 +511,7 @@ auto close_pipes_except(instance& root,
                         instance& child) -> void
 {
     if (const auto parent = find_parent(root, child)) {
-        auto& parent_info = std::get<instance::custom>(parent->info);
+        auto& parent_info = std::get<instance::system>(parent->info);
         auto& child_info = std::get<instance::forked>(child.info);
         for (auto&& pipe: the_pipe_registry().pipes) {
             if (!is_channel_for(parent_info.channels, pipe)) {
@@ -684,7 +684,7 @@ auto fork_executables(const system& system,
                       instance& root,
                       std::ostream& diags) -> void
 {
-    auto& info = std::get<instance::custom>(object.info);
+    auto& info = std::get<instance::system>(object.info);
     for (auto&& entry: system.nodes) {
         const auto& name = entry.first;
         const auto& node = entry.second;
@@ -729,7 +729,7 @@ auto close_internal_ends(const link& link,
     }
 }
 
-auto close_all_internal_ends(instance::custom& instance,
+auto close_all_internal_ends(instance::system& instance,
                              const system& system,
                              std::ostream& diags) -> void
 {
@@ -744,7 +744,7 @@ auto close_all_internal_ends(instance::custom& instance,
     }
     for (auto&& entry: instance.children) {
         const auto& sub_name = entry.first;
-        const auto custom = std::get_if<instance::custom>(&(entry.second.info));
+        const auto custom = std::get_if<instance::system>(&(entry.second.info));
         if (custom) {
             const auto& sub_system = system.nodes.at(sub_name);
             close_all_internal_ends(*custom,
@@ -779,8 +779,8 @@ auto instantiate(const node& system,
         const auto all_closed =
             confirm_closed({}, system.interface,
                            p->links, opts.ports);
-        result.info = instance::custom{};
-        auto& info = std::get<instance::custom>(result.info);
+        result.info = instance::system{};
+        auto& info = std::get<instance::system>(result.info);
         if (!all_closed) {
             info.pgrp = current_process_id();
         }

@@ -105,7 +105,7 @@ auto node_pipeline::append(const endpoint& end) -> node_pipeline&
     return *this;
 }
 
-static_assert(std::is_move_assignable_v<instance::custom>);
+static_assert(std::is_move_assignable_v<instance::system>);
 
 auto node_pipeline::instantiate() -> node_pipeline&
 {
