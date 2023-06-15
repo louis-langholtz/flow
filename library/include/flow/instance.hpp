@@ -28,8 +28,8 @@ namespace flow {
 struct instance
 {
     /// @brief Information specific to "system" instances.
-    /// @note Instantiating a system node, should result in a system instance.
-    /// @see system.
+    /// @note Instantiating a system node, results in a system instance.
+    /// @see flow::system.
     struct custom
     {
         static constexpr auto default_pgrp = no_process_id;
@@ -48,8 +48,7 @@ struct instance
     };
 
     /// @brief Information specific to "forked" instances.
-    /// @note Instantiating an executable node, should result in a forked
-    ///   instance.
+    /// @note Instantiating an executable node, results in a forked instance.
     /// @see executable.
     struct forked
     {
