@@ -15,6 +15,8 @@ namespace flow {
 struct node;
 
 /// @brief Recursive structure for defining systems.
+/// @note This is a <code>node</code> implementation type.
+/// @see node.
 struct system
 {
     /// @brief Environment for the <code>system</code>.

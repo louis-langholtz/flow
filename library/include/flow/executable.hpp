@@ -9,6 +9,9 @@
 
 namespace flow {
 
+/// @brief Executable.
+/// @note This is a <code>node</code> implementation type.
+/// @see node.
 struct executable
 {
     /// @brief Path to the executable file for this node.
