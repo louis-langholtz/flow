@@ -15,25 +15,9 @@
 #include "flow/io_type.hpp"
 #include "flow/node_name.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
+#include "flow/system.hpp"
 
 namespace flow {
-
-struct node;
-
-/// @brief Recursive structure for defining systems.
-struct system
-{
-    /// @brief Environment for the <code>system</code>.
-    environment_map environment;
-
-    /// @brief Nodes.
-    /// @note The identifying key of a node is considered an _external_
-    ///   component of that node.
-    std::map<node_name, node> nodes;
-
-    /// @brief Links.
-    std::vector<link> links;
-};
 
 struct executable
 {
@@ -89,14 +73,6 @@ static_assert(std::is_copy_constructible_v<node>);
 static_assert(std::is_move_constructible_v<node>);
 static_assert(std::is_copy_assignable_v<node>);
 static_assert(std::is_move_assignable_v<node>);
-
-inline auto operator==(const system& lhs,
-                       const system& rhs) noexcept -> bool
-{
-    return (lhs.nodes == rhs.nodes)
-        && (lhs.environment == rhs.environment)
-        && (lhs.links == rhs.links);
-}
 
 inline auto operator==(const executable& lhs,
                        const executable& rhs) noexcept -> bool
