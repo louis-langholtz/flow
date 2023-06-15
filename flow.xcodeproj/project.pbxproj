@@ -86,6 +86,8 @@
 		99BD75102A3A66C400186221 /* fstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD750F2A3A66C400186221 /* fstream.cpp */; };
 		99BD75132A3A8FC800186221 /* system.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD75112A3A8FC800186221 /* system.cpp */; };
 		99BD75142A3A8FC800186221 /* system.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99BD75122A3A8FC800186221 /* system.hpp */; };
+		99BD75172A3AAA1100186221 /* executable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99BD75152A3AAA1100186221 /* executable.cpp */; };
+		99BD75182A3AAA1100186221 /* executable.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99BD75162A3AAA1100186221 /* executable.hpp */; };
 		99C1937B29F4D70F00C3F53F /* node_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1937929F4D70F00C3F53F /* node_endpoint.cpp */; };
 		99C1937C29F4D70F00C3F53F /* node_endpoint.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */; };
 		99C1938329F506C200C3F53F /* file_endpoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 99C1938129F506C200C3F53F /* file_endpoint.cpp */; };
@@ -251,6 +253,8 @@
 		99BD750F2A3A66C400186221 /* fstream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = fstream.cpp; sourceTree = "<group>"; };
 		99BD75112A3A8FC800186221 /* system.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = system.cpp; sourceTree = "<group>"; };
 		99BD75122A3A8FC800186221 /* system.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = system.hpp; sourceTree = "<group>"; };
+		99BD75152A3AAA1100186221 /* executable.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = executable.cpp; sourceTree = "<group>"; };
+		99BD75162A3AAA1100186221 /* executable.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = executable.hpp; sourceTree = "<group>"; };
 		99C1937929F4D70F00C3F53F /* node_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = node_endpoint.cpp; sourceTree = "<group>"; };
 		99C1937A29F4D70F00C3F53F /* node_endpoint.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = node_endpoint.hpp; sourceTree = "<group>"; };
 		99C1938129F506C200C3F53F /* file_endpoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = file_endpoint.cpp; sourceTree = "<group>"; };
@@ -389,6 +393,7 @@
 				9943E8AE2A06F10F002F4C26 /* env_name.hpp */,
 				9943E8B22A06F403002F4C26 /* env_value.hpp */,
 				9943E8992A044697002F4C26 /* environment_map.hpp */,
+				99BD75162A3AAA1100186221 /* executable.hpp */,
 				9943E8AA2A059A28002F4C26 /* file_channel.hpp */,
 				99C1938229F506C200C3F53F /* file_endpoint.hpp */,
 				9986C7AD2A19220A006B2095 /* forwarding_channel.hpp */,
@@ -435,6 +440,7 @@
 				99C193A329F76AB800C3F53F /* descriptor_iostream.cpp */,
 				9986C7B02A1C455C006B2095 /* endpoint.cpp */,
 				9943E89B2A0453F3002F4C26 /* environment_map.cpp */,
+				99BD75152A3AAA1100186221 /* executable.cpp */,
 				9943E8A92A059A28002F4C26 /* file_channel.cpp */,
 				99C1938129F506C200C3F53F /* file_endpoint.cpp */,
 				9986C7AC2A19220A006B2095 /* forwarding_channel.cpp */,
@@ -544,6 +550,7 @@
 				9943E8A02A04A63F002F4C26 /* owning_process_id.hpp in Headers */,
 				9943E87D29FBFA07002F4C26 /* variant.hpp in Headers */,
 				9943E87729FB444F002F4C26 /* os_error_code.hpp in Headers */,
+				99BD75182A3AAA1100186221 /* executable.hpp in Headers */,
 				9943E8A42A04A783002F4C26 /* reference_process_id.hpp in Headers */,
 				99940BFC29F1F49F00A77461 /* process_id.hpp in Headers */,
 				99C1937C29F4D70F00C3F53F /* node_endpoint.hpp in Headers */,
@@ -704,6 +711,7 @@
 				99C1938F29F50EFD00C3F53F /* channel.cpp in Sources */,
 				99A88D202A0B431300AFD76F /* node_pipeline.cpp in Sources */,
 				99940BEE29F1C9A500A77461 /* io_type.cpp in Sources */,
+				99BD75172A3AAA1100186221 /* executable.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

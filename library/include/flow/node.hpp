@@ -1,37 +1,19 @@
 #ifndef node_hpp
 #define node_hpp
 
-#include <filesystem>
-#include <map>
 #include <ostream>
 #include <set>
-#include <string>
 #include <type_traits> // for std::is_default_constructible_v
-#include <vector>
 
-#include "flow/link.hpp"
-#include "flow/port_map.hpp"
-#include "flow/environment_map.hpp"
+#include "flow/executable.hpp"
 #include "flow/io_type.hpp"
+#include "flow/link.hpp"
 #include "flow/node_name.hpp"
-#include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
+#include "flow/port_map.hpp"
 #include "flow/system.hpp"
+#include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
-
-struct executable
-{
-    /// @brief Path to the executable file for this node.
-    std::filesystem::path file;
-
-    /// @brief Arguments to pass to the executable.
-    std::vector<std::string> arguments;
-
-    /// @brief Working directory.
-    /// @todo Consider what sense this member makes & removing it if
-    ///   there isn't enough reason to keep it around.
-    std::filesystem::path working_directory;
-};
 
 /// @brief Recursive structure for defining nodes.
 /// @note Nodes are conceptually made up of three categories of components:
@@ -73,14 +55,6 @@ static_assert(std::is_copy_constructible_v<node>);
 static_assert(std::is_move_constructible_v<node>);
 static_assert(std::is_copy_assignable_v<node>);
 static_assert(std::is_move_assignable_v<node>);
-
-inline auto operator==(const executable& lhs,
-                       const executable& rhs) noexcept -> bool
-{
-    return (lhs.file == rhs.file)
-        && (lhs.arguments == rhs.arguments)
-        && (lhs.working_directory == rhs.working_directory);
-}
 
 inline auto operator==(const node& lhs,
                        const node& rhs) noexcept -> bool
