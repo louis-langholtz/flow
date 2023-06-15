@@ -125,8 +125,7 @@ auto get_matching_set(const node& sys, io_type io)
 /// @throws std::invalid_argument if a port map entry has a direction
 ///   other than <code>io_type::in</code>, <code>io_type::out</code> or
 ///   <code>io_type::bidir</code>.
-auto connect_with_user(const node_name& name,
-                       const port_map& ports)
+auto link_with_user(const node_name& name, const port_map& ports)
     -> std::vector<link>;
 
 }
