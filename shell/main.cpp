@@ -26,7 +26,7 @@ namespace {
 
 using arguments = std::vector<std::string>;
 using string_span = std::span<const std::string>;
-using system_stack_type = std::stack<std::reference_wrapper<flow::node>>;
+using node_stack_type = std::stack<std::reference_wrapper<flow::node>>;
 
 using cmd_handler = std::function<void(const string_span& args)>;
 using cmd_table = std::map<std::string, cmd_handler>;
@@ -138,21 +138,21 @@ char *prompt([[maybe_unused]] EditLine *el)
 auto find(const std::map<flow::node_name, flow::node>& map,
           const std::string_view& name) -> const flow::node*
 {
-    auto sname = flow::node_name{};
+    auto node_name = flow::node_name{};
     try {
-        sname = flow::node_name{name};
+        node_name = flow::node_name{name};
     }
     catch (const flow::charset_validator_error& ex) {
         return nullptr;
     }
-    const auto entry = map.find(sname);
+    const auto entry = map.find(node_name);
     if (entry == map.end()) {
         return nullptr;
     }
     return &entry->second;
 }
 
-auto find(const system_stack_type& stack, const arguments& args)
+auto find(const node_stack_type& stack, const arguments& args)
     -> const flow::node*
 {
     const auto& system = std::get<flow::system>(stack.top().get().implementation);
@@ -307,7 +307,7 @@ auto parse(flow::endpoint& value, const std::string& string) -> bool
     return !ss.fail();
 }
 
-auto do_unset_system(flow::node& context, const string_span& args) -> void
+auto do_unset_node(flow::node& context, const string_span& args) -> void
 {
     auto usage = [&](std::ostream& os){
         os << "usage: ";
@@ -316,20 +316,20 @@ auto do_unset_system(flow::node& context, const string_span& args) -> void
         os << help_argument;
         os << "|";
         os << usage_argument;
-        os << "|<existing-system-name>...\n";
+        os << "|<existing-node-name>...\n";
     };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "removes system definitions.\n";
+            std::cout << "removes node definitions.\n";
             return;
         }
         if (arg == usage_argument) {
             usage(std::cout);
             return;
         }
-        auto sys_names = std::deque<flow::node_name>{};
+        auto node_names = std::deque<flow::node_name>{};
         try {
-            sys_names = flow::to_node_names(arg);
+            node_names = flow::to_node_names(arg);
         }
         catch (const flow::charset_validator_error& ex) {
             std::cerr << "invalid name ";
@@ -339,15 +339,15 @@ auto do_unset_system(flow::node& context, const string_span& args) -> void
             std::cerr << "\n";
             continue;
         }
-        const auto arg_basis = parse({{}, sys_names, &context}, 1u);
+        const auto arg_basis = parse({{}, node_names, &context}, 1u);
         const auto p =
             std::get_if<flow::system>(&arg_basis.psystem->implementation);
         if (!p) {
-            std::cerr << "parent not system?!\n";
+            std::cerr << "parent not system node?!\n";
             continue;
         }
         if (size(arg_basis.remaining) > 1u) {
-            std::cerr << "no such system as " << arg << "\n";
+            std::cerr << "no such node as " << arg << "\n";
             continue;
         }
         if (p->nodes.erase(arg_basis.remaining.front()) == 0) {
@@ -365,12 +365,12 @@ auto get_instantiate_options(const flow::node& context)
 }
 
 auto instantiate(const std::string_view& cmd,
-                 const flow::node& tsys,
+                 const flow::node& node,
                  const flow::instantiate_options& opts)
     -> std::optional<flow::instance>
 {
     try {
-        return {instantiate(tsys, std::cerr, opts)};
+        return {instantiate(node, std::cerr, opts)};
     }
     catch (const std::invalid_argument& ex) {
         std::cerr << "cannot instantiate ";
@@ -426,12 +426,12 @@ auto do_foreground(const flow::node& context, const string_span& args)
         os << help_argument;
         os << "|";
         os << usage_argument;
-        os << "|<existing-system-name>\n";
+        os << "|<existing-node-name>\n";
     };
     const auto nargs = args.subspan(1u);
     for (auto&& arg: nargs) {
         if (arg == help_argument) {
-            std::cout << "runs specified system definition in foreground.\n";
+            std::cout << "runs specified node in foreground.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -442,7 +442,7 @@ auto do_foreground(const flow::node& context, const string_span& args)
     const auto& system = std::get<flow::system>(context.implementation);
     const auto found = find(system.nodes, nargs[0].c_str());
     if (!found) {
-        std::cerr << "no such system as ";
+        std::cerr << "no such node as ";
         std::cerr << std::quoted(nargs[0]);
         std::cerr << '\n';
         return;
@@ -462,12 +462,12 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         os << help_argument;
         os << "|";
         os << usage_argument;
-        os << "|<old-system-name> <new-system-name>\n";
+        os << "|<old-name> <new-name>\n";
     };
     const auto nargs = args.subspan(1u);
     for (auto&& arg: nargs) {
         if (arg == help_argument) {
-            std::cout << "renames specified system definition to new name.\n";
+            std::cout << "renames specified node definition to new name.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -476,10 +476,7 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         }
     }
     if (size(nargs) != 2u) {
-        std::cerr << "usage: ";
-        std::cerr << args[0];
-        std::cerr << " [" << help_argument;
-        std::cerr << "] <old-name> <new-name>\n";
+        usage(std::cerr);
         return;
     }
     auto old_name = flow::node_name{};
@@ -487,7 +484,7 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         old_name = flow::node_name{nargs[0]};
     }
     catch (const flow::charset_validator_error& ex) {
-        std::cerr << "old system name ";
+        std::cerr << "old name ";
         std::cerr << std::quoted(nargs[0]);
         std::cerr << " invalid: " << ex.what();
         return;
@@ -497,7 +494,7 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         new_name = flow::node_name{nargs[1]};
     }
     catch (const flow::charset_validator_error& ex) {
-        std::cerr << "new system name ";
+        std::cerr << "new name ";
         std::cerr << std::quoted(nargs[1]);
         std::cerr << " invalid: " << ex.what();
         return;
@@ -506,7 +503,7 @@ auto do_rename(flow::node& context, const string_span& args) -> void
     auto nodes = system.nodes;
     auto nh = nodes.extract(old_name);
     if (nh.empty()) {
-        std::cerr << "no such subsystem as ";
+        std::cerr << "no such node as ";
         std::cerr << old_name;
         std::cerr << '\n';
         return;
@@ -514,7 +511,7 @@ auto do_rename(flow::node& context, const string_span& args) -> void
     nh.key() = new_name;
     const auto result = nodes.insert(std::move(nh));
     if (!result.inserted) {
-        std::cerr << "unable to rename system to ";
+        std::cerr << "unable to rename node to ";
         std::cerr << new_name;
         std::cerr << "\n";
         return;
@@ -729,7 +726,7 @@ auto do_remove_links(flow::node& context, const string_span& args)
 {
     auto src_str = std::string{};
     auto dst_str = std::string{};
-    auto nconnects = 0;
+    auto nlinks = 0;
     const auto usage = [&](std::ostream& os){
         os << "usage: ";
         os << args[0];
@@ -789,17 +786,17 @@ auto do_remove_links(flow::node& context, const string_span& args)
             continue;
         }
         auto& system = std::get<flow::system>(context.implementation);
-        const auto conn = flow::unidirectional_link{
+        const auto link = flow::unidirectional_link{
             lhs_endpoint, rhs_endpoint
         };
         std::cout << std::quoted(arg);
         std::cout << ": found and removed ";
-        std::cout << erase(system.links, flow::link{conn});
+        std::cout << erase(system.links, flow::link{link});
         std::cout << " matching link(s)\n";
-        ++nconnects;
+        ++nlinks;
     }
     if (empty(src_str) && empty(dst_str)) {
-        if (nconnects < 1) {
+        if (nlinks < 1) {
             usage(std::cerr);
         }
         return;
@@ -855,25 +852,25 @@ auto do_add_links(flow::node& context, const string_span& args) -> void
         os << " <lhs_endpoint>-<rhs_endpoint>...";
         os << '\n';
         os << "  where <lhs_endpoint> and <rhs_endpoint> are one of:\n";
-        os << "  <user_endpoint>|<file_endpoint>|<system_endpoint>\n";
+        os << "  <user_endpoint>|<file_endpoint>|<node_endpoint>\n";
         os << "  where <user_endpoint> is: ";
         os << flow::reserved::user_endpoint_prefix;
         os << "<user-endpoint-name>\n";
         os << "  where <file_endpoint> is: ";
         os << flow::reserved::file_endpoint_prefix;
         os << "<filesystem-path>\n";
-        os << "  where <system_endpoint> is: ";
+        os << "  where <node_endpoint> is: ";
         os << flow::reserved::descriptors_prefix;
         os << "<number>[";
         os << flow::reserved::descriptor_separator;
         os << "<number>...][";
         os << flow::reserved::address_prefix;
-        os << "<system-name>]\n";
+        os << "<node-name>]\n";
     };
     auto parent_basis = system_basis{{}, {}, &context};
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "adds links between endpoints within a system.\n";
+            std::cout << "adds links between endpoints within system node.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -939,7 +936,7 @@ auto do_add_links(flow::node& context, const string_span& args) -> void
         case 0u:
             break;
         default:
-            std::cerr << std::quoted(name) << "no such system\n";
+            std::cerr << std::quoted(name) << "no such node\n";
             return;
         }
         const auto p = std::get_if<flow::system>(&name_basis.psystem->implementation);
@@ -982,7 +979,7 @@ auto print(std::ostream& os, const flow::port_map& ports) -> void
 
 auto do_show_nodes(const flow::node& context, const string_span& args) -> void
 {
-    constexpr auto show_info_argument = "--show-info";
+    constexpr auto show_info_argument = "--show-implementation";
     constexpr auto recursive_argument = "--recursive";
     auto usage = [&](std::ostream& os){
         os << "usage: ";
@@ -1002,7 +999,7 @@ auto do_show_nodes(const flow::node& context, const string_span& args) -> void
     auto show_recursive = false;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "shows information about systems that have been added.\n";
+            std::cout << "shows information about nodes that have been defined.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -1082,7 +1079,7 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
         }
         catch (const flow::charset_validator_error& ex) {
             std::cerr << std::quoted(arg);
-            std::cerr << ": not a valid system name, skipping.";
+            std::cerr << ": not a valid node name, skipping.";
             continue;
         }
         const auto it = instances.find(name);
@@ -1487,7 +1484,7 @@ auto do_chdir(flow::node& context, const string_span& args) -> void
     map["PWD"] = args[1];
 }
 
-auto do_push(system_stack_type& stack, const string_span& args) -> void
+auto do_push(node_stack_type& stack, const string_span& args) -> void
 {
     auto usage = [&](std::ostream& os){
         os << "usage: ";
@@ -1497,7 +1494,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
         os << "|";
         os << usage_argument;
         os << "|";
-        os << "<system-name>";
+        os << "<system-node-name>";
         os << "\n";
     };
     for (auto&& arg: args.subspan(1u)) {
@@ -1521,14 +1518,14 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
     }
     catch (const flow::charset_validator_error& ex) {
         std::cerr << std::quoted(args[1]);
-        std::cerr << " not sequence of valid system names: ";
+        std::cerr << " not sequence of valid node names: ";
         std::cerr << ex.what();
         std::cerr << "\n";
         return;
     }
     const auto name_basis = parse({{}, names, &stack.top().get()});
     if (!empty(name_basis.remaining)) {
-        std::cerr << "unable to parse entire sequence of system names\n";
+        std::cerr << "unable to parse entire sequence of node names\n";
         return;
     }
     if (!std::holds_alternative<flow::system>(name_basis.psystem->implementation)) {
@@ -1539,7 +1536,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
     stack.push(*name_basis.psystem);
 }
 
-auto do_pop(system_stack_type& stack, const string_span& args) -> void
+auto do_pop(node_stack_type& stack, const string_span& args) -> void
 {
     auto usage = [&](std::ostream& os){
         os << "usage: ";
@@ -1549,7 +1546,7 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
         os << "|";
         os << usage_argument;
         os << "|";
-        os << rebase_prefix << "<new-system-name>";
+        os << rebase_prefix << "<new-system-node-name>";
         os << "]\n";
     };
     auto rebase = false;
@@ -1646,12 +1643,12 @@ auto main(int argc, const char * argv[]) -> int
 {
     auto environment = flow::get_environ();
     environment["SHELL"] = argv[0];
-    auto root_system = flow::node{
+    auto root_node = flow::node{
         flow::system{environment},
         flow::std_ports,
     };
-    system_stack_type system_stack;
-    system_stack.push(root_system);
+    node_stack_type node_stack;
+    node_stack.push(root_node);
     auto instance = flow::instance{flow::instance::system{}};
     auto do_loop = true;
     auto hist_size = 100;
@@ -1675,29 +1672,29 @@ auto main(int argc, const char * argv[]) -> int
         if (arg.starts_with(des_prefix)) {
             if (const auto p =
                 parse_port_map_entry(arg.substr(size(des_prefix)))) {
-                update(system_stack.top().get().interface, *p);
+                update(node_stack.top().get().interface, *p);
             }
             continue;
         }
     }
 
-    const auto show_sys_lambda = [&](const string_span& args){
-        do_show_nodes(system_stack.top().get(), args);
+    const auto show_nodes_lambda = [&](const string_span& args){
+        do_show_nodes(node_stack.top().get(), args);
     };
-    const cmd_table sys_cmds{
-        {"", show_sys_lambda},
+    const cmd_table node_cmds{
+        {"", show_nodes_lambda},
         {"rename", [&](const string_span& args){
-            do_rename(system_stack.top().get(), args);
+            do_rename(node_stack.top().get(), args);
         }},
         {"run", [&](const string_span& args){
-            do_foreground(system_stack.top().get(), args);
+            do_foreground(node_stack.top().get(), args);
         }},
         {"set", [&](const string_span& args){
-            do_set_node(system_stack.top().get(), args);
+            do_set_node(node_stack.top().get(), args);
         }},
-        {"show", show_sys_lambda},
+        {"show", show_nodes_lambda},
         {"unset", [&](const string_span& args){
-            do_unset_system(system_stack.top().get(), args);
+            do_unset_node(node_stack.top().get(), args);
         }},
     };
 
@@ -1712,31 +1709,31 @@ auto main(int argc, const char * argv[]) -> int
         }}
     };
 
-    const auto show_conns_lambda = [&](const string_span& args){
-        do_show_links(system_stack.top().get(), args);
+    const auto show_links_lambda = [&](const string_span& args){
+        do_show_links(node_stack.top().get(), args);
     };
-    const cmd_table conn_cmds{
-        {"", show_conns_lambda},
+    const cmd_table link_cmds{
+        {"", show_links_lambda},
         {"add", [&](const string_span& args){
-            do_add_links(system_stack.top().get(), args);
+            do_add_links(node_stack.top().get(), args);
         }},
         {"remove", [&](const string_span& args){
-            do_remove_links(system_stack.top().get(), args);
+            do_remove_links(node_stack.top().get(), args);
         }},
-        {"show", show_conns_lambda},
+        {"show", show_links_lambda},
     };
 
     const auto show_env_lambda = [&](const string_span& args){
-        do_env(system_stack.top().get(), args);
+        do_env(node_stack.top().get(), args);
     };
     const cmd_table env_cmds{
         {"", show_env_lambda},
         {"set", [&](const string_span& args){
-            do_setenv(system_stack.top().get(), args);
+            do_setenv(node_stack.top().get(), args);
         }},
         {"show", show_env_lambda},
         {"unset", [&](const string_span& args){
-            do_unsetenv(system_stack.top().get(), args);
+            do_unsetenv(node_stack.top().get(), args);
         }},
     };
 
@@ -1764,10 +1761,10 @@ auto main(int argc, const char * argv[]) -> int
             do_history(hist, hist_size, args);
         }},
         {"ports", [&](const string_span& args){
-            do_ports(system_stack.top().get().interface, args);
+            do_ports(node_stack.top().get().interface, args);
         }},
         {"cd", [&](const string_span& args){
-            do_chdir(system_stack.top().get(), args);
+            do_chdir(node_stack.top().get(), args);
         }},
         {"env", [&](const string_span& args){
             do_cmds(env_cmds, args.subspan(1u));
@@ -1775,17 +1772,17 @@ auto main(int argc, const char * argv[]) -> int
         {"instances", [&](const string_span& args){
             do_cmds(inst_cmds, args.subspan(1u));
         }},
-        {"systems", [&](const string_span& args){
-            do_cmds(sys_cmds, args.subspan(1u));
+        {"nodes", [&](const string_span& args){
+            do_cmds(node_cmds, args.subspan(1u));
         }},
         {"links", [&](const string_span& args){
-            do_cmds(conn_cmds, args.subspan(1u));
+            do_cmds(link_cmds, args.subspan(1u));
         }},
         {"push", [&](const string_span& args){
-            do_push(system_stack, args);
+            do_push(node_stack, args);
         }},
         {"pop", [&](const string_span& args){
-            do_pop(system_stack, args);
+            do_pop(node_stack, args);
         }},
         {"usage", [&](const string_span& args){
             do_usage(cmds, args);
@@ -1847,25 +1844,25 @@ auto main(int argc, const char * argv[]) -> int
         if (const auto it = cmds.find(args[0]); it != cmds.end()) {
             run(it->second, args);
         }
-        else if (const auto found = find(system_stack, args)) {
+        else if (const auto found = find(node_stack, args)) {
             const auto node_name = std::string{args[0]};
-            auto& context = system_stack.top().get();
+            auto& context = node_stack.top().get();
             const auto opts = get_instantiate_options(context);
             auto derived_name = node_name;
-            const auto tsys = update(*found, args);
-            if (tsys != *found) {
+            const auto tnode = update(*found, args);
+            if (tnode != *found) {
                 auto& system = std::get<flow::system>(context.implementation);
                 derived_name = bg_job_name(args[0]);
-                system.nodes.emplace(derived_name, tsys);
+                system.nodes.emplace(derived_name, tnode);
             }
             if (bg_requested) {
-                if (auto obj = instantiate(derived_name, tsys, opts)) {
+                if (auto obj = instantiate(derived_name, tnode, opts)) {
                     auto& ci = std::get<flow::instance::system>(instance.info);
                     ci.children.emplace(derived_name, std::move(*obj));
                 }
             }
             else {
-                foreground(derived_name, tsys, opts);
+                foreground(derived_name, tnode, opts);
             }
         }
         else if (el_parse(el.get(), ac, av) == -1) {

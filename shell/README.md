@@ -5,8 +5,8 @@ This is just a work in progress at the moment.
 
 ## Goals
 
-- [x] Having this application itself model an executable system from the outside, and model
-      a custom system from the inside.
+- [x] Having this application itself model an executable node from the outside, and model
+      a system node from the inside.
 - [x] Providing a command line oriented language interfacing the underlying functionality.
 - [ ] Having a well defined grammar.
 - [ ] Having the grammar be semantically consistent. I.e. if there is a rule for adding
@@ -54,20 +54,20 @@ From within the command line shell,
 define a system for echoing "hello world",
 instantiate it in the foreground,
 and then exit:
-1. `systems set echo_hello_world --file=echo -- echo "hello world"`
+1. `nodes set echo_hello_world --file=echo -- echo "hello world"`
 1. `echo_hello_world`
 1. `exit`
 
 ## Bigger Example
 
 ```
-systems set cat_system {}
-systems set xargs_system {}
-connections add :1@cat_system-:0@xargs_system
-connections add :2@cat_system-%/dev/null
-connections add :2@xargs_system-%/dev/null
-connections add ^stdin-:0@cat_system
-connections add :1@xargs_system-^stdout
+nodes set cat_system {}
+nodes set xargs_system {}
+links add :1@cat_system-:0@xargs_system
+links add :2@cat_system-%/dev/null
+links add :2@xargs_system-%/dev/null
+links add ^stdin-:0@cat_system
+links add :1@xargs_system-^stdout
 pop --rebase=sys
 sys &
 ```
