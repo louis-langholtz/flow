@@ -30,31 +30,7 @@ auto operator<<(std::ostream& os, const node& value)
         os << "}";
     }
     else if (const auto p = std::get_if<system>(&(value.implementation))) {
-        os << "system{";
-        auto sub_prefix = "";
-        if (!empty(p->environment)) {
-            os << sub_prefix << ".environment=" << p->environment;
-            sub_prefix = ",";
-        }
-        if (!empty(p->nodes)) {
-            os << ".nodes={";
-            auto prefix = "";
-            for (auto&& entry: p->nodes) {
-                os << prefix << "{";
-                os << entry.first;
-                os << "=";
-                os << entry.second;
-                os << "}";
-                prefix = ",";
-            }
-            os << "}";
-            sub_prefix = ",";
-        }
-        if (!empty(p->links)) {
-            os << sub_prefix << ".links={";
-            os << "}";
-        }
-        os << "}";
+        os << *p;
     }
     os << "}";
     return os;
