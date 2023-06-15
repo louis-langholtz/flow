@@ -136,7 +136,7 @@ auto wait(instance& object) -> std::vector<wait_result>
         [](instance::forked& obj){
             return wait(obj);
         },
-        [](instance::custom& obj){
+        [](instance::system& obj){
             auto results = std::vector<wait_result>{};
             for (auto&& entry: obj.children) {
                 const auto waits = wait(entry.second);

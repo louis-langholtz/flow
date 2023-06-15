@@ -1066,7 +1066,7 @@ auto do_wait(flow::instance& instance, const string_span& args) -> void
         os << usage_argument;
         os << "|<instance-name>...\n";
     };
-    auto& instances = std::get<flow::instance::custom>(instance.info).children;
+    auto& instances = std::get<flow::instance::system>(instance.info).children;
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "waits for an instance.\n";
@@ -1111,7 +1111,7 @@ auto do_show_instances(flow::instance& instance, const string_span& args)
         os << usage_argument;
         os << "\n";
     };
-    const auto& custom = std::get<flow::instance::custom>(instance.info);
+    const auto& custom = std::get<flow::instance::system>(instance.info);
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
             std::cout << "shows a listing of instantiations.\n";
@@ -1652,7 +1652,7 @@ auto main(int argc, const char * argv[]) -> int
     };
     system_stack_type system_stack;
     system_stack.push(root_system);
-    auto instance = flow::instance{flow::instance::custom{}};
+    auto instance = flow::instance{flow::instance::system{}};
     auto do_loop = true;
     auto hist_size = 100;
 
@@ -1860,7 +1860,7 @@ auto main(int argc, const char * argv[]) -> int
             }
             if (bg_requested) {
                 if (auto obj = instantiate(derived_name, tsys, opts)) {
-                    auto& ci = std::get<flow::instance::custom>(instance.info);
+                    auto& ci = std::get<flow::instance::system>(instance.info);
                     ci.children.emplace(derived_name, std::move(*obj));
                 }
             }

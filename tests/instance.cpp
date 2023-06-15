@@ -5,15 +5,15 @@
 TEST(instance, default_construction)
 {
     flow::instance obj;
-    EXPECT_TRUE(std::holds_alternative<flow::instance::custom>(obj.info));
+    EXPECT_TRUE(std::holds_alternative<flow::instance::system>(obj.info));
 }
 
 TEST(instance, default_custom_construction)
 {
-    flow::instance::custom obj;
+    flow::instance::system obj;
     EXPECT_TRUE(empty(obj.children));
     EXPECT_TRUE(empty(obj.channels));
-    EXPECT_EQ(obj.pgrp, flow::instance::custom::default_pgrp);
+    EXPECT_EQ(obj.pgrp, flow::instance::system::default_pgrp);
 }
 
 TEST(instance, default_forked_construction)

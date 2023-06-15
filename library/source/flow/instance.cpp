@@ -9,7 +9,7 @@ namespace flow {
 auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 {
     os << "instance{";
-    if (const auto p = std::get_if<instance::custom>(&value.info)) {
+    if (const auto p = std::get_if<instance::system>(&value.info)) {
         os << ",.pgrp=" << p->pgrp;
         os << ",.children={";
         for (auto&& entry: p->children) {
@@ -41,7 +41,7 @@ auto operator<<(std::ostream& os, const instance& value) -> std::ostream&
 auto pretty_print(std::ostream& os, const instance& value) -> void
 {
     os << "{\n";
-    if (const auto p = std::get_if<instance::custom>(&value.info)) {
+    if (const auto p = std::get_if<instance::system>(&value.info)) {
         os << "  .pgrp=" << p->pgrp << ",\n";
         if (p->children.empty()) {
             os << "  .children={},\n";
@@ -97,7 +97,7 @@ auto get_reference_process_id(const std::vector<node_name>& names,
     for (auto comps = names; !empty(comps); comps.pop_back()) {
         const auto& comp = comps.back();
         auto found = false;
-        if (const auto p = std::get_if<instance::custom>(info)) {
+        if (const auto p = std::get_if<instance::system>(info)) {
             for (auto&& entry: p->children) {
                 if (entry.first == comp) {
                     info = &entry.second.info;
@@ -119,7 +119,7 @@ auto get_reference_process_id(const std::vector<node_name>& names,
 auto total_descendants(const instance& object) -> std::size_t
 {
     auto result = std::size_t{0};
-    if (const auto p = std::get_if<instance::custom>(&object.info)) {
+    if (const auto p = std::get_if<instance::system>(&object.info)) {
         for (auto&& child: p->children) {
             result += total_descendants(child.second) + 1u;
         }
@@ -130,7 +130,7 @@ auto total_descendants(const instance& object) -> std::size_t
 auto total_channels(const instance& object) -> std::size_t
 {
     auto result = std::size_t{};
-    if (const auto p = std::get_if<instance::custom>(&object.info)) {
+    if (const auto p = std::get_if<instance::system>(&object.info)) {
         result += std::size(p->channels);
         for (auto&& child: p->children) {
             result += total_channels(child.second);

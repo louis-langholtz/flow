@@ -230,7 +230,7 @@ auto write_diags(instance& object, std::ostream& os,
             show_diags(os, name, p->diags);
         }
     }
-    else if (const auto p = std::get_if<instance::custom>(&object.info)) {
+    else if (const auto p = std::get_if<instance::system>(&object.info)) {
         for (auto&& entry: p->children) {
             const auto full_name = std::string{name} + "." + entry.first.get();
             write_diags(entry.second, os, full_name);
@@ -314,7 +314,7 @@ auto mkfifo(const file_endpoint& file) -> void
 }
 
 auto send_signal(signal sig,
-                 const instance::custom& info,
+                 const instance::system& info,
                  std::ostream& diags,
                  const std::string& name) -> void
 {
@@ -370,7 +370,7 @@ auto send_signal(signal sig,
         [](auto) {
             throw std::logic_error{"unsupported instance info type"};
         },
-        [&](const instance::custom& info) {
+        [&](const instance::system& info) {
             send_signal(sig, info, diags, name);
         },
         [&](const instance::forked& info) {

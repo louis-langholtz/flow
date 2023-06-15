@@ -30,13 +30,13 @@ struct instance
     /// @brief Information specific to "system" instances.
     /// @note Instantiating a system node, results in a system instance.
     /// @see flow::system.
-    struct custom
+    struct system
     {
         static constexpr auto default_pgrp = no_process_id;
 
         /// @brief Default constructor.
         /// @note This ensures compilers see class as default constructable.
-        custom() noexcept = default;
+        system() noexcept = default;
 
         /// @brief Sub-instances - or children - of this instance.
         std::map<node_name, instance> children;
@@ -60,12 +60,12 @@ struct instance
         variant<owning_process_id, wait_status> state;
     };
 
-    variant<custom, forked> info;
+    variant<system, forked> info;
 };
 
-static_assert(std::is_default_constructible_v<instance::custom>);
-static_assert(std::is_move_constructible_v<instance::custom>);
-static_assert(std::is_move_assignable_v<instance::custom>);
+static_assert(std::is_default_constructible_v<instance::system>);
+static_assert(std::is_move_constructible_v<instance::system>);
+static_assert(std::is_move_assignable_v<instance::system>);
 
 static_assert(std::is_default_constructible_v<instance::forked>);
 
