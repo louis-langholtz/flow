@@ -756,35 +756,35 @@ auto close_all_internal_ends(instance::system& instance,
 
 }
 
-auto instantiate(const node& system,
+auto instantiate(const node& node,
                  std::ostream& diags,
                  const instantiate_options& opts)
     -> instance
 {
     instance result;
-    if (const auto p = std::get_if<executable>(&system.implementation)) {
+    if (const auto p = std::get_if<executable>(&node.implementation)) {
         if (!p->file.has_filename()) {
             throw_has_no_filename(p->file, "executable file path ");
         }
         const auto all_closed =
-            confirm_closed({}, system.interface, {}, opts.ports);
+            confirm_closed({}, node.interface, {}, opts.ports);
         result.info = instance::forked{};
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();
         auto pgrp = all_closed? no_process_id: current_process_id();
-        fork_child({}, system, opts.environment, result, pgrp, {}, {}, result,
+        fork_child({}, node, opts.environment, result, pgrp, {}, {}, result,
                    diags);
     }
-    else if (const auto p = std::get_if<flow::system>(&system.implementation)) {
+    else if (const auto p = std::get_if<flow::system>(&node.implementation)) {
         const auto all_closed =
-            confirm_closed({}, system.interface,
+            confirm_closed({}, node.interface,
                            p->links, opts.ports);
         result.info = instance::system{};
         auto& info = std::get<instance::system>(result.info);
         if (!all_closed) {
             info.pgrp = current_process_id();
         }
-        for (auto&& entry: system.interface) {
+        for (auto&& entry: node.interface) {
             const auto look_for = node_endpoint{{}, entry.first};
             if (!find_index(p->links, look_for)) {
                 std::ostringstream os;
@@ -795,7 +795,7 @@ auto instantiate(const node& system,
         }
         info.channels.reserve(size(p->links));
         for (auto&& link: p->links) {
-            info.channels.push_back(make_channel(link, {}, system,
+            info.channels.push_back(make_channel(link, {}, node,
                                                  info.channels, {}, {}));
         }
         // Create all the subsystem instances before forking any!

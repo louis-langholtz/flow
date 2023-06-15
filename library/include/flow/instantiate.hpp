@@ -32,20 +32,20 @@ struct invalid_port_map: std::invalid_argument
 };
 
 /// @brief Instantiates the given node.
-/// @param[in] sys System to attempt to instantiate.
+/// @param[in] node System to attempt to instantiate.
 /// @param[out] diags Diagnostic information and warnings that don't by
 ///   themselves prevent instantiation.
-/// @throws invalid_link if a <code>link</code> specified by @sys
+/// @throws invalid_link if a <code>link</code> specified by @node
 ///   (or any of its sub-systems) is invalid such that a <code>channel</code>
 ///   cannot be made for it.
 /// @throws invalid_executable if a <code>executable</code> specified
-///   by @sys (or any of its sub-systems) is invalid such that an
+///   by @node (or any of its sub-systems) is invalid such that an
 ///   <code>instance</code> cannot be made for it.
 /// @throws invalid_port_map if a <code>port_map</code> specified
-///   by @sys (or any of its sub-systems) is invalid such that an
+///   by @node (or any of its sub-systems) is invalid such that an
 ///   <code>instance</code> cannot be made for it.
 /// @see instance.
-auto instantiate(const node& sys, std::ostream& diags,
+auto instantiate(const node& node, std::ostream& diags,
                  const instantiate_options& opts = {})
     -> instance;
 
