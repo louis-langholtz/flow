@@ -12,25 +12,18 @@ auto operator<<(std::ostream& os, const node& value)
     os << "node{";
     auto top_prefix = "";
     if (!empty(value.interface)) {
-        os << top_prefix << ".ports=" << value.interface;
+        os << top_prefix << ".interface=" << value.interface;
         top_prefix = ",";
     }
-    os << top_prefix << ".info=";
+    os << top_prefix << ".implementation=";
     if (const auto p = std::get_if<executable>(&(value.implementation))) {
-        os << "executable_info{";
-        os << ".file=" << p->file;
-        os << ",.arguments={";
-        auto prefix = "";
-        for (auto&& arg: p->arguments) {
-            os << prefix << arg;
-            prefix = ",";
-        }
-        os << "}";
-        os << ",.working_directory=" << p->working_directory;
-        os << "}";
+        os << *p;
     }
     else if (const auto p = std::get_if<system>(&(value.implementation))) {
         os << *p;
+    }
+    else {
+        os << "{}";
     }
     os << "}";
     return os;
