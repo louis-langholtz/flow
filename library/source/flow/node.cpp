@@ -30,7 +30,7 @@ auto operator<<(std::ostream& os, const node& value)
         os << "}";
     }
     else if (const auto p = std::get_if<system>(&(value.implementation))) {
-        os << "custom_info{";
+        os << "system{";
         auto sub_prefix = "";
         if (!empty(p->environment)) {
             os << sub_prefix << ".environment=" << p->environment;
@@ -73,7 +73,7 @@ auto pretty_print(std::ostream& os, const node& value) -> void
     }
     if (const auto p = std::get_if<system>(&value.implementation)) {
         os << top_prefix;
-        os << "  .info=custom{";
+        os << "  .implementation=system{";
         auto info_prefix = "";
         if (!empty(p->environment)) {
             os << info_prefix;
@@ -125,7 +125,7 @@ auto pretty_print(std::ostream& os, const node& value) -> void
     }
     else if (const auto p = std::get_if<executable>(&value.implementation)) {
         os << top_prefix;
-        os << "  .info=executable{";
+        os << "  .implementation=executable{";
         auto exe_prefix = "\n";
         if (!p->file.empty()) {
             os << exe_prefix;

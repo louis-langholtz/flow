@@ -47,8 +47,8 @@ const auto background_argument = std::string{"&"};
 constexpr auto emacs_editor_str = "emacs";
 constexpr auto vi_editor_str = "vi";
 constexpr auto assignment_token = '=';
-constexpr auto custom_begin_token = "{";
-constexpr auto custom_end_token = "}";
+constexpr auto system_begin_token = "{";
+constexpr auto system_end_token = "}";
 constexpr auto link_separator = '-';
 
 auto next_sequence() -> std::size_t
@@ -155,8 +155,8 @@ auto find(const std::map<flow::node_name, flow::node>& map,
 auto find(const system_stack_type& stack, const arguments& args)
     -> const flow::node*
 {
-    const auto& custom = std::get<flow::system>(stack.top().get().implementation);
-    for (auto&& entry: custom.nodes) {
+    const auto& system = std::get<flow::system>(stack.top().get().implementation);
+    for (auto&& entry: system.nodes) {
         const auto& sub = entry.second;
         if (const auto p = std::get_if<flow::executable>(&sub.implementation)) {
             if (p->arguments == args) {
@@ -164,7 +164,7 @@ auto find(const system_stack_type& stack, const arguments& args)
             }
         }
     }
-    if (const auto found = find(custom.nodes, args[0])) {
+    if (const auto found = find(system.nodes, args[0])) {
         return found;
     }
     return nullptr;
@@ -343,7 +343,7 @@ auto do_unset_system(flow::node& context, const string_span& args) -> void
         const auto p =
             std::get_if<flow::system>(&arg_basis.psystem->implementation);
         if (!p) {
-            std::cerr << "parent not custom?!\n";
+            std::cerr << "parent not system?!\n";
             continue;
         }
         if (size(arg_basis.remaining) > 1u) {
@@ -439,8 +439,8 @@ auto do_foreground(const flow::node& context, const string_span& args)
             return;
         }
     }
-    const auto& custom = std::get<flow::system>(context.implementation);
-    const auto found = find(custom.nodes, nargs[0].c_str());
+    const auto& system = std::get<flow::system>(context.implementation);
+    const auto found = find(system.nodes, nargs[0].c_str());
     if (!found) {
         std::cerr << "no such system as ";
         std::cerr << std::quoted(nargs[0]);
@@ -449,7 +449,7 @@ auto do_foreground(const flow::node& context, const string_span& args)
     }
     foreground(nargs[0], update(*found, nargs), {
         .ports = context.interface,
-        .environment = custom.environment
+        .environment = system.environment
     });
 }
 
@@ -502,9 +502,9 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         std::cerr << " invalid: " << ex.what();
         return;
     }
-    auto& custom = std::get<flow::system>(context.implementation);
-    auto subsystems = custom.nodes;
-    auto nh = subsystems.extract(old_name);
+    auto& system = std::get<flow::system>(context.implementation);
+    auto nodes = system.nodes;
+    auto nh = nodes.extract(old_name);
     if (nh.empty()) {
         std::cerr << "no such subsystem as ";
         std::cerr << old_name;
@@ -512,23 +512,23 @@ auto do_rename(flow::node& context, const string_span& args) -> void
         return;
     }
     nh.key() = new_name;
-    const auto result = subsystems.insert(std::move(nh));
+    const auto result = nodes.insert(std::move(nh));
     if (!result.inserted) {
         std::cerr << "unable to rename system to ";
         std::cerr << new_name;
         std::cerr << "\n";
         return;
     }
-    custom.nodes = std::move(subsystems);
+    system.nodes = std::move(nodes);
 }
 
-auto do_set_system(flow::node& context, const string_span& args) -> void
+auto do_set_node(flow::node& context, const string_span& args) -> void
 {
-    auto system = flow::node{};
+    auto node = flow::node{};
     auto parent = std::string{};
     auto names = std::vector<std::string>{};
-    auto custom = false;
-    auto executable = false;
+    auto def_system = false;
+    auto def_executable = false;
     auto file = std::string{};
     auto port_map_entries = std::vector<flow::port_map_entry>{};
     auto usage = [&](std::ostream& os){
@@ -550,12 +550,12 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
         os << "\n";
     };
     auto index = 1u;
-    const auto custom_token = std::string{custom_begin_token}
-                            + std::string{custom_end_token};
+    const auto system_token = std::string{system_begin_token}
+                            + std::string{system_end_token};
     for (auto&& arg: args.subspan(1u)) {
         ++index;
         if (arg == help_argument) {
-            std::cout << "adds a new custom or executable system definition.\n";
+            std::cout << "adds a new system or executable node definition.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -580,38 +580,38 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
             continue;
         }
         if (arg.starts_with(file_prefix)) {
-            if (custom) {
+            if (def_system) {
                 std::ostringstream os;
                 os << std::quoted(arg);
-                os << " for executable systems, not custom";
+                os << " for executable nodes, not system nodes";
                 abort(std::cerr, parent, os.str());
                 return;
             }
             file = arg.substr(file_prefix.length());
-            executable = true;
+            def_executable = true;
             continue;
         }
         if (arg == "--") {
-            if (custom) {
+            if (def_system) {
                 std::ostringstream os;
                 os << std::quoted(arg);
-                os << " for executable systems, not custom";
+                os << " for executable nodes, not system nodes";
                 abort(std::cerr, parent, os.str());
                 return;
             }
-            executable = true;
+            def_executable = true;
             // arguments after this are for flow::executable::arguments
             break;
         }
-        if (arg == custom_token) {
-            if (executable) {
+        if (arg == system_token) {
+            if (def_executable) {
                 std::ostringstream os;
                 os << std::quoted(arg);
-                os << " for custom systems, not executable";
+                os << " for system nodes, not executable nodes";
                 abort(std::cerr, parent, os.str());
                 return;
             }
-            custom = true;
+            def_system = true;
             continue;
         }
         if (arg.starts_with("-") || arg.starts_with("--")) {
@@ -648,7 +648,7 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
             base_names = flow::to_node_names(name);
         }
         catch (const flow::charset_validator_error& ex) {
-            std::cerr << "skipping invalid system name(s) ";
+            std::cerr << "skipping invalid node name(s) ";
             std::cerr << std::quoted(name);
             std::cerr << ": " << ex.what();
             std::cerr << "\n";
@@ -667,28 +667,28 @@ auto do_set_system(flow::node& context, const string_span& args) -> void
         const auto psys =
         std::get_if<flow::system>(&(name_basis.psystem->implementation));
         if (!psys) {
-            abort(std::cerr, parent, "parent not custom");
+            abort(std::cerr, parent, "parent not system?!");
             return;
         }
         const auto arg_span = args.subspan(index);
         const auto arguments = std::vector(begin(arg_span), end(arg_span));
         if (!empty(file) || !empty(arguments)) {
-            system.implementation = flow::executable{
+            node.implementation = flow::executable{
                 .file = file,
                 .arguments = arguments
             };
-            system.interface = flow::std_ports;
+            node.interface = flow::std_ports;
         }
         else {
-            system.implementation = flow::system{
+            node.implementation = flow::system{
                 .environment = psys->environment
             };
-            system.interface = name_basis.psystem->interface;
+            node.interface = name_basis.psystem->interface;
         }
         for (auto&& entry: port_map_entries) {
-            update(system.interface, entry);
+            update(node.interface, entry);
         }
-        psys->nodes.insert_or_assign(name_basis.remaining.front(), system);
+        psys->nodes.insert_or_assign(name_basis.remaining.front(), node);
     }
 }
 
@@ -713,8 +713,8 @@ auto do_show_links(const flow::node& context, const string_span& args)
             }
         }
     }
-    const auto& custom = std::get<flow::system>(context.implementation);
-    for (auto&& c: custom.links) {
+    const auto& system = std::get<flow::system>(context.implementation);
+    for (auto&& c: system.links) {
         if (const auto p = std::get_if<flow::unidirectional_link>(&c)) {
             std::cout << p->src;
             std::cout << link_separator;
@@ -788,13 +788,13 @@ auto do_remove_links(flow::node& context, const string_span& args)
             std::cerr << ": can't parse right-hand-side endpoint\n";
             continue;
         }
-        auto& custom = std::get<flow::system>(context.implementation);
+        auto& system = std::get<flow::system>(context.implementation);
         const auto conn = flow::unidirectional_link{
             lhs_endpoint, rhs_endpoint
         };
         std::cout << std::quoted(arg);
         std::cout << ": found and removed ";
-        std::cout << erase(custom.links, flow::link{conn});
+        std::cout << erase(system.links, flow::link{conn});
         std::cout << " matching link(s)\n";
         ++nconnects;
     }
@@ -833,12 +833,12 @@ auto do_remove_links(flow::node& context, const string_span& args)
         abort(std::cerr, src_str, dst_str, "can't parse destination");
         return;
     }
-    auto& custom = std::get<flow::system>(context.implementation);
+    auto& system = std::get<flow::system>(context.implementation);
     const auto key = flow::link{
         flow::unidirectional_link{src_endpoint, dst_endpoint}
     };
     std::cout << "found and removed ";
-    std::cout << erase(custom.links, key);
+    std::cout << erase(system.links, key);
     std::cout << " matching link(s)\n";
 }
 
@@ -944,7 +944,7 @@ auto do_add_links(flow::node& context, const string_span& args) -> void
         }
         const auto p = std::get_if<flow::system>(&name_basis.psystem->implementation);
         if (!p) {
-            std::cerr << "specified containing system is not custom\n";
+            std::cerr << "specified containing node is not system?!\n";
             return;
         }
         auto lhs_endpoint = flow::endpoint{};
@@ -980,7 +980,7 @@ auto print(std::ostream& os, const flow::port_map& ports) -> void
     }
 }
 
-auto do_show_systems(const flow::node& context, const string_span& args) -> void
+auto do_show_nodes(const flow::node& context, const string_span& args) -> void
 {
     constexpr auto show_info_argument = "--show-info";
     constexpr auto recursive_argument = "--recursive";
@@ -1018,8 +1018,8 @@ auto do_show_systems(const flow::node& context, const string_span& args) -> void
             continue;
         }
     }
-    const auto& custom = std::get<flow::system>(context.implementation);
-    for (auto&& entry: custom.nodes) {
+    const auto& system = std::get<flow::system>(context.implementation);
+    for (auto&& entry: system.nodes) {
         std::cout << entry.first;
         print(std::cout, entry.second.interface);
         if (show_info) {
@@ -1039,16 +1039,16 @@ auto do_show_systems(const flow::node& context, const string_span& args) -> void
             }
             else if (const auto p = std::get_if<flow::system>(&entry.second.implementation)) {
                 std::cout << ' ';
-                std::cout << custom_begin_token;
+                std::cout << system_begin_token;
                 if (show_recursive && !empty(p->nodes)) {
                     std::cout << '\n';
                     auto opts = flow::detail::indenting_ostreambuf_options{
                         .indent = 2
                     };
                     const flow::detail::indenting_ostreambuf indent{std::cout, opts};
-                    do_show_systems(entry.second, args);
+                    do_show_nodes(entry.second, args);
                 }
-                std::cout << custom_end_token;
+                std::cout << system_end_token;
             }
         }
         std::cout << '\n';
@@ -1261,7 +1261,7 @@ auto do_ports(flow::port_map& map, const string_span& args) -> void
     };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "prints the I/O ports of the current custom system.\n";
+            std::cout << "prints the I/O ports of the current system node.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -1502,7 +1502,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
     };
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "pushes specified custom system onto stack.\n";
+            std::cout << "pushes specified system node onto stack.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -1512,7 +1512,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
     }
     if (args.size() != 2u) {
         std::cerr << "invalid argument count " << args.size();
-        std::cerr << ": specify custom system and only that\n";
+        std::cerr << ": specify system node and only that\n";
         return;
     }
     auto names = std::deque<flow::node_name>();
@@ -1533,7 +1533,7 @@ auto do_push(system_stack_type& stack, const string_span& args) -> void
     }
     if (!std::holds_alternative<flow::system>(name_basis.psystem->implementation)) {
         std::cerr << std::quoted(args[1]);
-        std::cerr << ": not custom system, can only push into custom system\n";
+        std::cerr << ": not system node, can only push into system node\n";
         return;
     }
     stack.push(*name_basis.psystem);
@@ -1556,7 +1556,7 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
     auto rebase_name = std::string{};
     for (auto&& arg: args.subspan(1u)) {
         if (arg == help_argument) {
-            std::cout << "pops the current custom system off the stack.\n";
+            std::cout << "pops the current system node off the stack.\n";
             return;
         }
         if (arg == usage_argument) {
@@ -1578,7 +1578,7 @@ auto do_pop(system_stack_type& stack, const string_span& args) -> void
         return;
     }
     if (!rebase) {
-        std::cerr << "already at root custom system";
+        std::cerr << "already at root system node";
         std::cerr << " and rebase not specified.\n";
         return;
     }
@@ -1682,7 +1682,7 @@ auto main(int argc, const char * argv[]) -> int
     }
 
     const auto show_sys_lambda = [&](const string_span& args){
-        do_show_systems(system_stack.top().get(), args);
+        do_show_nodes(system_stack.top().get(), args);
     };
     const cmd_table sys_cmds{
         {"", show_sys_lambda},
@@ -1693,7 +1693,7 @@ auto main(int argc, const char * argv[]) -> int
             do_foreground(system_stack.top().get(), args);
         }},
         {"set", [&](const string_span& args){
-            do_set_system(system_stack.top().get(), args);
+            do_set_node(system_stack.top().get(), args);
         }},
         {"show", show_sys_lambda},
         {"unset", [&](const string_span& args){
@@ -1854,9 +1854,9 @@ auto main(int argc, const char * argv[]) -> int
             auto derived_name = node_name;
             const auto tsys = update(*found, args);
             if (tsys != *found) {
-                auto& custom = std::get<flow::system>(context.implementation);
+                auto& system = std::get<flow::system>(context.implementation);
                 derived_name = bg_job_name(args[0]);
-                custom.nodes.emplace(derived_name, tsys);
+                system.nodes.emplace(derived_name, tsys);
             }
             if (bg_requested) {
                 if (auto obj = instantiate(derived_name, tsys, opts)) {

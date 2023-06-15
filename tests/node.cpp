@@ -2,7 +2,7 @@
 
 #include "flow/node.hpp"
 
-TEST(node_custom, default_construction)
+TEST(node_system, default_construction)
 {
     flow::system obj;
     EXPECT_TRUE(empty(obj.environment));
@@ -10,7 +10,7 @@ TEST(node_custom, default_construction)
     EXPECT_TRUE(empty(obj.links));
 }
 
-TEST(node_custom, equality)
+TEST(node_system, equality)
 {
     flow::system obj_a, obj_b;
     obj_b.links = {flow::link{}};

@@ -105,7 +105,7 @@ auto validate(const node_endpoint& end,
             const auto& d_info = at(node.interface, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
                 std::ostringstream os;
-                os << "bad custom node endpoint io: expected=";
+                os << "bad node endpoint io: expected=";
                 os << reverse(expected_io);
                 os << ", got ";
                 os << d_info.direction;
