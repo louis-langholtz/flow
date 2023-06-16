@@ -61,13 +61,27 @@ and then exit:
 ## Bigger Example
 
 ```
+nodes set sys --closed {}
+push sys
 nodes set cat_system {}
+push cat_system
+nodes set cat_process --file=/bin/cat
+links add :0-:0@cat_process
+links add :1@cat_process-:1
+links add :2@cat_process-:2
+pop
 nodes set xargs_system {}
+push xargs_system
+nodes set xargs_process --file=/usr/bin/xargs -- xargs ls -alF
+links add :0-:0@xargs_process
+links add :1@xargs_process-:1
+links add :2@xargs_process-:2
+pop
 links add :1@cat_system-:0@xargs_system
 links add :2@cat_system-%/dev/null
 links add :2@xargs_system-%/dev/null
 links add ^stdin-:0@cat_system
 links add :1@xargs_system-^stdout
-pop --rebase=sys
+pop
 sys &
 ```

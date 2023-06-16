@@ -42,6 +42,7 @@ const auto dst_prefix = std::string{"--dst="};
 const auto rebase_prefix = std::string{"--rebase="};
 const auto help_argument = std::string{"--help"};
 const auto usage_argument = std::string{"--usage"};
+const auto closed_argument = std::string{"--closed"};
 const auto background_argument = std::string{"&"};
 
 constexpr auto emacs_editor_str = "emacs";
@@ -377,7 +378,7 @@ auto instantiate(const std::string_view& cmd,
         std::cerr << std::quoted(cmd);
         std::cerr << ": ";
         std::cerr << ex.what();
-        std::cerr << "\n";
+        std::cerr << ".\n";
     }
     return {};
 }
@@ -519,9 +520,8 @@ auto do_rename(flow::node& context, const string_span& args) -> void
     system.nodes = std::move(nodes);
 }
 
-auto do_set_node(flow::node& context, const string_span& args) -> void
+auto do_set_nodes(flow::node& context, const string_span& args) -> void
 {
-    auto node = flow::node{};
     auto parent = std::string{};
     auto names = std::vector<std::string>{};
     auto def_system = false;
@@ -535,7 +535,8 @@ auto do_set_node(flow::node& context, const string_span& args) -> void
         os << help_argument << "|" << usage_argument;
         os << "| [" << parent_prefix << "<parent-name>] ";
         os << "<name>...";
-        os << " [" << des_prefix << "<n>=<in|out>[:<comment>]...]";
+        os << " [" << closed_argument << "|";
+        os << des_prefix << "<n>=<in|out>[:<comment>]...]";
         os << " [{} | " << file_prefix << "<file>" << " -- arg...]\n";
     };
     auto abort = [](std::ostream& os,
@@ -547,17 +548,22 @@ auto do_set_node(flow::node& context, const string_span& args) -> void
         os << "\n";
     };
     auto index = 1u;
+    auto closed_node = false;
     const auto system_token = std::string{system_begin_token}
                             + std::string{system_end_token};
     for (auto&& arg: args.subspan(1u)) {
         ++index;
         if (arg == help_argument) {
-            std::cout << "adds a new system or executable node definition.\n";
+            std::cout << "creates or updates node definitions.\n";
             return;
         }
         if (arg == usage_argument) {
             usage(std::cout);
             return;
+        }
+        if (arg == closed_argument) {
+            closed_node = true;
+            continue;
         }
         if (arg.starts_with(parent_prefix)) {
             parent = arg.substr(parent_prefix.size());
@@ -669,23 +675,29 @@ auto do_set_node(flow::node& context, const string_span& args) -> void
         }
         const auto arg_span = args.subspan(index);
         const auto arguments = std::vector(begin(arg_span), end(arg_span));
-        if (!empty(file) || !empty(arguments)) {
+        const auto node_name = name_basis.remaining.front();
+        const auto found = psys->nodes.find(node_name);
+        auto node = (found == psys->nodes.end())? flow::node{}: found->second;
+        if (def_executable) {
             node.implementation = flow::executable{
                 .file = file,
                 .arguments = arguments
             };
-            node.interface = flow::std_ports;
+            node.interface = closed_node? flow::port_map{}: flow::std_ports;
         }
-        else {
+        else if (def_system) {
             node.implementation = flow::system{
                 .environment = psys->environment
             };
-            node.interface = name_basis.psystem->interface;
+            node.interface = closed_node? flow::port_map{}: flow::std_ports;
+        }
+        else if (closed_node) {
+            node.interface = flow::port_map{};
         }
         for (auto&& entry: port_map_entries) {
             update(node.interface, entry);
         }
-        psys->nodes.insert_or_assign(name_basis.remaining.front(), node);
+        psys->nodes.insert_or_assign(node_name, node);
     }
 }
 
@@ -1690,7 +1702,7 @@ auto main(int argc, const char * argv[]) -> int
             do_foreground(node_stack.top().get(), args);
         }},
         {"set", [&](const string_span& args){
-            do_set_node(node_stack.top().get(), args);
+            do_set_nodes(node_stack.top().get(), args);
         }},
         {"show", show_nodes_lambda},
         {"unset", [&](const string_span& args){
