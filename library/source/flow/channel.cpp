@@ -34,7 +34,7 @@ auto at(const port_map& ports, const port_id& key, const node_name& name)
         }
         os << " descriptor mapping: ";
         os << ex.what();
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
 }
 
@@ -100,56 +100,67 @@ auto validate(const node_endpoint& end,
               const node& node,
               io_type expected_io) -> port_type
 {
+    std::ostringstream os;
     if (end.address == node_name{}) {
+        auto prefix = "bad interface-node endpoint io: ";
         for (auto&& d: end.ports) {
             const auto& d_info = at(node.interface, d, end.address);
             if (d_info.direction != reverse(expected_io)) {
-                std::ostringstream os;
-                os << "bad node endpoint io: expected=";
+                os << prefix << "expected ";
+                prefix = "; ";
                 os << reverse(expected_io);
+                os << " for " << d;
                 os << ", got ";
                 os << d_info.direction;
-                throw invalid_link{os.str()};
             }
+        }
+        if (const auto err = os.str(); !empty(err)) {
+            throw std::invalid_argument{err};
         }
         const auto counts = count_types(end.ports);
         if (multiple_types(counts)) {
-            std::ostringstream os;
             os << "node endpoint can't specify";
             os << " both signal & descriptor ports";
-            throw invalid_link{os.str()};
+            throw std::invalid_argument{os.str()};
         }
         return get_port_type(counts);
     }
     if (const auto p = std::get_if<system>(&(node.implementation))) {
         const auto found = p->nodes.find(end.address);
         if (found == p->nodes.end()) {
-            std::ostringstream os;
-            os << "endpoint address node ";
+            os << "endpoint addressed node ";
             os << end.address;
             os << " not found";
-            throw invalid_link{os.str()};
+            throw std::invalid_argument{os.str()};
         }
         const auto& subsys = found->second;
+        auto prefix = "bad internal-node endpoint io: ";
         for (auto&& d: end.ports) {
             const auto& d_info = at(subsys.interface, d, end.address);
             if (d_info.direction != expected_io) {
-                throw invalid_link{"bad subsys endpoint io"};
+                os << prefix << "expected ";
+                prefix = "; ";
+                os << expected_io;
+                os << " for " << d;
+                os << ", got ";
+                os << d_info.direction;
             }
+        }
+        if (const auto err = os.str(); !empty(err)) {
+            throw std::invalid_argument{err};
         }
         const auto counts = count_types(end.ports);
         if (multiple_types(counts)) {
-            std::ostringstream os;
             os << "node endpoint can't specify";
             os << " both signal & descriptor ports";
-            throw invalid_link{os.str()};
+            throw std::invalid_argument{os.str()};
         }
         return get_port_type(counts);
     }
     if (const auto p = std::get_if<executable>(&(node.implementation))) {
         return port_type::unknown;
     }
-    throw std::logic_error{"validate: unknown node implementation type"};
+    throw std::logic_error{"unknown node implementation type"};
 }
 
 auto make_channel(const file_endpoint& src, const file_endpoint& dst)
@@ -165,7 +176,7 @@ auto make_channel(const file_endpoint& src, const file_endpoint& dst)
         std::ostringstream os;
         os << "can't open source file endpoint " << src.path;
         os << ": " << err;
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     auto dst_d = owning_descriptor{
         ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
@@ -176,7 +187,7 @@ auto make_channel(const file_endpoint& src, const file_endpoint& dst)
         std::ostringstream os;
         os << "can't open destination file endpoint " << dst.path;
         os << ": " << err;
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     return {std::move(src_d), std::move(dst_d)};
 }
@@ -203,7 +214,7 @@ auto make_channel(const std::set<port_id>& dset,
         os << "can't find parent link with ";
         os << look_for;
         os << " endpoint for making reference channel";
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     return {&parent_channels[*found]};
 }
@@ -218,14 +229,14 @@ auto make_channel(const user_endpoint& src, const user_endpoint& dst,
         std::ostringstream os;
         os << "can't find source link with endpoint ";
         os << src;
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     const auto dst_conn = find_index(links, dst);
     if (!dst_conn) {
         std::ostringstream os;
         os << "can't find destination link with endpoint ";
         os << dst;
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     return make_channel(std::get<pipe_channel>(channels[*src_conn]),
                         std::get<pipe_channel>(channels[*dst_conn]));
@@ -246,14 +257,14 @@ auto make_signal_channel(const node_endpoint& src,
     if (src.ports != dst.ports) {
         std::ostringstream os;
         os << "link between different signal sets not supported";
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     if (src.address != node_name{}) {
         std::ostringstream os;
         os << "link src node endpoint for signal(s) must be";
         os << " empty address; not ";
         os << src.address;
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     return signal_channel{
         to_signal_set(src.ports),
@@ -267,7 +278,8 @@ auto get_interface_ports(const node_endpoint* end)
     return (end && (end->address == node_name{}))? &(end->ports): nullptr;
 }
 
-auto make_channel(const unidirectional_link& conn,
+auto make_channel(const endpoint& src,
+                  const endpoint& dst,
                   const node_name& name,
                   const node& node,
                   const std::span<channel>& channels,
@@ -275,27 +287,25 @@ auto make_channel(const unidirectional_link& conn,
                   const std::span<channel>& parent_channels)
     -> channel
 {
-    static constexpr auto same_endpoints_error =
-        "link must have different endpoints";
-    if (conn.src == conn.dst) {
-        throw invalid_link{same_endpoints_error};
+    if (src == dst) {
+        throw std::invalid_argument{"must have different endpoints"};
     }
-    const auto src_file = std::get_if<file_endpoint>(&conn.src);
-    const auto dst_file = std::get_if<file_endpoint>(&conn.dst);
+    const auto src_file = std::get_if<file_endpoint>(&src);
+    const auto dst_file = std::get_if<file_endpoint>(&dst);
     if (src_file && dst_file) {
         return make_channel(*src_file, *dst_file);
     }
-    const auto src_user = std::get_if<user_endpoint>(&conn.src);
-    const auto dst_user = std::get_if<user_endpoint>(&conn.dst);
+    const auto src_user = std::get_if<user_endpoint>(&src);
+    const auto dst_user = std::get_if<user_endpoint>(&dst);
     if (src_user && dst_user) {
         return make_channel(*src_user, *dst_user,
                             std::get<system>(node.implementation).links,
                             channels);
     }
-    const auto src_node = std::get_if<node_endpoint>(&conn.src);
-    const auto dst_node = std::get_if<node_endpoint>(&conn.dst);
+    const auto src_node = std::get_if<node_endpoint>(&src);
+    const auto dst_node = std::get_if<node_endpoint>(&dst);
     if (!src_node && !dst_node) {
-        throw invalid_link{"at least one end must be a node"};
+        throw std::invalid_argument{"at least one end must be a node"};
     }
     const auto src_port_type = src_node
         ? validate(*src_node, node, io_type::out)
@@ -309,7 +319,7 @@ auto make_channel(const unidirectional_link& conn,
         // TODO: make a forwarding channel for this case
         std::ostringstream os;
         os << "link between enclosing node endpoints not supported";
-        throw invalid_link{os.str()};
+        throw std::invalid_argument{os.str()};
     }
     if (src_file) {
         return file_channel{src_file->path, io_type::in};
@@ -326,21 +336,36 @@ auto make_channel(const unidirectional_link& conn,
             os << "link between different port types not supported";
             os << ": src-type=" << int(src_port_type);
             os << ", dst-type=" << int(dst_port_type);
-            throw invalid_link{os.str()};
+            throw std::invalid_argument{os.str()};
         }
         if (src_port_type == port_type::signal) {
             return make_signal_channel(*src_node, *dst_node);
         }
     }
     if (src_dset) {
-        return make_channel(*src_dset, name,
-                            parent_links, parent_channels);
+        return make_channel(*src_dset, name, parent_links, parent_channels);
     }
     if (dst_dset) {
-        return make_channel(*dst_dset, name,
-                            parent_links, parent_channels);
+        return make_channel(*dst_dset, name, parent_links, parent_channels);
     }
     return pipe_channel{};
+}
+
+auto make_channel(const unidirectional_link& conn,
+                  const node_name& name,
+                  const node& node,
+                  const std::span<channel>& channels,
+                  const std::span<const link>& parent_links,
+                  const std::span<channel>& parent_channels)
+    -> channel
+{
+    try {
+        return make_channel(conn.src, conn.dst, name, node, channels,
+                            parent_links, parent_channels);
+    }
+    catch (const std::invalid_argument& ex) {
+        throw invalid_link{conn, ex.what()};
+    }
 }
 
 }
@@ -366,7 +391,7 @@ auto make_channel(const link& for_link,
         return make_channel(*p, name, node, channels,
                             parent_links, parent_channels);
     }
-    throw invalid_link{"only unidirectional_link supported"};
+    throw invalid_link{for_link, "only unidirectional_link supported"};
 }
 
 auto operator<<(std::ostream& os, const reference_channel& value)

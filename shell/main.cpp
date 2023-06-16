@@ -373,6 +373,15 @@ auto instantiate(const std::string_view& cmd,
     try {
         return {instantiate(node, std::cerr, opts)};
     }
+    catch (const flow::invalid_link& ex) {
+        std::cerr << "cannot instantiate ";
+        std::cerr << std::quoted(cmd);
+        std::cerr << ": invalid link ";
+        std::cerr << ex.value;
+        std::cerr << ": ";
+        std::cerr << ex.what();
+        std::cerr << ".\n";
+    }
     catch (const std::invalid_argument& ex) {
         std::cerr << "cannot instantiate ";
         std::cerr << std::quoted(cmd);
