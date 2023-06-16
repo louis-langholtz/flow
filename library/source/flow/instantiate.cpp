@@ -363,6 +363,8 @@ auto confirm_closed(const node_name& name,
                     const port_map& available) -> bool
 {
     auto is_internally_closed = true;
+    std::ostringstream os;
+    auto prefix = "missing link for ";
     for (auto&& entry: ports) {
         if (!requires_link(entry)) {
             continue;
@@ -378,9 +380,11 @@ auto confirm_closed(const node_name& name,
                 continue;
             }
         }
-        std::ostringstream os;
-        os << "missing link for " << look_for;
-        throw invalid_port_map{os.str()};
+        os << prefix << look_for;
+        prefix = ", ";
+    }
+    if (const auto msg = os.str(); !empty(msg)) {
+        throw invalid_port_map{msg};
     }
     return is_internally_closed;
 }
@@ -784,13 +788,18 @@ auto instantiate(const node& node,
         if (!all_closed) {
             info.pgrp = current_process_id();
         }
-        for (auto&& entry: node.interface) {
-            const auto look_for = node_endpoint{{}, entry.first};
-            if (!find_index(p->links, look_for)) {
-                std::ostringstream os;
-                os << look_for;
-                os << ": enclosing endpoint not connected";
-                throw invalid_port_map{os.str()};
+        {
+            std::ostringstream os;
+            auto prefix = "enclosing endpoint(s) not connected: ";
+            for (auto&& entry: node.interface) {
+                const auto look_for = node_endpoint{{}, entry.first};
+                if (!find_index(p->links, look_for)) {
+                    os << prefix << look_for;
+                    prefix = ", ";
+                }
+            }
+            if (const auto msg = os.str(); !empty(msg)) {
+                throw invalid_port_map{msg};
             }
         }
         info.channels.reserve(size(p->links));
