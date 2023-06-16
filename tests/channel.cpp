@@ -41,6 +41,42 @@ TEST(make_channel, with_diff_sizes)
                               pconns, {}), std::logic_error);
 }
 
+TEST(make_channel, same_ends)
+{
+    const auto the_end = node_endpoint{"a"};
+    try {
+        make_channel(unidirectional_link{the_end, the_end}, node_name{},
+                     flow::node{}, {}, {}, {});
+        FAIL() << "expected invalid_link, got none";
+    }
+    catch (const invalid_link& ex) {
+        EXPECT_EQ(ex.value, flow::link(unidirectional_link{the_end, the_end}));
+        EXPECT_EQ(std::string(ex.what()), "link must have different endpoints");
+    }
+    catch (...) {
+        FAIL() << "expected invalid_link, got other exception";
+    }
+}
+
+TEST(make_channel, end_to_nonesuch)
+{
+    const auto the_link = flow::link{unidirectional_link{
+        node_endpoint{node_name{}},
+        node_endpoint{node_name{"b"}},
+    }};
+    try {
+        make_channel(the_link, node_name{}, flow::node{}, {}, {}, {});
+        FAIL() << "expected invalid_link, got none";
+    }
+    catch (const invalid_link& ex) {
+        EXPECT_EQ(ex.value, the_link);
+        EXPECT_EQ(std::string(ex.what()), "endpoint addressed node b not found");
+    }
+    catch (...) {
+        FAIL() << "expected invalid_link, got other exception";
+    }
+}
+
 TEST(make_channel, for_subsys_to_file)
 {
     using flow::link; // disambiguate link

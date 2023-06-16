@@ -47,7 +47,14 @@ static_assert(std::is_default_constructible_v<channel>);
 
 struct invalid_link: std::invalid_argument
 {
-    using std::invalid_argument::invalid_argument;
+    invalid_link(link l, const std::string& what_arg):
+        std::invalid_argument(what_arg), value(std::move(l))
+    {}
+    invalid_link(link l, const char* what_arg):
+        std::invalid_argument(what_arg), value(std::move(l))
+    {}
+
+    link value;
 };
 
 /// @brief Makes a <code>channel</code> for a <code>link</code>.
