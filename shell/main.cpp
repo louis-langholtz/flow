@@ -15,11 +15,12 @@
 
 #include "flow/channel.hpp"
 #include "flow/charset_checker.hpp"
-#include "flow/link.hpp"
-#include "flow/reference_descriptor.hpp"
 #include "flow/environment_map.hpp"
 #include "flow/indenting_ostreambuf.hpp"
 #include "flow/instantiate.hpp"
+#include "flow/invalid_link.hpp"
+#include "flow/link.hpp"
+#include "flow/reference_descriptor.hpp"
 #include "flow/utility.hpp"
 
 namespace {

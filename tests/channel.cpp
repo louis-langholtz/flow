@@ -2,6 +2,7 @@
 
 #include "flow/channel.hpp"
 #include "flow/instance.hpp"
+#include "flow/invalid_link.hpp"
 #include "flow/node.hpp"
 
 using namespace flow;
@@ -51,7 +52,7 @@ TEST(make_channel, same_ends)
     }
     catch (const invalid_link& ex) {
         EXPECT_EQ(ex.value, flow::link(unidirectional_link{the_end, the_end}));
-        EXPECT_EQ(std::string(ex.what()), "link must have different endpoints");
+        EXPECT_EQ(std::string(ex.what()), "must have different endpoints");
     }
     catch (...) {
         FAIL() << "expected invalid_link, got other exception";

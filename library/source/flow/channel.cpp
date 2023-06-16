@@ -8,6 +8,7 @@
 
 #include "flow/channel.hpp"
 #include "flow/instance.hpp"
+#include "flow/invalid_link.hpp"
 #include "flow/node.hpp"
 #include "flow/utility.hpp"
 

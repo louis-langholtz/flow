@@ -3,7 +3,6 @@
 
 #include <ostream>
 #include <span>
-#include <stdexcept> // for std::invalid_argument
 #include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/link.hpp"
@@ -44,18 +43,6 @@ using channel = reference_channel::channel;
 // Confirm that channel is default constructable as it's expected to be.
 // This fails unless all of channel's types are complete.
 static_assert(std::is_default_constructible_v<channel>);
-
-struct invalid_link: std::invalid_argument
-{
-    invalid_link(link l, const std::string& what_arg):
-        std::invalid_argument(what_arg), value(std::move(l))
-    {}
-    invalid_link(link l, const char* what_arg):
-        std::invalid_argument(what_arg), value(std::move(l))
-    {}
-
-    link value;
-};
 
 /// @brief Makes a <code>channel</code> for a <code>link</code>.
 /// @throws invalid_link if something is invalid about
