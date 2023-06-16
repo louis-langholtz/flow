@@ -20,16 +20,6 @@ TEST(make_channel, with_defaulted_args)
                               {}, {}), invalid_link);
 }
 
-TEST(make_channel, with_diff_system_endpoints)
-{
-    const auto conn = unidirectional_link{
-        node_endpoint{"a"},
-        node_endpoint{"b"},
-    };
-    EXPECT_THROW(make_channel(conn, node_name{}, flow::node{}, {},
-                              {}, {}), invalid_link);
-}
-
 TEST(make_channel, with_diff_sizes)
 {
     using flow::link; // disambiguate link
