@@ -164,7 +164,7 @@ auto validate(const node_endpoint& end,
     throw std::logic_error{"unknown node implementation type"};
 }
 
-auto make_channel(const file_endpoint& src, const file_endpoint& dst)
+auto make_forwarding_channel(const file_endpoint& src, const file_endpoint& dst)
     -> forwarding_channel
 {
     const auto mode = 0600;
@@ -193,7 +193,7 @@ auto make_channel(const file_endpoint& src, const file_endpoint& dst)
     return {std::move(src_d), std::move(dst_d)};
 }
 
-auto make_channel(const pipe_channel& src, const pipe_channel& dst)
+auto make_forwarding_channel(const pipe_channel& src, const pipe_channel& dst)
     -> forwarding_channel
 {
     return {
@@ -202,10 +202,10 @@ auto make_channel(const pipe_channel& src, const pipe_channel& dst)
     };
 }
 
-auto make_channel(const std::set<port_id>& dset,
-                  const node_name& name,
-                  const std::span<const link>& parent_links,
-                  const std::span<channel>& parent_channels)
+auto make_reference_channel(const std::set<port_id>& dset,
+                            const node_name& name,
+                            const std::span<const link>& parent_links,
+                            const std::span<channel>& parent_channels)
     -> reference_channel
 {
     const auto look_for = node_endpoint{name, dset};
@@ -220,9 +220,10 @@ auto make_channel(const std::set<port_id>& dset,
     return {&parent_channels[*found]};
 }
 
-auto make_channel(const user_endpoint& src, const user_endpoint& dst,
-                  const std::span<const link>& links,
-                  const std::span<channel>& channels)
+auto make_forwarding_channel(const user_endpoint& src,
+                             const user_endpoint& dst,
+                             const std::span<const link>& links,
+                             const std::span<channel>& channels)
     -> forwarding_channel
 {
     const auto src_conn = find_index(links, src);
@@ -239,8 +240,8 @@ auto make_channel(const user_endpoint& src, const user_endpoint& dst,
         os << dst;
         throw std::invalid_argument{os.str()};
     }
-    return make_channel(std::get<pipe_channel>(channels[*src_conn]),
-                        std::get<pipe_channel>(channels[*dst_conn]));
+    return make_forwarding_channel(std::get<pipe_channel>(channels[*src_conn]),
+                                   std::get<pipe_channel>(channels[*dst_conn]));
 }
 
 auto to_signal_set(const std::set<port_id>& ports) -> std::set<signal>
@@ -294,14 +295,13 @@ auto make_channel(const endpoint& src,
     const auto src_file = std::get_if<file_endpoint>(&src);
     const auto dst_file = std::get_if<file_endpoint>(&dst);
     if (src_file && dst_file) {
-        return make_channel(*src_file, *dst_file);
+        return make_forwarding_channel(*src_file, *dst_file);
     }
     const auto src_user = std::get_if<user_endpoint>(&src);
     const auto dst_user = std::get_if<user_endpoint>(&dst);
     if (src_user && dst_user) {
-        return make_channel(*src_user, *dst_user,
-                            std::get<system>(node.implementation).links,
-                            channels);
+        const auto& links = std::get<system>(node.implementation).links;
+        return make_forwarding_channel(*src_user, *dst_user, links, channels);
     }
     const auto src_node = std::get_if<node_endpoint>(&src);
     const auto dst_node = std::get_if<node_endpoint>(&dst);
@@ -344,10 +344,12 @@ auto make_channel(const endpoint& src,
         }
     }
     if (src_dset) {
-        return make_channel(*src_dset, name, parent_links, parent_channels);
+        return make_reference_channel(*src_dset, name,
+                                      parent_links, parent_channels);
     }
     if (dst_dset) {
-        return make_channel(*dst_dset, name, parent_links, parent_channels);
+        return make_reference_channel(*dst_dset, name,
+                                      parent_links, parent_channels);
     }
     return pipe_channel{};
 }
