@@ -2,9 +2,8 @@
 #define link_hpp
 
 #include <array>
-#include <concepts> // for std::convertible_to
+#include <concepts> // for std::convertible_to, std::regular
 #include <ostream>
-#include <type_traits> // for std::is_default_constructible_v
 #include <utility> // for std::move
 
 #include "flow/endpoint.hpp"
@@ -27,8 +26,7 @@ constexpr auto operator==(const link& lhs, const link& rhs) noexcept -> bool
     return (lhs.a == rhs.a) && (lhs.b == rhs.b);
 }
 
-static_assert(std::is_default_constructible_v<link>);
-static_assert(std::equality_comparable<link>);
+static_assert(std::regular<link>);
 
 auto operator<<(std::ostream& os, const link& value) -> std::ostream&;
 

@@ -1,9 +1,9 @@
 #ifndef node_hpp
 #define node_hpp
 
+#include <concepts> // for std::regular.
 #include <ostream>
 #include <set>
-#include <type_traits> // for std::is_default_constructible_v
 
 #include "flow/executable.hpp"
 #include "flow/io_type.hpp"
@@ -50,18 +50,15 @@ struct node
     variant<system, executable> implementation;
 };
 
-static_assert(std::is_default_constructible_v<node>);
-static_assert(std::is_copy_constructible_v<node>);
-static_assert(std::is_move_constructible_v<node>);
-static_assert(std::is_copy_assignable_v<node>);
-static_assert(std::is_move_assignable_v<node>);
-
 inline auto operator==(const node& lhs,
                        const node& rhs) noexcept -> bool
 {
     return (lhs.interface == rhs.interface)
         && (lhs.implementation == rhs.implementation);
 }
+
+// Ensure regularity...
+static_assert(std::regular<node>);
 
 auto operator<<(std::ostream& os, const node& value)
     -> std::ostream&;

@@ -7,7 +7,7 @@
 #include <set>
 #include <string_view>
 #include <utility> // for std::move
-#include <type_traits> // for std::is_default_constructible_v
+#include <type_traits> // for std::is_constructible_v
 
 #include "flow/port_id.hpp"
 #include "flow/node_name.hpp"
@@ -32,12 +32,14 @@ struct node_endpoint
     std::set<port_id> ports;
 };
 
-// Ensure regularity in terms of special member functions supported...
-static_assert(std::is_default_constructible_v<node_endpoint>);
-static_assert(std::is_copy_constructible_v<node_endpoint>);
-static_assert(std::is_move_constructible_v<node_endpoint>);
-static_assert(std::is_copy_assignable_v<node_endpoint>);
-static_assert(std::is_move_assignable_v<node_endpoint>);
+inline auto operator==(const node_endpoint& lhs,
+                       const node_endpoint& rhs) -> bool
+{
+    return (lhs.address == rhs.address)
+        && (lhs.ports == rhs.ports);
+}
+
+static_assert(std::regular<node_endpoint>);
 
 // Ensure initializing construction supported for contained types...
 static_assert(std::is_constructible_v<node_endpoint,
@@ -50,13 +52,6 @@ static_assert(std::is_constructible_v<node_endpoint,
               node_name, reference_descriptor>);
 static_assert(std::is_constructible_v<node_endpoint,
               node_name, reference_descriptor, reference_descriptor>);
-
-inline auto operator==(const node_endpoint& lhs,
-                       const node_endpoint& rhs) -> bool
-{
-    return (lhs.address == rhs.address)
-        && (lhs.ports == rhs.ports);
-}
 
 auto operator<<(std::ostream& os, const node_endpoint& value)
     -> std::ostream&;

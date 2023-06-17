@@ -1,6 +1,7 @@
 #ifndef port_map_hpp
 #define port_map_hpp
 
+#include <concepts> // for std::regular.
 #include <map>
 #include <ostream>
 
@@ -11,6 +12,8 @@ namespace flow {
 
 using port_map = std::map<port_id, port_info>;
 using port_map_entry = port_map::value_type;
+
+static_assert(std::regular<port_map>);
 
 auto operator<<(std::ostream& os,
                 const port_map& value)

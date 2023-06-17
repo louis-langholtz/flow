@@ -2,7 +2,6 @@
 #define descriptor_id_hpp
 
 #include <ostream>
-#include <type_traits> // for std::underlying_type_t
 
 namespace flow {
 
