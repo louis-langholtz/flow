@@ -225,59 +225,7 @@ auto to_open_flags(io_type direction)
 }
 
 auto setup(const node_name& name,
-           const bidirectional_link& c,
-           file_channel& p,
-           std::ostream& diags) -> void
-{
-    const auto file_ends = make_endpoints<file_endpoint>(c);
-    assert(file_ends[0] || file_ends[1]);
-    const auto& file_end = file_ends[0]? file_ends[0]: file_ends[1];
-    const auto& other_end = file_ends[0]? c.ends[1]: c.ends[0];
-    if (const auto op = std::get_if<node_endpoint>(&other_end)) {
-        if (op->address != name) {
-            diags << name << " skipping " << c << "\n";
-            return;
-        }
-        const auto flags = to_open_flags(p.io);
-        if (!flags) {
-            if (!empty(flags.error())) {
-                diags << name << " " << c;
-                diags << ", can't get needed open flags: ";
-                diags << flags.error();
-                diags << "\n";
-                diags.flush();
-                exit(exit_failure_code);
-            }
-            close(op->ports);
-            return;
-        }
-        const auto mode = 0600;
-        const auto fd = ::open( // NOLINT(cppcoreguidelines-pro-type-vararg)
-                               file_end->path.c_str(), *flags, mode);
-        if (fd == -1) {
-            static constexpr auto mode_width = 5;
-            diags << name << " " << c;
-            diags << ", open file " << file_end->path << " with mode ";
-            diags << std::oct << std::setfill('0') << std::setw(mode_width);
-            diags << *flags;
-            diags << " failed: " << os_error_code(errno) << "\n";
-            exit(exit_failure_code);
-        }
-        for (auto&& port: op->ports) {
-            if (std::holds_alternative<reference_descriptor>(port)) {
-                if (!dup2(fd, std::get<reference_descriptor>(port))) {
-                    diags << name << " " << c;
-                    diags << ", dup2(" << fd << "," << port << ") failed: ";
-                    diags << os_error_code(errno) << "\n";
-                    exit(exit_failure_code);
-                }
-            }
-        }
-    }
-}
-
-auto setup(const node_name& name,
-           const unidirectional_link& conn,
+           const link& conn,
            file_channel& chan,
            std::ostream& diags) -> void
 {
@@ -327,19 +275,6 @@ auto setup(const node_name& name,
                 }
             }
         }
-    }
-}
-
-auto setup(const node_name& name,
-           const link& conn,
-           file_channel& fchan,
-           std::ostream& diags) -> void
-{
-    if (const auto p = std::get_if<unidirectional_link>(&conn)) {
-        return setup(name, *p, fchan, diags);
-    }
-    if (const auto p = std::get_if<bidirectional_link>(&conn)) {
-        return setup(name, *p, fchan, diags);
     }
 }
 
@@ -650,7 +585,7 @@ auto fork_child(const node_name& name,
         }
         make_substitutions(argv);
         // Deal with:
-        // unidirectional_link{
+        // link{
         //   node_endpoint{ls_process_name, flow::reference_descriptor{1}},
         //   node_endpoint{cat_process_name, flow::reference_descriptor{0}}
         // }

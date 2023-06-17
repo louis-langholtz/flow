@@ -5,76 +5,37 @@
 #include <concepts> // for std::convertible_to
 #include <ostream>
 #include <type_traits> // for std::is_default_constructible_v
+#include <utility> // for std::move
 
 #include "flow/endpoint.hpp"
-#include "flow/variant.hpp"
 
 namespace flow {
 
-struct unidirectional_link {
-    endpoint src;
-    endpoint dst;
+struct link
+{
+    link() = default;
+
+    template <std::convertible_to<endpoint> A, std::convertible_to<endpoint> B>
+    link(A a_, B b_): a(std::move(a_)), b(std::move(b_)) {}
+
+    endpoint a;
+    endpoint b;
 };
 
-constexpr auto operator==(const unidirectional_link& lhs,
-                          const unidirectional_link& rhs) noexcept
-    -> bool
+constexpr auto operator==(const link& lhs, const link& rhs) noexcept -> bool
 {
-    return (lhs.src == rhs.src) && (lhs.dst == rhs.dst);
+    return (lhs.a == rhs.a) && (lhs.b == rhs.b);
 }
-
-auto operator<<(std::ostream& os, const unidirectional_link& value)
-    -> std::ostream&;
-
-struct bidirectional_link {
-    std::array<endpoint, 2u> ends;
-};
-
-constexpr auto operator==(const bidirectional_link& lhs,
-                          const bidirectional_link& rhs) noexcept
-    -> bool
-{
-    return lhs.ends == rhs.ends;
-}
-
-auto operator<<(std::ostream& os, const bidirectional_link& value)
-    -> std::ostream&;
-
-using link = variant<
-    unidirectional_link,
-    bidirectional_link
->;
 
 static_assert(std::is_default_constructible_v<link>);
 static_assert(std::equality_comparable<link>);
 
-template <std::convertible_to<endpoint> T>
-auto make_endpoints(const unidirectional_link& c)
-    -> std::array<const T*, 2u>
-{
-    return {std::get_if<T>(&c.src), std::get_if<T>(&c.dst)};
-}
-
-template <std::convertible_to<endpoint> T>
-auto make_endpoints(const bidirectional_link& c)
-    -> std::array<const T*, 2u>
-{
-    return {
-        std::get_if<T>(&c.ends[0]), // NOLINT(readability-container-data-pointer)
-        std::get_if<T>(&c.ends[1])
-    };
-}
+auto operator<<(std::ostream& os, const link& value) -> std::ostream&;
 
 template <std::convertible_to<endpoint> T>
 auto make_endpoints(const link& c) -> std::array<const T*, 2u>
 {
-    if (const auto p = std::get_if<unidirectional_link>(&c)) {
-        return make_endpoints<T>(*p);
-    }
-    if (const auto p = std::get_if<bidirectional_link>(&c)) {
-        return make_endpoints<T>(*p);
-    }
-    return std::array<const T*, 2u>{nullptr, nullptr};
+    return {std::get_if<T>(&c.a), std::get_if<T>(&c.b)};
 }
 
 }

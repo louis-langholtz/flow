@@ -733,13 +733,11 @@ auto do_show_links(const flow::node& context, const string_span& args)
         }
     }
     const auto& system = std::get<flow::system>(context.implementation);
-    for (auto&& c: system.links) {
-        if (const auto p = std::get_if<flow::unidirectional_link>(&c)) {
-            std::cout << p->src;
-            std::cout << link_separator;
-            std::cout << p->dst;
-            std::cout << '\n';
-        }
+    for (auto&& link: system.links) {
+        std::cout << link.a;
+        std::cout << link_separator;
+        std::cout << link.b;
+        std::cout << '\n';
     }
 }
 
@@ -808,7 +806,7 @@ auto do_remove_links(flow::node& context, const string_span& args)
             continue;
         }
         auto& system = std::get<flow::system>(context.implementation);
-        const auto link = flow::unidirectional_link{
+        const auto link = flow::link{
             lhs_endpoint, rhs_endpoint
         };
         std::cout << std::quoted(arg);
@@ -853,9 +851,7 @@ auto do_remove_links(flow::node& context, const string_span& args)
         return;
     }
     auto& system = std::get<flow::system>(context.implementation);
-    const auto key = flow::link{
-        flow::unidirectional_link{src_endpoint, dst_endpoint}
-    };
+    const auto key = flow::link{src_endpoint, dst_endpoint};
     std::cout << "found and removed ";
     std::cout << erase(system.links, key);
     std::cout << " matching link(s)\n";
@@ -978,9 +974,7 @@ auto do_add_links(flow::node& context, const string_span& args) -> void
             std::cerr << ": can't parse right-hand-side endpoint\n";
             continue;
         }
-        p->links.emplace_back(flow::unidirectional_link{
-            lhs_endpoint, rhs_endpoint
-        });
+        p->links.emplace_back(lhs_endpoint, rhs_endpoint);
     }
 }
 
