@@ -1,6 +1,7 @@
 #ifndef endpoint_hpp
 #define endpoint_hpp
 
+#include <concepts> // for std::regular.
 #include <istream>
 
 #include "flow/file_endpoint.hpp"
@@ -22,6 +23,9 @@ using endpoint = variant<
     node_endpoint,
     file_endpoint
 >;
+
+// Ensure regularity...
+static_assert(std::regular<endpoint>);
 
 auto operator>>(std::istream& is, endpoint& value) -> std::istream&;
 

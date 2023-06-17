@@ -1,10 +1,10 @@
 #ifndef executable_hpp
 #define executable_hpp
 
+#include <concepts> // for std::regular.
 #include <filesystem>
 #include <ostream>
 #include <string>
-#include <type_traits> // for std::is_default_constructible_v
 #include <vector>
 
 namespace flow {
@@ -26,12 +26,6 @@ struct executable
     std::filesystem::path working_directory;
 };
 
-static_assert(std::is_default_constructible_v<executable>);
-static_assert(std::is_copy_constructible_v<executable>);
-static_assert(std::is_move_constructible_v<executable>);
-static_assert(std::is_copy_assignable_v<executable>);
-static_assert(std::is_move_assignable_v<executable>);
-
 inline auto operator==(const executable& lhs,
                        const executable& rhs) noexcept -> bool
 {
@@ -39,6 +33,8 @@ inline auto operator==(const executable& lhs,
         && (lhs.arguments == rhs.arguments)
         && (lhs.working_directory == rhs.working_directory);
 }
+
+static_assert(std::regular<executable>);
 
 auto operator<<(std::ostream& os, const executable& value) -> std::ostream&;
 

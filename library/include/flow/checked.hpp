@@ -2,7 +2,7 @@
 #define checked_hpp
 
 #include <string>
-#include <type_traits>
+#include <type_traits> // for std::is_default_constructible_v
 #include <utility> // for std::exchange
 
 namespace flow::detail {

@@ -1,9 +1,9 @@
 #ifndef system_hpp
 #define system_hpp
 
+#include <concepts> // for std::regular.
 #include <map>
 #include <ostream>
-#include <type_traits> // for std::is_default_constructible_v
 #include <vector>
 
 #include "flow/environment_map.hpp"
@@ -31,13 +31,9 @@ struct system
     std::vector<link> links;
 };
 
-static_assert(std::is_default_constructible_v<system>);
-static_assert(std::is_copy_constructible_v<system>);
-static_assert(std::is_move_constructible_v<system>);
-static_assert(std::is_copy_assignable_v<system>);
-static_assert(std::is_move_assignable_v<system>);
-
 auto operator==(const system& lhs, const system& rhs) noexcept -> bool;
+
+static_assert(std::regular<system>);
 
 auto operator<<(std::ostream& os, const system& value) -> std::ostream&;
 

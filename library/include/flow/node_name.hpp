@@ -1,7 +1,7 @@
 #ifndef node_name_hpp
 #define node_name_hpp
 
-#include <concepts>
+#include <concepts> // for std::regular.
 #include <deque>
 #include <ostream>
 #include <string>
@@ -25,6 +25,8 @@ struct node_name_checker: detail::allowed_chars_checker<detail::name_charset>
 ///   thrown otherwise.
 /// @see node.
 using node_name = detail::checked<std::string, node_name_checker>;
+
+static_assert(std::regular<node_name>);
 
 auto operator<<(std::ostream& os, const node_name& name) -> std::ostream&;
 

@@ -1,6 +1,7 @@
 #ifndef environment_map_hpp
 #define environment_map_hpp
 
+#include <concepts> // for std::regular.
 #include <map>
 #include <ostream>
 #include <string>
@@ -13,6 +14,8 @@
 namespace flow {
 
 using environment_map = std::map<env_name, env_value>;
+
+static_assert(std::regular<environment_map>);
 
 auto operator<<(std::ostream& os, const environment_map& value)
     -> std::ostream&;

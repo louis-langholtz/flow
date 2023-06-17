@@ -1,6 +1,7 @@
 #ifndef env_name_hpp
 #define env_name_hpp
 
+#include <concepts> // for std::regular.
 #include <string>
 
 #include "flow/checked.hpp"
@@ -18,11 +19,7 @@ struct env_name_checker:
 ///   type with one or more invalid characters.
 using env_name = detail::checked<std::string, env_name_checker>;
 
-static_assert(std::is_nothrow_default_constructible_v<env_name>);
-static_assert(std::is_nothrow_move_constructible_v<env_name>);
-static_assert(std::is_nothrow_move_assignable_v<env_name>);
-static_assert(std::is_copy_constructible_v<env_name>);
-static_assert(std::is_copy_assignable_v<env_name>);
+static_assert(std::regular<env_name>);
 
 }
 

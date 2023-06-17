@@ -1,6 +1,7 @@
 #ifndef user_endpoint_hpp
 #define user_endpoint_hpp
 
+#include <concepts> // for std::regular.
 #include <istream>
 #include <ostream>
 #include <string>
@@ -30,6 +31,8 @@ struct user_endpoint
         return name < other.name;
     }
 };
+
+static_assert(std::regular<user_endpoint>);
 
 auto operator<<(std::ostream& os, const user_endpoint& value)
     -> std::ostream&;

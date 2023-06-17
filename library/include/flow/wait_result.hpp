@@ -1,6 +1,7 @@
 #ifndef wait_result_hpp
 #define wait_result_hpp
 
+#include <concepts> // for std::regular.
 #include <ostream>
 #include <vector>
 
@@ -57,6 +58,8 @@ using wait_result = variant<
     error_wait_result,
     info_wait_result
 >;
+
+static_assert(std::regular<wait_result>);
 
 struct instance;
 
