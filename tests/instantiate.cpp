@@ -51,9 +51,6 @@ TEST(instantiate, ls_system)
 {
     using flow::system;
     using flow::link;
-    const auto input_file_endpoint = file_endpoint{"flow.in"};
-    const auto output_file_endpoint = file_endpoint{"flow.out"};
-    touch(output_file_endpoint);
     system system;
 
     const auto cat_process_name = node_name{"cat"};
