@@ -50,6 +50,7 @@ TEST(instantiate, empty_executable)
 TEST(instantiate, ls_system)
 {
     using flow::system;
+    using flow::link;
     const auto input_file_endpoint = file_endpoint{"flow.in"};
     const auto output_file_endpoint = file_endpoint{"flow.out"};
     touch(output_file_endpoint);
@@ -67,24 +68,24 @@ TEST(instantiate, ls_system)
     xargs_executable.arguments = {"xargs", "ls", "-alF"};
     system.nodes.emplace(xargs_process_name, xargs_executable);
 
-    const auto cat_stdin = unidirectional_link{
+    const auto cat_stdin = link{
         user_endpoint{},
         node_endpoint{cat_process_name, reference_descriptor{0}}
     };
-    const auto xargs_stdout = unidirectional_link{
+    const auto xargs_stdout = link{
         node_endpoint{xargs_process_name, reference_descriptor{1}},
         user_endpoint{},
     };
     system.links.push_back(cat_stdin);
-    system.links.push_back(unidirectional_link{
+    system.links.push_back(link{
         node_endpoint{cat_process_name, reference_descriptor{1}},
         node_endpoint{xargs_process_name, reference_descriptor{0}},
     });
-    system.links.push_back(unidirectional_link{
+    system.links.push_back(link{
         node_endpoint{cat_process_name, reference_descriptor{2}},
         file_endpoint::dev_null,
     });
-    system.links.push_back(unidirectional_link{
+    system.links.push_back(link{
         node_endpoint{xargs_process_name, reference_descriptor{2}},
         file_endpoint::dev_null,
     });
@@ -189,16 +190,17 @@ TEST(instantiate, ls_system)
 TEST(instantiate, ls_outerr_system)
 {
     using flow::system;
+    using flow::link;
     const auto ls_exe_name = node_name{"ls_exe"};
     const auto ls_exe_node = executable{
         .file = "/bin/ls",
         .arguments = {"ls", no_such_path, "/"},
     };
-    const auto ls_in = unidirectional_link{
+    const auto ls_in = link{
         file_endpoint::dev_null,
         node_endpoint{ls_exe_name, stdin_id},
     };
-    const auto ls_outerr = unidirectional_link{
+    const auto ls_outerr = link{
         node_endpoint{ls_exe_name, stdout_id, stderr_id},
         user_endpoint{},
     };
@@ -251,11 +253,12 @@ TEST(instantiate, ls_outerr_system)
 TEST(instantiate, env_system)
 {
     using flow::system;
+    using flow::link;
     const auto base_env_name = env_name{"base"};
     const auto base_env_val = env_value{"base value"};
     const auto derived_env_val = env_value{"derived value"};
     const auto env_exe_name = node_name{"env_exe"};
-    const auto env_out = unidirectional_link{
+    const auto env_out = link{
         node_endpoint{env_exe_name, stdout_id},
         user_endpoint{},
     };
@@ -341,8 +344,9 @@ TEST(instantiate, env_system)
 
 TEST(instantiate, lsof_system)
 {
+    using flow::link;
     const auto lsof_name = node_name{"lsof"};
-    const auto lsof_stdout = unidirectional_link{
+    const auto lsof_stdout = link{
         node_endpoint{lsof_name, stdout_id}, user_endpoint{},
     };
 
@@ -353,11 +357,11 @@ TEST(instantiate, lsof_system)
         .arguments = {"lsof", "-p", "$$"},
         .working_directory = "/usr/local",
     }, std_ports});
-    custom.links.push_back(unidirectional_link{
+    custom.links.push_back(link{
         file_endpoint::dev_null, node_endpoint{lsof_name, stdin_id},
     });
     custom.links.push_back(lsof_stdout);
-    custom.links.push_back(unidirectional_link{
+    custom.links.push_back(link{
         node_endpoint{lsof_name, stderr_id}, file_endpoint::dev_null,
     });
     {
@@ -432,15 +436,15 @@ TEST(instantiate, nested_system)
                         }}
                     },
                     .links = {
-                        unidirectional_link{
+                        {
                             node_endpoint{node_name{}, reference_descriptor{0}},
                             node_endpoint{cat_process_name, reference_descriptor{0}}
                         },
-                        unidirectional_link{
+                        {
                             node_endpoint{cat_process_name, reference_descriptor{1}},
                             node_endpoint{node_name{}, reference_descriptor{1}},
                         },
-                        unidirectional_link{
+                        {
                             node_endpoint{cat_process_name, reference_descriptor{2}},
                             node_endpoint{node_name{}, reference_descriptor{2}},
                         }
@@ -456,15 +460,15 @@ TEST(instantiate, nested_system)
                         }}
                     },
                     .links = {
-                        unidirectional_link{
+                        {
                             node_endpoint{node_name{}, reference_descriptor{0}},
                             node_endpoint{xargs_process_name, reference_descriptor{0}}
                         },
-                        unidirectional_link{
+                        {
                             node_endpoint{xargs_process_name, reference_descriptor{1}},
                             node_endpoint{node_name{}, reference_descriptor{1}},
                         },
-                        unidirectional_link{
+                        {
                             node_endpoint{xargs_process_name, reference_descriptor{2}},
                             node_endpoint{node_name{}, reference_descriptor{2}},
                         }
@@ -473,23 +477,23 @@ TEST(instantiate, nested_system)
             }
         },
         .links = {
-            unidirectional_link{
+            {
                 user_endpoint{},
                 node_endpoint{cat_system_name, reference_descriptor{0}},
             },
-            unidirectional_link{
+            {
                 node_endpoint{cat_system_name, reference_descriptor{1}},
                 node_endpoint{xargs_system_name, reference_descriptor{0}},
             },
-            unidirectional_link{
+            {
                 node_endpoint{cat_system_name, reference_descriptor{2}},
                 file_endpoint::dev_null,
             },
-            unidirectional_link{
+            {
                 node_endpoint{xargs_system_name, reference_descriptor{2}},
                 file_endpoint::dev_null,
             },
-            unidirectional_link{
+            {
                 node_endpoint{xargs_system_name, reference_descriptor{1}},
                 user_endpoint{},
             }
@@ -584,7 +588,7 @@ TEST(instantiate, bin_dd)
                 },
             }
         }}},
-        .links = {unidirectional_link{
+        .links = {{
             node_endpoint{exe_name, reference_descriptor{2}},
             user_endpoint{},
         }},

@@ -19,9 +19,8 @@ constexpr auto default_pipe_read_buffer_size = 4096u;
 
 /// @brief POSIX pipe.
 /// @note This class is movable but not copyable.
-/// @note Instances of this type are made for
-/// <code>unidirectional_link</code> instances.
-/// @see unidirectional_link.
+/// @note Instances of this type are made for <code>link</code> instances.
+/// @see link.
 struct pipe_channel
 {
     enum class io: unsigned {read = 0u, write = 1u};

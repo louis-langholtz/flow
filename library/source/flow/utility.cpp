@@ -250,7 +250,7 @@ auto find_index(const std::span<const link>& links,
     return {};
 }
 
-auto is_matching(const unidirectional_link& link,
+auto is_matching(const link& link,
                  const node_endpoint& look_for) -> bool
 {
     const auto ends = make_endpoints<node_endpoint>(link);
@@ -277,16 +277,10 @@ auto find_index(const std::span<const link>& links,
     const auto last = std::end(links);
     const auto iter = std::find_if(first, last, [&look_for](const auto& c){
         const auto look_sys = std::get_if<node_endpoint>(&look_for);
-        if (const auto p = std::get_if<unidirectional_link>(&c)) {
-            if (look_sys) {
-                return is_matching(*p, *look_sys);
-            }
-            return (p->src == look_for) || (p->dst == look_for);
+        if (look_sys) {
+            return is_matching(c, *look_sys);
         }
-        if (const auto p = std::get_if<bidirectional_link>(&c)) {
-            return (p->ends[0] == look_for) || (p->ends[1] == look_for);
-        }
-        return false;
+        return (c.a == look_for) || (c.b == look_for);
     });
     if (iter != last) {
         return {std::distance(first, iter)};

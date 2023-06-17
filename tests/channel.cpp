@@ -24,7 +24,7 @@ TEST(make_channel, with_diff_sizes)
 {
     using flow::link; // disambiguate link
     const auto pconns = std::vector<link>{
-        unidirectional_link{user_endpoint{}, node_endpoint{
+        link{user_endpoint{}, node_endpoint{
             {}, {reference_descriptor{1}}
         }}
     };
@@ -34,14 +34,15 @@ TEST(make_channel, with_diff_sizes)
 
 TEST(make_channel, same_ends)
 {
+    using flow::link; // disambiguate link
     const auto the_end = node_endpoint{"a"};
     try {
-        make_channel(unidirectional_link{the_end, the_end}, node_name{},
+        make_channel(link{the_end, the_end}, node_name{},
                      port_map{}, {}, {}, {}, {});
         FAIL() << "expected invalid_link, got none";
     }
     catch (const invalid_link& ex) {
-        EXPECT_EQ(ex.value, flow::link(unidirectional_link{the_end, the_end}));
+        EXPECT_EQ(ex.value, flow::link(the_end, the_end));
         EXPECT_EQ(std::string(ex.what()), "must have different endpoints");
     }
     catch (...) {
@@ -51,10 +52,10 @@ TEST(make_channel, same_ends)
 
 TEST(make_channel, end_to_nonesuch)
 {
-    const auto the_link = flow::link{unidirectional_link{
+    const auto the_link = flow::link{
         node_endpoint{node_name{}},
-        node_endpoint{node_name{"b"}},
-    }};
+        node_endpoint{node_name{"b"}}
+    };
     try {
         make_channel(the_link, node_name{}, port_map{}, {}, {}, {}, {});
         FAIL() << "expected invalid_link, got none";
@@ -78,7 +79,7 @@ TEST(make_channel, for_subsys_to_file)
             {"subsys", flow::node{}},
         }
     };
-    const auto conn = unidirectional_link{
+    const auto conn = link{
         node_endpoint{"subsys"},
         file_endpoint{"file"},
     };
@@ -99,7 +100,7 @@ TEST(make_channel, for_file_to_subsys)
             {"subsys", flow::node{}},
         }
     };
-    const auto conn = unidirectional_link{
+    const auto conn = link{
         file_endpoint{"file"},
         node_endpoint{"subsys"},
     };
@@ -121,7 +122,7 @@ TEST(make_channel, for_default_subsys_to_default_subsys)
             {"subsys_b", flow::node{}},
         }
     };
-    const auto conn = unidirectional_link{
+    const auto conn = link{
         node_endpoint{"subsys_a"},
         node_endpoint{"subsys_b"},
     };
@@ -143,12 +144,12 @@ TEST(make_channel, for_exe_subsys_to_sys)
         }
     };
     ASSERT_FALSE(empty(std_ports));
-    const auto conn = unidirectional_link{
+    const auto conn = link{
         node_endpoint{"subsys_a", {reference_descriptor{1}}},
         node_endpoint{{}, {reference_descriptor{1}}},
     };
     const auto pconns = std::vector<link>{
-        unidirectional_link{user_endpoint{}, node_endpoint{
+        link{user_endpoint{}, node_endpoint{
             {}, {reference_descriptor{1}}
         }}
     };
@@ -176,7 +177,7 @@ TEST(make_channel, signal_channel)
         }}}
     };
     const auto interface = port_map{{sig, {"", io_type::in}}};
-    auto conn = flow::unidirectional_link{
+    auto conn = flow::link{
         node_endpoint{{}, {sig}},
         node_endpoint{exe_name, {sig}},
     };

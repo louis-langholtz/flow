@@ -45,9 +45,8 @@ auto node_pipeline::append(const node& sys) -> node_pipeline&
             if (empty(sys_inputs)) {
                 throw std::invalid_argument{"current node must have inputs"};
             }
-            info.links.emplace_back(unidirectional_link{
-                src_end, node_endpoint{sys_name, sys_inputs},
-            });
+            info.links.emplace_back(src_end,
+                                    node_endpoint{sys_name, sys_inputs});
         }
     }
     else {
@@ -60,10 +59,8 @@ auto node_pipeline::append(const node& sys) -> node_pipeline&
         if (empty(sys_inputs)) {
             throw std::invalid_argument{"current node must have inputs"};
         }
-        info.links.emplace_back(unidirectional_link{
-            node_endpoint{last_name, std::move(last_outputs)},
-            node_endpoint{sys_name, sys_inputs},
-        });
+        info.links.emplace_back(node_endpoint{last_name, std::move(last_outputs)},
+                                node_endpoint{sys_name, sys_inputs});
     }
     info.nodes.emplace(sys_name, sys);
     return *this;
@@ -98,9 +95,8 @@ auto node_pipeline::append(const endpoint& end) -> node_pipeline&
         if (empty(last_outputs)) {
             throw std::invalid_argument{"last node must have outputs"};
         }
-        info.links.emplace_back(unidirectional_link{
-            node_endpoint{last_name, std::move(last_outputs)}, dst_end,
-        });
+        info.links.emplace_back(node_endpoint{last_name, std::move(last_outputs)},
+                                dst_end);
     }
     return *this;
 }

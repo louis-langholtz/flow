@@ -134,22 +134,16 @@ auto link_with_user(const node_name& name, const port_map& ports)
         const auto user_ep_name = name.get() + ":" + to_string(entry.first);
         switch (entry.second.direction) {
         case io_type::in:
-            result.emplace_back(unidirectional_link{
-                user_endpoint{user_ep_name},
-                node_endpoint{name, entry.first},
-            });
+            result.emplace_back(user_endpoint{user_ep_name},
+                                node_endpoint{name, entry.first});
             break;
         case io_type::out:
-            result.emplace_back(unidirectional_link{
-                node_endpoint{name, entry.first},
-                user_endpoint{user_ep_name},
-            });
+            result.emplace_back(node_endpoint{name, entry.first},
+                                user_endpoint{user_ep_name});
             break;
         case io_type::bidir:
-            result.emplace_back(bidirectional_link{
-                node_endpoint{name, entry.first},
-                user_endpoint{user_ep_name},
-            });
+            result.emplace_back(node_endpoint{name, entry.first},
+                                user_endpoint{user_ep_name});
             break;
         case io_type::none:
         default: {

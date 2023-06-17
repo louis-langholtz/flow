@@ -382,24 +382,6 @@ auto make_channel(const endpoint& src,
     return pipe_channel{};
 }
 
-auto make_channel(const unidirectional_link& conn,
-                  const node_name& name,
-                  const port_map& interface,
-                  const system& implementation,
-                  const std::span<channel>& channels,
-                  const std::span<const link>& parent_links,
-                  const std::span<channel>& parent_channels)
-    -> channel
-{
-    try {
-        return make_channel(conn.src, conn.dst, name, interface, implementation,
-                            channels, parent_links, parent_channels);
-    }
-    catch (const std::invalid_argument& ex) {
-        throw invalid_link{conn, ex.what()};
-    }
-}
-
 }
 
 auto make_channel(const link& for_link,
@@ -420,11 +402,14 @@ auto make_channel(const link& for_link,
         os << ")";
         throw std::logic_error{os.str()};
     }
-    if (const auto p = std::get_if<unidirectional_link>(&for_link)) {
-        return make_channel(*p, name, interface, implementation, channels,
-                            parent_links, parent_channels);
+    try {
+        return make_channel(for_link.a, for_link.b,
+                            name, interface, implementation,
+                            channels, parent_links, parent_channels);
     }
-    throw invalid_link{for_link, "only unidirectional_link supported"};
+    catch (std::invalid_argument& ex) {
+        throw invalid_link{for_link, ex.what()};
+    }
 }
 
 }
