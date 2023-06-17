@@ -329,7 +329,8 @@ auto make_channel(const endpoint& src,
     const auto src_user = std::get_if<user_endpoint>(&src);
     const auto dst_user = std::get_if<user_endpoint>(&dst);
     if (src_user && dst_user) {
-        return make_forwarding_channel(*src_user, *dst_user, implementation.links, channels);
+        return make_forwarding_channel(*src_user, *dst_user,
+                                       implementation.links, channels);
     }
     const auto src_node = std::get_if<node_endpoint>(&src);
     const auto dst_node = std::get_if<node_endpoint>(&dst);
