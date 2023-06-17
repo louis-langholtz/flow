@@ -14,11 +14,27 @@
 
 namespace flow {
 
+auto operator<<(std::ostream& os, const reference_channel& value)
+    -> std::ostream&
+{
+    os << "reference_channel{";
+    os << value.other;
+    if (value.other) {
+        os << ", " << *value.other;
+    }
+    os << "}";
+    return os;
+}
+
+}
+
+namespace flow::detail {
+
 namespace {
 
 enum class port_type { unknown, descriptor, signal };
 
-auto at(const port_map& ports, const port_id& key, const node_name& name)
+auto at(const port_map& ports, const port_id& key)
     -> const port_info&
 {
     try {
@@ -26,14 +42,9 @@ auto at(const port_map& ports, const port_id& key, const node_name& name)
     }
     catch (const std::out_of_range& ex) {
         std::ostringstream os;
-        os << "can't find " << key << " in ";
-        if (name == node_name{}) {
-            os << "system's";
-        }
-        else {
-            os << name << " node's";
-        }
-        os << " descriptor mapping: ";
+        os << "can't find ";
+        os << key;
+        os << " in descriptor mapping: ";
         os << ex.what();
         throw std::invalid_argument{os.str()};
     }
@@ -97,71 +108,88 @@ auto get_port_type(const port_size_array& counts) -> port_type
     return port_type::unknown;
 }
 
-auto validate(const node_endpoint& end,
-              const node& node,
+auto validate(const std::set<port_id>& ports,
+              const port_map& interface,
               io_type expected_io) -> port_type
 {
     std::ostringstream os;
-    if (end.address == node_name{}) {
-        auto prefix = "bad interface-node endpoint io: ";
-        for (auto&& d: end.ports) {
-            const auto& d_info = at(node.interface, d, end.address);
-            if (d_info.direction != reverse(expected_io)) {
-                os << prefix << "expected ";
-                prefix = "; ";
-                os << reverse(expected_io);
-                os << " for " << d;
-                os << ", got ";
-                os << d_info.direction;
-            }
+    auto prefix = "bad interface-node endpoint io: ";
+    for (auto&& d: ports) {
+        const auto& d_info = at(interface, d);
+        if (d_info.direction != expected_io) {
+            os << prefix << "expected ";
+            prefix = "; ";
+            os << expected_io;
+            os << " for " << d;
+            os << ", got ";
+            os << d_info.direction;
         }
-        if (const auto err = os.str(); !empty(err)) {
-            throw std::invalid_argument{err};
-        }
-        const auto counts = count_types(end.ports);
-        if (multiple_types(counts)) {
-            os << "node endpoint can't specify";
-            os << " both signal & descriptor ports";
-            throw std::invalid_argument{os.str()};
-        }
-        return get_port_type(counts);
     }
-    if (const auto p = std::get_if<system>(&(node.implementation))) {
-        const auto found = p->nodes.find(end.address);
-        if (found == p->nodes.end()) {
-            os << "endpoint addressed node ";
-            os << end.address;
-            os << " not found";
-            throw std::invalid_argument{os.str()};
-        }
-        const auto& subsys = found->second;
-        auto prefix = "bad internal-node endpoint io: ";
-        for (auto&& d: end.ports) {
-            const auto& d_info = at(subsys.interface, d, end.address);
-            if (d_info.direction != expected_io) {
-                os << prefix << "expected ";
-                prefix = "; ";
-                os << expected_io;
-                os << " for " << d;
-                os << ", got ";
-                os << d_info.direction;
-            }
-        }
-        if (const auto err = os.str(); !empty(err)) {
-            throw std::invalid_argument{err};
-        }
-        const auto counts = count_types(end.ports);
-        if (multiple_types(counts)) {
-            os << "node endpoint can't specify";
-            os << " both signal & descriptor ports";
-            throw std::invalid_argument{os.str()};
-        }
-        return get_port_type(counts);
+    if (const auto err = os.str(); !empty(err)) {
+        throw std::invalid_argument{err};
     }
-    if (const auto p = std::get_if<executable>(&(node.implementation))) {
-        return port_type::unknown;
+    const auto counts = count_types(ports);
+    if (multiple_types(counts)) {
+        os << "node endpoint can't specify";
+        os << " both signal & descriptor ports";
+        throw std::invalid_argument{os.str()};
     }
-    throw std::logic_error{"unknown node implementation type"};
+    return get_port_type(counts);
+}
+
+auto validate(const node_endpoint& end,
+              const std::map<node_name, node>& nodes,
+              io_type expected_io) -> port_type
+{
+    const auto found = nodes.find(end.address);
+    if (found == nodes.end()) {
+        std::ostringstream os;
+        os << "endpoint addressed node ";
+        os << end.address;
+        os << " not found";
+        throw std::invalid_argument{os.str()};
+    }
+    const auto& subsys = found->second;
+    auto prefix = "bad internal-node endpoint: ";
+    std::ostringstream os;
+    for (auto&& d: end.ports) {
+        const auto found_port = subsys.interface.find(d);
+        if (found_port == subsys.interface.end()) {
+            os << prefix << "can't find " << d << " in interface";
+            prefix = "; ";
+            continue;
+        }
+        const auto& d_info = found_port->second;
+        if (d_info.direction != expected_io) {
+            os << prefix << "expected ";
+            prefix = "; ";
+            os << expected_io;
+            os << " for " << d;
+            os << ", got ";
+            os << d_info.direction;
+            continue;
+        }
+    }
+    if (const auto err = os.str(); !empty(err)) {
+        throw std::invalid_argument{err};
+    }
+    const auto counts = count_types(end.ports);
+    if (multiple_types(counts)) {
+        os << "node endpoint can't specify";
+        os << " both signal & descriptor ports";
+        throw std::invalid_argument{os.str()};
+    }
+    return get_port_type(counts);
+}
+
+auto validate(const node_endpoint& end,
+              const port_map& interface,
+              const std::map<node_name, node>& nodes,
+              io_type expected_io) -> port_type
+{
+    return (end.address == node_name{})
+        ? validate(end.ports, interface, reverse(expected_io))
+        : validate(end, nodes, expected_io);
 }
 
 auto make_forwarding_channel(const file_endpoint& src, const file_endpoint& dst)
@@ -283,7 +311,8 @@ auto get_interface_ports(const node_endpoint* end)
 auto make_channel(const endpoint& src,
                   const endpoint& dst,
                   const node_name& name,
-                  const node& node,
+                  const port_map& interface,
+                  const system& implementation,
                   const std::span<channel>& channels,
                   const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
@@ -300,8 +329,7 @@ auto make_channel(const endpoint& src,
     const auto src_user = std::get_if<user_endpoint>(&src);
     const auto dst_user = std::get_if<user_endpoint>(&dst);
     if (src_user && dst_user) {
-        const auto& links = std::get<system>(node.implementation).links;
-        return make_forwarding_channel(*src_user, *dst_user, links, channels);
+        return make_forwarding_channel(*src_user, *dst_user, implementation.links, channels);
     }
     const auto src_node = std::get_if<node_endpoint>(&src);
     const auto dst_node = std::get_if<node_endpoint>(&dst);
@@ -309,10 +337,10 @@ auto make_channel(const endpoint& src,
         throw std::invalid_argument{"at least one end must be a node"};
     }
     const auto src_port_type = src_node
-        ? validate(*src_node, node, io_type::out)
+        ? validate(*src_node, interface, implementation.nodes, io_type::out)
         : port_type::unknown;
     const auto dst_port_type = dst_node
-        ? validate(*dst_node, node, io_type::in)
+        ? validate(*dst_node, interface, implementation.nodes, io_type::in)
         : port_type::unknown;
     const auto src_dset = get_interface_ports(src_node);
     const auto dst_dset = get_interface_ports(dst_node);
@@ -356,15 +384,16 @@ auto make_channel(const endpoint& src,
 
 auto make_channel(const unidirectional_link& conn,
                   const node_name& name,
-                  const node& node,
+                  const port_map& interface,
+                  const system& implementation,
                   const std::span<channel>& channels,
                   const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
     -> channel
 {
     try {
-        return make_channel(conn.src, conn.dst, name, node, channels,
-                            parent_links, parent_channels);
+        return make_channel(conn.src, conn.dst, name, interface, implementation,
+                            channels, parent_links, parent_channels);
     }
     catch (const std::invalid_argument& ex) {
         throw invalid_link{conn, ex.what()};
@@ -375,7 +404,8 @@ auto make_channel(const unidirectional_link& conn,
 
 auto make_channel(const link& for_link,
                   const node_name& name,
-                  const node& node,
+                  const port_map& interface,
+                  const system& implementation,
                   const std::span<channel>& channels,
                   const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
@@ -391,22 +421,10 @@ auto make_channel(const link& for_link,
         throw std::logic_error{os.str()};
     }
     if (const auto p = std::get_if<unidirectional_link>(&for_link)) {
-        return make_channel(*p, name, node, channels,
+        return make_channel(*p, name, interface, implementation, channels,
                             parent_links, parent_channels);
     }
     throw invalid_link{for_link, "only unidirectional_link supported"};
-}
-
-auto operator<<(std::ostream& os, const reference_channel& value)
-    -> std::ostream&
-{
-    os << "reference_channel{";
-    os << value.other;
-    if (value.other) {
-        os << ", " << *value.other;
-    }
-    os << "}";
-    return os;
 }
 
 }

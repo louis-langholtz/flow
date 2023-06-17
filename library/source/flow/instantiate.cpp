@@ -404,7 +404,7 @@ auto make_child(instance& parent,
                 const std::span<const link>& links,
                 const port_map& ports) -> instance
 {
-    instance result;
+    using detail::make_channel;
     const auto all_closed = confirm_closed(name, node.interface,
                                            links, ports);
     if (const auto p = std::get_if<executable>(&node.implementation)) {
@@ -413,11 +413,10 @@ auto make_child(instance& parent,
             os << "cannot instantiate " << name << ": executable file path ";
             throw_has_no_filename(p->file, os.str());
         }
-        instance::forked info;
-        info.diags = ext::temporary_fstream();
-        result.info = std::move(info);
+        return {instance::forked{ext::temporary_fstream(), {}}};
     }
-    else if (const auto p = std::get_if<system>(&node.implementation)) {
+    if (const auto p = std::get_if<system>(&node.implementation)) {
+        instance result;
         result.info = instance::system{};
         auto& parent_info = std::get<instance::system>(parent.info);
         auto& info = std::get<instance::system>(result.info);
@@ -425,27 +424,22 @@ auto make_child(instance& parent,
             info.pgrp = current_process_id();
         }
         for (auto&& link: p->links) {
-            auto channel = make_channel(link, name, node, info.channels,
-                                        links, parent_info.channels);
-            if (const auto q = std::get_if<forwarding_channel>(&channel)) {
-                // TODO?
-            }
-            info.channels.emplace_back(std::move(channel));
+            info.channels.emplace_back(make_channel(link, name, node.interface,
+                                                    *p, info.channels, links,
+                                                    parent_info.channels));
         }
         for (auto&& entry: p->nodes) {
-            auto kid = make_child(result, entry.first, entry.second,
-                                  p->links, ports);
-            info.children.emplace(entry.first, std::move(kid));
+            info.children.emplace(entry.first,
+                                  make_child(result, entry.first, entry.second,
+                                             p->links, ports));
         }
+        return result;
     }
-    else {
-        std::ostringstream os;
-        os << "parent: unrecognized node implementation type for ";
-        os << name;
-        os << '\n';
-        throw std::logic_error{os.str()};
-    }
-    return result;
+    std::ostringstream os;
+    os << "parent: unrecognized node implementation type for ";
+    os << name;
+    os << '\n';
+    throw std::logic_error{os.str()};
 }
 
 auto change_directory(const std::filesystem::path& path, std::ostream& diags)
@@ -591,7 +585,8 @@ auto find_file(const std::filesystem::path& file,
 }
 
 auto fork_child(const node_name& name,
-                const node& sys,
+                const port_map& interface,
+                const executable& implementation,
                 const environment_map& env,
                 instance& child,
                 reference_process_id& pgrp,
@@ -600,8 +595,7 @@ auto fork_child(const node_name& name,
                 instance& root,
                 std::ostream& diags) -> void
 {
-    const auto& exe = std::get<executable>(sys.implementation);
-    auto exe_path = exe.file;
+    auto exe_path = implementation.file;
     if (exe_path.empty()) {
         diags << "no file specified to execute\n";
         return;
@@ -623,7 +617,7 @@ auto fork_child(const node_name& name,
         exe_path = *found;
     }
     auto& child_info = std::get<instance::forked>(child.info);
-    auto arg_buffers = make_arg_bufs(exe.arguments, exe_path);
+    auto arg_buffers = make_arg_bufs(implementation.arguments, exe_path);
     auto env_buffers = make_arg_bufs(env);
     auto argv = make_argv(arg_buffers);
     auto envp = make_argv(env_buffers);
@@ -664,11 +658,11 @@ auto fork_child(const node_name& name,
         // Also:
         // Close file descriptors inherited by child that it's not using.
         // See: https://stackoverflow.com/a/7976880/7410358
-        setup(root, name, sys.interface, links, channels, child);
+        setup(root, name, interface, links, channels, child);
         // NOTE: child.diags streams opened close-on-exec, so no need
         //   to close them.
-        if (!exe.working_directory.empty()) {
-            change_directory(exe.working_directory, child_info.diags);
+        if (!implementation.working_directory.empty()) {
+            change_directory(implementation.working_directory, child_info.diags);
         }
         // NOTE: the following does not return!
         exec_child(exe_path, argv.data(), envp.data(), child_info.diags);
@@ -698,9 +692,9 @@ auto fork_executables(const system& system,
             continue;
         }
         if (const auto p = std::get_if<executable>(&node.implementation)) {
-            fork_child(name, node, system.environment, found->second,
-                       info.pgrp, system.links, info.channels, root,
-                       diags);
+            fork_child(name, node.interface, *p, system.environment,
+                       found->second, info.pgrp, system.links, info.channels,
+                       root, diags);
             continue;
         }
         if (const auto p = std::get_if<flow::system>(&node.implementation)) {
@@ -750,9 +744,9 @@ auto close_all_internal_ends(instance::system& instance,
         const auto& sub_name = entry.first;
         const auto custom = std::get_if<instance::system>(&(entry.second.info));
         if (custom) {
-            const auto& sub_system = system.nodes.at(sub_name);
+            const auto& sub_node = system.nodes.at(sub_name);
             close_all_internal_ends(*custom,
-                                    std::get<flow::system>(sub_system.implementation),
+                                    std::get<flow::system>(sub_node.implementation),
                                     diags);
         }
     }
@@ -765,8 +759,8 @@ auto instantiate(const node& node,
                  const instantiate_options& opts)
     -> instance
 {
-    instance result;
     if (const auto p = std::get_if<executable>(&node.implementation)) {
+        instance result;
         if (!p->file.has_filename()) {
             throw_has_no_filename(p->file, "executable file path ");
         }
@@ -776,13 +770,15 @@ auto instantiate(const node& node,
         auto& info = std::get<instance::forked>(result.info);
         info.diags = ext::temporary_fstream();
         auto pgrp = all_closed? no_process_id: current_process_id();
-        fork_child({}, node, opts.environment, result, pgrp, {}, {}, result,
-                   diags);
+        fork_child({}, node.interface, *p, opts.environment, result, pgrp,
+                   {}, {}, result, diags);
+        return result;
     }
-    else if (const auto p = std::get_if<flow::system>(&node.implementation)) {
-        const auto all_closed =
-            confirm_closed({}, node.interface,
-                           p->links, opts.ports);
+    if (const auto p = std::get_if<flow::system>(&node.implementation)) {
+        instance result;
+        using detail::make_channel;
+        const auto all_closed = confirm_closed({}, node.interface,
+                                               p->links, opts.ports);
         result.info = instance::system{};
         auto& info = std::get<instance::system>(result.info);
         if (!all_closed) {
@@ -804,23 +800,24 @@ auto instantiate(const node& node,
         }
         info.channels.reserve(size(p->links));
         for (auto&& link: p->links) {
-            info.channels.push_back(make_channel(link, {}, node,
+            info.channels.push_back(make_channel(link, {}, node.interface, *p,
                                                  info.channels, {}, {}));
         }
         // Create all the subsystem instances before forking any!
         for (auto&& entry: p->nodes) {
             const auto& sub_name = entry.first;
-            const auto& sub_system = entry.second;
-            auto kid = make_child(result, sub_name, sub_system, p->links,
-                                  opts.ports);
-            info.children.emplace(sub_name, std::move(kid));
+            const auto& sub_node = entry.second;
+            info.children.emplace(sub_name,
+                                  make_child(result, sub_name, sub_node,
+                                             p->links, opts.ports));
         }
         fork_executables(*p, result, result, diags);
         // Only now, after making child processes,
         // close parent side of pipe_channels...
         close_all_internal_ends(info, *p, diags);
+        return result;
     }
-    return result;
+    throw std::logic_error{"unrecognized node implementation type"};
 }
 
 }

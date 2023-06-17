@@ -9,13 +9,14 @@
 #include "flow/file_channel.hpp"
 #include "flow/forwarding_channel.hpp"
 #include "flow/pipe_channel.hpp"
+#include "flow/port_map.hpp"
 #include "flow/signal_channel.hpp"
 #include "flow/variant.hpp" // for <variant>, flow::variant, + ostream support
 
 namespace flow {
 
-struct node;
 struct instance;
+struct system;
 
 struct reference_channel
 {
@@ -44,6 +45,11 @@ using channel = reference_channel::channel;
 // This fails unless all of channel's types are complete.
 static_assert(std::is_default_constructible_v<channel>);
 
+auto operator<<(std::ostream& os, const reference_channel& value)
+    -> std::ostream&;
+
+namespace detail {
+
 /// @brief Makes a <code>channel</code> for a <code>link</code>.
 /// @throws invalid_link if something is invalid about
 ///   @link for the given context that prevents making the
@@ -53,14 +59,14 @@ static_assert(std::is_default_constructible_v<channel>);
 /// @see channel.
 auto make_channel(const link& for_link,
                   const node_name& name,
-                  const node& node,
+                  const port_map& interface,
+                  const system& implementation,
                   const std::span<channel>& channels,
                   const std::span<const link>& parent_links,
                   const std::span<channel>& parent_channels)
     -> channel;
 
-auto operator<<(std::ostream& os, const reference_channel& value)
-    -> std::ostream&;
+}
 
 }
 
