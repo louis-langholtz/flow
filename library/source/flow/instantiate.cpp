@@ -20,6 +20,17 @@ namespace flow {
 
 namespace {
 
+[[noreturn]]
+auto throw_unrecognized_node_implementation_type(const node_name& name = {})
+    -> void
+{
+    std::ostringstream os;
+    os << "unrecognized node implementation type for \"";
+    os << name;
+    os << "\"";
+    throw std::logic_error{os.str()};
+}
+
 constexpr auto exit_failure_code = EXIT_FAILURE;
 
 /// @brief Exit the running process.
@@ -370,11 +381,7 @@ auto make_child(instance& parent,
         }
         return result;
     }
-    std::ostringstream os;
-    os << "parent: unrecognized node implementation type for ";
-    os << name;
-    os << '\n';
-    throw std::logic_error{os.str()};
+    throw_unrecognized_node_implementation_type(name);
 }
 
 auto change_directory(const std::filesystem::path& path, std::ostream& diags)
@@ -636,7 +643,7 @@ auto fork_executables(const system& system,
             fork_executables(*p, found->second, root, diags);
             continue;
         }
-        diags << "Detected unknown node implementation type - skipping!\n";
+        throw_unrecognized_node_implementation_type(name);
     }
 }
 
@@ -752,7 +759,7 @@ auto instantiate(const node& node,
         close_all_internal_ends(info, *p, diags);
         return result;
     }
-    throw std::logic_error{"unrecognized node implementation type"};
+    throw_unrecognized_node_implementation_type();
 }
 
 }
