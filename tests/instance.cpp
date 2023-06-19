@@ -8,7 +8,7 @@ TEST(instance, default_construction)
     EXPECT_TRUE(std::holds_alternative<flow::instance::system>(obj.info));
 }
 
-TEST(instance, default_custom_construction)
+TEST(instance, default_system_construction)
 {
     flow::instance::system obj;
     EXPECT_TRUE(empty(obj.children));
