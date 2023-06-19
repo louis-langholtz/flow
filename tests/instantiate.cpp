@@ -6,6 +6,7 @@
 
 #include "flow/reference_descriptor.hpp"
 #include "flow/instantiate.hpp"
+#include "flow/invalid_link.hpp"
 #include "flow/utility.hpp"
 
 namespace {
@@ -15,7 +16,7 @@ constexpr auto no_such_path = "/fee/fii/foo/fum";
 using namespace flow;
 using namespace flow::descriptors;
 
-TEST(instantiate, default_custom)
+TEST(instantiate, default_system)
 {
     using flow::system;
     std::ostringstream os;
@@ -45,6 +46,49 @@ TEST(instantiate, empty_executable)
     auto obj = instance{};
     EXPECT_THROW(obj = instantiate(sys, os), invalid_executable);
     EXPECT_TRUE(empty(os.str()));
+}
+
+TEST(instantiate, same_ends_link)
+{
+    const auto the_end = node_endpoint{"a"};
+    const auto sys = flow::system{
+        .links = {{the_end, the_end}}
+    };
+    std::ostringstream diags;
+    try {
+        instantiate(sys, diags);
+        FAIL() << "expected invalid_link, got none";
+    }
+    catch (const invalid_link& ex) {
+        EXPECT_EQ(ex.value, flow::link(the_end, the_end));
+        EXPECT_EQ(std::string(ex.what()), "must have different endpoints");
+    }
+    catch (...) {
+        FAIL() << "expected invalid_link, got other exception";
+    }
+}
+
+TEST(instantiate, end_to_nonesuch)
+{
+    const auto the_link = flow::link{
+        node_endpoint{node_name{}},
+        node_endpoint{node_name{"b"}}
+    };
+    const auto sys = flow::system{
+        .links = {the_link}
+    };
+    std::ostringstream diags;
+    try {
+        instantiate(sys, diags);
+        FAIL() << "expected invalid_link, got none";
+    }
+    catch (const invalid_link& ex) {
+        EXPECT_EQ(ex.value, the_link);
+        EXPECT_EQ(std::string(ex.what()), "endpoint addressed node b not found");
+    }
+    catch (...) {
+        FAIL() << "expected invalid_link, got other exception";
+    }
 }
 
 TEST(instantiate, ls_system)
