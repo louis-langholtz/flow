@@ -734,20 +734,6 @@ auto instantiate(const port_map& ports,
     if (!all_closed) {
         info.pgrp = current_process_id();
     }
-    {
-        std::ostringstream os;
-        auto prefix = "enclosing endpoint(s) not connected: ";
-        for (auto&& entry: ports) {
-            const auto look_for = node_endpoint{{}, entry.first};
-            if (!find_index(impl.links, look_for)) {
-                os << prefix << look_for;
-                prefix = ", ";
-            }
-        }
-        if (const auto msg = os.str(); !empty(msg)) {
-            throw invalid_port_map{msg};
-        }
-    }
     info.channels.reserve(size(impl.links));
     for (auto&& link: impl.links) {
         info.channels.push_back(make_channel(link, {}, ports, impl,
