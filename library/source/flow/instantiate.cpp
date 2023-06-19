@@ -20,17 +20,6 @@ namespace flow {
 
 namespace {
 
-[[noreturn]]
-auto throw_unrecognized_node_implementation_type(const node_name& name = {})
-    -> void
-{
-    std::ostringstream os;
-    os << "unrecognized node implementation type for \"";
-    os << name;
-    os << "\"";
-    throw std::logic_error{os.str()};
-}
-
 constexpr auto exit_failure_code = EXIT_FAILURE;
 
 /// @brief Exit the running process.
@@ -147,10 +136,8 @@ auto is_channel_for(const std::span<const channel>& channels,
     return false;
 }
 
-auto close(pipe_channel& p, pipe_channel::io side,
-           const node_name& name, const link& c,
-           std::ostream& diags)
-    -> void
+auto close(pipe_channel& p, pipe_channel::io side, const node_name& name,
+           const link& c, std::ostream& diags) -> void
 {
     diags << name << " " << c << " " << p;
     diags << ", close  " << side << "-side\n";
@@ -161,9 +148,7 @@ auto close(pipe_channel& p, pipe_channel::io side,
 }
 
 auto dup2(pipe_channel& p, pipe_channel::io side, reference_descriptor id,
-          const node_name& name, const link& c,
-          std::ostream& diags)
-    -> void
+          const node_name& name, const link& c, std::ostream& diags) -> void
 {
     diags << name << " " << c << " " << p;
     diags << ", dup " << side << "-side to ";
@@ -179,8 +164,7 @@ auto dup2(pipe_channel& pc,
           const std::set<port_id>& ports,
           const node_name& name,
           const link& conn,
-          std::ostream& diags)
-    -> void
+          std::ostream& diags) -> void
 {
     for (auto&& port: ports) {
         if (std::holds_alternative<reference_descriptor>(port)) {
@@ -223,8 +207,7 @@ auto setup(const node_name& name,
     }
 }
 
-auto to_open_flags(io_type direction)
-    -> expected<int, std::string>
+auto to_open_flags(io_type direction) -> expected<int, std::string>
 {
     switch (direction) {
     case io_type::in: return {O_RDONLY};
@@ -347,41 +330,71 @@ auto throw_has_no_filename(const std::filesystem::path& path,
 auto make_child(instance& parent,
                 const node_name& name,
                 const node& node,
-                const std::span<const link>& links,
-                const port_map& ports) -> instance
+                const std::span<const link>& parent_links,
+                const port_map& parent_ports) -> instance;
+
+auto make_child(const node_name& name,
+                const port_map& interface,
+                const executable& implementation,
+                const std::span<const link>& parent_links,
+                const port_map& parent_ports) -> instance
 {
-    using detail::make_channel;
-    const auto all_closed = confirm_closed(name, node.interface,
-                                           links, ports);
-    if (const auto p = std::get_if<executable>(&node.implementation)) {
-        if (!p->file.has_filename()) {
-            std::ostringstream os;
-            os << "cannot instantiate " << name << ": executable file path ";
-            throw_has_no_filename(p->file, os.str());
-        }
-        return {instance::forked{ext::temporary_fstream(), {}}};
+    confirm_closed(name, interface, parent_links, parent_ports);
+    if (!implementation.file.has_filename()) {
+        std::ostringstream os;
+        os << "cannot instantiate ";
+        os << name;
+        os << ": executable file path ";
+        throw_has_no_filename(implementation.file, os.str());
     }
-    if (const auto p = std::get_if<system>(&node.implementation)) {
-        instance result;
-        result.info = instance::system{};
-        auto& parent_info = std::get<instance::system>(parent.info);
-        auto& info = std::get<instance::system>(result.info);
-        if (!all_closed) {
-            info.pgrp = current_process_id();
-        }
-        for (auto&& link: p->links) {
-            info.channels.emplace_back(make_channel(link, name, node.interface,
-                                                    *p, info.channels, links,
-                                                    parent_info.channels));
-        }
-        for (auto&& entry: p->nodes) {
-            info.children.emplace(entry.first,
-                                  make_child(result, entry.first, entry.second,
-                                             p->links, ports));
-        }
-        return result;
+    return instance{instance::forked{ext::temporary_fstream(), {}}};
+}
+
+auto make_child(instance& parent,
+                const node_name& name,
+                const port_map& interface,
+                const system& implementation,
+                const std::span<const link>& parent_links,
+                const port_map& parent_ports) -> instance
+{
+    instance result;
+    const auto all_closed = confirm_closed(name, interface,
+                                           parent_links, parent_ports);
+    result.info = instance::system{};
+    auto& parent_info = std::get<instance::system>(parent.info);
+    auto& info = std::get<instance::system>(result.info);
+    if (!all_closed) {
+        info.pgrp = current_process_id();
     }
-    throw_unrecognized_node_implementation_type(name);
+    for (auto&& link: implementation.links) {
+        info.channels.emplace_back(make_channel(link, name, interface,
+                                                implementation, info.channels, parent_links,
+                                                parent_info.channels));
+    }
+    for (auto&& entry: implementation.nodes) {
+        info.children.emplace(entry.first,
+                              make_child(result, entry.first, entry.second,
+                                         implementation.links, parent_ports));
+    }
+    return result;
+}
+
+auto make_child(instance& parent,
+                const node_name& name,
+                const node& node,
+                const std::span<const link>& parent_links,
+                const port_map& parent_ports) -> instance
+{
+    return std::visit(detail::overloaded{
+        [&](const executable& implementation) {
+            return make_child(name, node.interface, implementation,
+                              parent_links, parent_ports);
+        },
+        [&](const system& implementation) {
+            return make_child(parent, name, node.interface, implementation,
+                              parent_links, parent_ports);
+        }
+    }, node.implementation);
 }
 
 auto change_directory(const std::filesystem::path& path, std::ostream& diags)
@@ -447,8 +460,7 @@ auto close_unused_ports(const node_name& name,
     }
 }
 
-auto close_pipes_except(instance& root,
-                        instance& child) -> void
+auto close_pipes_except(instance& root, instance& child) -> void
 {
     if (const auto parent = find_parent(root, child)) {
         auto& parent_info = std::get<instance::system>(parent->info);
@@ -498,8 +510,7 @@ auto setup(instance& root,
     close_pipes_except(root, child);
 }
 
-auto find_file(const std::filesystem::path& file,
-               const env_value& path)
+auto find_file(const std::filesystem::path& file, const env_value& path)
     -> std::optional<std::filesystem::path>
 {
     static constexpr auto delimiter = ':';
@@ -611,10 +622,10 @@ auto fork_child(const node_name& name,
     }
     default: // case for the spawning/parent process
         child_info.state = owning_process_id(pid);
-        pthread_sigmask(SIG_SETMASK, &old_set, nullptr);
         if (pgrp == no_process_id) {
             pgrp = pid;
         }
+        pthread_sigmask(SIG_SETMASK, &old_set, nullptr);
         break;
     }
 }
@@ -633,17 +644,16 @@ auto fork_executables(const system& system,
             diags << "can't find child instance for " << name << "!\n";
             continue;
         }
-        if (const auto p = std::get_if<executable>(&node.implementation)) {
-            fork_child(name, node.interface, *p, system.environment,
-                       found->second, info.pgrp, system.links, info.channels,
-                       root, diags);
-            continue;
-        }
-        if (const auto p = std::get_if<flow::system>(&node.implementation)) {
-            fork_executables(*p, found->second, root, diags);
-            continue;
-        }
-        throw_unrecognized_node_implementation_type(name);
+        std::visit(detail::overloaded{
+            [&](const flow::executable& implementation) {
+                fork_child(name, node.interface, implementation, system.environment,
+                           found->second, info.pgrp, system.links, info.channels,
+                           root, diags);
+            },
+            [&](const flow::system& implementation) {
+                fork_executables(implementation, found->second, root, diags);
+            }
+        }, node.implementation);
     }
 }
 
@@ -694,6 +704,70 @@ auto close_all_internal_ends(instance::system& instance,
     }
 }
 
+auto instantiate(const port_map& ports,
+                 const executable& impl,
+                 std::ostream& diags,
+                 const instantiate_options& opts) -> instance
+{
+    instance result;
+    if (!impl.file.has_filename()) {
+        throw_has_no_filename(impl.file, "executable file path ");
+    }
+    const auto all_closed = confirm_closed({}, ports, {}, opts.ports);
+    result.info = instance::forked{ext::temporary_fstream(), {}};
+    auto pgrp = all_closed? no_process_id: current_process_id();
+    fork_child({}, ports, impl, opts.environment, result, pgrp, {}, {},
+               result, diags);
+    return result;
+}
+
+auto instantiate(const port_map& ports,
+                 const system& impl,
+                 std::ostream& diags,
+                 const instantiate_options& opts) -> instance
+{
+    instance result;
+    using detail::make_channel;
+    const auto all_closed = confirm_closed({}, ports, impl.links, opts.ports);
+    result.info = instance::system{};
+    auto& info = std::get<instance::system>(result.info);
+    if (!all_closed) {
+        info.pgrp = current_process_id();
+    }
+    {
+        std::ostringstream os;
+        auto prefix = "enclosing endpoint(s) not connected: ";
+        for (auto&& entry: ports) {
+            const auto look_for = node_endpoint{{}, entry.first};
+            if (!find_index(impl.links, look_for)) {
+                os << prefix << look_for;
+                prefix = ", ";
+            }
+        }
+        if (const auto msg = os.str(); !empty(msg)) {
+            throw invalid_port_map{msg};
+        }
+    }
+    info.channels.reserve(size(impl.links));
+    for (auto&& link: impl.links) {
+        info.channels.push_back(make_channel(link, {}, ports, impl,
+                                             info.channels, {}, {}));
+    }
+    // Create all the subsystem instances before forking any!
+    for (auto&& entry: impl.nodes) {
+        const auto& sub_name = entry.first;
+        const auto& sub_node = entry.second;
+        info.children.emplace(sub_name,
+                              make_child(result, sub_name, sub_node,
+                                         impl.links, opts.ports));
+    }
+    fork_executables(impl, result, result, diags);
+    // Only now, after making child processes,
+    // close parent side of pipe_channels...
+    close_all_internal_ends(info, impl, diags);
+    return result;
+}
+
 }
 
 auto instantiate(const node& node,
@@ -701,65 +775,14 @@ auto instantiate(const node& node,
                  const instantiate_options& opts)
     -> instance
 {
-    if (const auto p = std::get_if<executable>(&node.implementation)) {
-        instance result;
-        if (!p->file.has_filename()) {
-            throw_has_no_filename(p->file, "executable file path ");
+    return std::visit(detail::overloaded{
+        [&](const executable& implementation) {
+            return instantiate(node.interface, implementation, diags, opts);
+        },
+        [&](const system& implementation) {
+            return instantiate(node.interface, implementation, diags, opts);
         }
-        const auto all_closed =
-            confirm_closed({}, node.interface, {}, opts.ports);
-        result.info = instance::forked{};
-        auto& info = std::get<instance::forked>(result.info);
-        info.diags = ext::temporary_fstream();
-        auto pgrp = all_closed? no_process_id: current_process_id();
-        fork_child({}, node.interface, *p, opts.environment, result, pgrp,
-                   {}, {}, result, diags);
-        return result;
-    }
-    if (const auto p = std::get_if<flow::system>(&node.implementation)) {
-        instance result;
-        using detail::make_channel;
-        const auto all_closed = confirm_closed({}, node.interface,
-                                               p->links, opts.ports);
-        result.info = instance::system{};
-        auto& info = std::get<instance::system>(result.info);
-        if (!all_closed) {
-            info.pgrp = current_process_id();
-        }
-        {
-            std::ostringstream os;
-            auto prefix = "enclosing endpoint(s) not connected: ";
-            for (auto&& entry: node.interface) {
-                const auto look_for = node_endpoint{{}, entry.first};
-                if (!find_index(p->links, look_for)) {
-                    os << prefix << look_for;
-                    prefix = ", ";
-                }
-            }
-            if (const auto msg = os.str(); !empty(msg)) {
-                throw invalid_port_map{msg};
-            }
-        }
-        info.channels.reserve(size(p->links));
-        for (auto&& link: p->links) {
-            info.channels.push_back(make_channel(link, {}, node.interface, *p,
-                                                 info.channels, {}, {}));
-        }
-        // Create all the subsystem instances before forking any!
-        for (auto&& entry: p->nodes) {
-            const auto& sub_name = entry.first;
-            const auto& sub_node = entry.second;
-            info.children.emplace(sub_name,
-                                  make_child(result, sub_name, sub_node,
-                                             p->links, opts.ports));
-        }
-        fork_executables(*p, result, result, diags);
-        // Only now, after making child processes,
-        // close parent side of pipe_channels...
-        close_all_internal_ends(info, *p, diags);
-        return result;
-    }
-    throw_unrecognized_node_implementation_type();
+    }, node.implementation);
 }
 
 }
